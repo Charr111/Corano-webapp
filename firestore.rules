@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'apolokor@gmail.com';
+    }
+
+    match /menuCategories/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /menuItems/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /reviews/{document=**} {
+      // Anyone can read if the status is approved, or if they are the admin
+      allow read: if (resource.data.status == 'approved') || isAdmin();
+      // Anyone can create a review
+      allow create: if true;
+      // Only admin can modify or delete reviews
+      allow update, delete: if isAdmin();
+    }
+  }
+}

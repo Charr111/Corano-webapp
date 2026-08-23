@@ -1,0 +1,51 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+
+const BackToTop = () => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const toggleVisibility = () => {
+      // Appear after scrolling down a reasonable amount (~4 items worth of height)
+      if (window.scrollY > 600) {
+        setIsVisible(true);
+      } else {
+        setIsVisible(false);
+      }
+    };
+
+    window.addEventListener('scroll', toggleVisibility);
+    // Initial check in case the page loads already scrolled
+    toggleVisibility();
+
+    return () => window.removeEventListener('scroll', toggleVisibility);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  };
+
+  return (
+    <AnimatePresence>
+      {isVisible && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.2 }}
+          onClick={scrollToTop}
+          // Placed well above the bottom nav (h-16), a bit below the middle of the screen
+          className="fixed bottom-[20vh] md:bottom-12 right-6 z-[60] p-4 bg-[#E4CD86] text-black rounded-full shadow-2xl hover:bg-[#E4CD86]/90 transition-colors active:scale-95 flex items-center justify-center"
+          aria-label="Back to top"
+        >
+          <span className="material-symbols-outlined text-3xl leading-none">arrow_upward</span>
+        </motion.button>
+      )}
+    </AnimatePresence>
+  );
+};
+
+export default BackToTop;

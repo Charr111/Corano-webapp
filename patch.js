@@ -1,0 +1,4 @@
+import fs from 'fs';
+let css = fs.readFileSync('src/index.css', 'utf8');
+css = css.replace('.hide-scrollbar::-webkit-scrollbar {\n  display: none;\n}\n.hide-scrollbar {\n  -ms-overflow-style: none;\n  scrollbar-width: none;\n}', '@media (max-width: 768px) {\n  .hide-scrollbar::-webkit-scrollbar {\n    display: none;\n  }\n  .hide-scrollbar {\n    -ms-overflow-style: none;\n    scrollbar-width: none;\n  }\n}\n\n@media (min-width: 769px) {\n  .hide-scrollbar::-webkit-scrollbar {\n    height: 6px;\n  }\n  .hide-scrollbar::-webkit-scrollbar-track {\n    background: rgba(255, 255, 255, 0.05);\n    border-radius: 10px;\n  }\n  .hide-scrollbar::-webkit-scrollbar-thumb {\n    background: rgba(228, 205, 134, 0.5);\n    border-radius: 10px;\n  }\n  .hide-scrollbar::-webkit-scrollbar-thumb:hover {\n    background: rgba(228, 205, 134, 0.8);\n  }\n}');
+fs.writeFileSync('src/index.css', css);
