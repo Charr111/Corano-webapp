@@ -9,7 +9,7 @@ const Visit = () => {
       className="relative min-h-full py-12 px-4 sm:px-6 lg:px-8"
     >
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <img src="https://res.cloudinary.com/wlgd4zum/image/upload/f_auto/q_auto/corano_673c67.jpg" alt="Visit Background" className="w-full h-full object-cover" fetchPriority="high" loading="eager" />
+        <img src="/visit-bg.jpg" alt="Visit Background" className="w-full h-full object-cover" fetchPriority="high" loading="eager" />
         <div className="absolute inset-0 bg-background/60"></div>
       </div>
       <div className="relative z-10 max-w-7xl mx-auto">

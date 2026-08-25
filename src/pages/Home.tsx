@@ -104,7 +104,7 @@ const Home = () => {
       <section className="relative min-h-[100svh] flex items-center justify-center pt-28 pb-24">
         <div className="absolute inset-0 z-0">
           <img
-            src="https://res.cloudinary.com/wlgd4zum/image/upload/f_auto,q_auto,w_2000/v1786550183/corano-our-story-resto-food.jpg"
+            src="/our-story-bg.jpg"
             alt="Our Story Background"
             className="w-full h-full object-cover object-[center_25%]"
             fetchPriority="high"
