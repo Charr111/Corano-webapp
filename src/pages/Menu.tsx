@@ -68,6 +68,7 @@ const Menu = () => {
       <div className="relative z-10 max-w-7xl mx-auto">
         <div className="text-center mb-8 md:mb-12">
           <h1 className="font-headline text-3xl md:text-4xl text-primary mb-2">Our Menu</h1>
+          <div className="w-20 h-1 bg-primary mx-auto rounded-full mt-4"></div>
         </div>
 
         {/* Categories Tab Bar */}
@@ -77,7 +78,7 @@ const Menu = () => {
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.name.toLowerCase())}
-                className={`whitespace-nowrap pb-3 mb-2 px-2 text-lg font-medium transition-colors relative ${
+                className={`font-headline whitespace-nowrap pb-3 mb-2 px-2 text-lg font-medium transition-colors relative ${
                   activeCategory === cat.name.toLowerCase() ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'
                 }`}
               >
@@ -192,15 +193,15 @@ const Menu = () => {
                   <h2 className="font-headline text-2xl md:text-3xl text-on-surface pr-4">{selectedItem.title}</h2>
                   <span className="text-2xl font-bold text-primary">${selectedItem.price}</span>
                 </div>
-                <p className="text-on-surface-variant leading-relaxed text-lg mb-4 whitespace-pre-wrap">
+                <p className="font-headline text-on-surface-variant leading-relaxed text-lg mb-4 whitespace-pre-wrap">
                   {selectedItem.desc}
                 </p>
                 {selectedItem.addons && selectedItem.addons.length > 0 && (
                   <div className="mb-8 p-4 bg-surface rounded-xl border border-outline-variant/30">
-                    <h4 className="text-sm font-bold text-on-surface mb-2">Options & Add-ons</h4>
+                    <h4 className="font-headline text-sm font-bold text-on-surface mb-2">Options & Add-ons</h4>
                     <ul className="space-y-2">
                       {selectedItem.addons.map((addon, idx) => (
-                        <li key={idx} className="text-sm text-on-surface-variant flex items-center gap-2">
+                        <li key={idx} className="font-headline text-sm text-on-surface-variant flex items-center gap-2">
                           <span className="w-1.5 h-1.5 rounded-full bg-primary/60 shrink-0"></span>
                           {addon}
                         </li>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import Menu from './pages/Menu';
-import Visit from './pages/Visit';
+import About from './pages/About';
 import Reviews from './pages/Reviews';
 import Admin from './pages/Admin';
 import PageMeta from './components/PageMeta';
@@ -34,19 +34,19 @@ const BottomNav = () => {
       <div className="flex justify-around items-center h-16">
         <Link to="/home" className={`flex flex-col items-center justify-center w-full h-full ${currentView === 'home' ? 'text-primary' : 'text-on-surface-variant'}`}>
           <span className="material-symbols-outlined text-2xl">home</span>
-          <span className="text-[10px] font-medium mt-1">Home</span>
+          <span className="font-headline text-[10px] font-medium mt-1">Home</span>
         </Link>
         <Link to="/menu" className={`flex flex-col items-center justify-center w-full h-full ${currentView === 'menu' ? 'text-primary' : 'text-on-surface-variant'}`}>
           <span className="material-symbols-outlined text-2xl">restaurant_menu</span>
-          <span className="text-[10px] font-medium mt-1">Menu</span>
+          <span className="font-headline text-[10px] font-medium mt-1">Menu</span>
         </Link>
-        <Link to="/visit" className={`flex flex-col items-center justify-center w-full h-full ${currentView === 'visit' ? 'text-primary' : 'text-on-surface-variant'}`}>
+        <Link to="/about" className={`flex flex-col items-center justify-center w-full h-full ${currentView === 'about' ? 'text-primary' : 'text-on-surface-variant'}`}>
           <span className="material-symbols-outlined text-2xl">storefront</span>
-          <span className="text-[10px] font-medium mt-1">Visit</span>
+          <span className="font-headline text-[10px] font-medium mt-1">About</span>
         </Link>
         <Link to="/reviews" className={`flex flex-col items-center justify-center w-full h-full ${currentView === 'reviews' ? 'text-primary' : 'text-on-surface-variant'}`}>
           <span className="material-symbols-outlined text-2xl">star</span>
-          <span className="text-[10px] font-medium mt-1">Reviews</span>
+          <span className="font-headline text-[10px] font-medium mt-1">Reviews</span>
         </Link>
       </div>
     </nav>
@@ -65,7 +65,7 @@ const MainLayout = () => {
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Home />} />
           <Route path="/menu" element={<Menu />} />
-          <Route path="/visit" element={<Visit />} />
+          <Route path="/about" element={<About />} />
           <Route path="/reviews" element={<Reviews />} />
           <Route path="/admin" element={<Admin />} />
         </Routes>

@@ -108,12 +108,12 @@ const Reviews = () => {
       <div className="relative z-10 max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="font-headline text-4xl md:text-5xl text-primary mb-4">Customer Reviews</h1>
-          <p className="text-xl text-on-surface-variant max-w-2xl mx-auto mb-8">
+          <p className="font-headline text-xl text-on-surface-variant max-w-2xl mx-auto mb-8">
             Hear what our guests have to say about their experiences at Corano.
           </p>
           <button 
             onClick={() => setShowForm(true)}
-            className="bg-primary text-on-primary px-8 py-3 rounded-full font-bold shadow-md hover:bg-primary/90 transition-colors"
+            className="font-headline bg-primary text-on-primary px-8 py-3 rounded-full font-bold shadow-md hover:bg-primary/90 transition-colors"
           >
             Write a Review
           </button>
@@ -143,7 +143,7 @@ const Reviews = () => {
                     ))}
                   </div>
                 </div>
-                <p className="text-on-surface text-lg leading-relaxed mb-6 italic">
+                <p className="font-headline text-on-surface text-lg leading-relaxed mb-6 italic">
                   "{review.text}"
                 </p>
                 <div className="flex items-center justify-between">
