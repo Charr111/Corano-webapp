@@ -116,7 +116,12 @@ const Menu = () => {
                   onClick={() => setSelectedItem(item)}
                   className="bg-surface-container-low rounded-2xl overflow-hidden border border-outline-variant/20 cursor-pointer hover:border-primary/50 transition-colors flex md:flex-col"
                 >
-                  <div className="w-32 h-32 md:w-full md:h-48 shrink-0 bg-surface-container">
+                  <div className="w-32 h-32 md:w-full md:h-48 shrink-0 bg-surface-container relative">
+                    {item.isNew && (
+                      <div className="absolute top-2 right-2 bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full z-10 shadow-md">
+                        New Item
+                      </div>
+                    )}
                     {item.img ? (
                       <img 
                         src={item.img} 
