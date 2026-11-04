@@ -15,8 +15,8 @@ const Header = () => {
   
   return (
     <div className="fixed top-0 left-0 right-0 w-full z-50 h-28 flex items-center justify-center pointer-events-none bg-background/95 backdrop-blur-md border-b border-outline-variant/20">
-       <Link to="/home" className="flex items-center justify-center pointer-events-auto drop-shadow-2xl">
-        <img src="https://res.cloudinary.com/wlgd4zum/image/upload/f_auto,q_auto,w_600/corano-logo" alt="Corano Logo" className="h-20 w-auto object-contain" fetchPriority="high" loading="eager" />
+      <Link to="/home" className="flex items-center justify-center pointer-events-auto drop-shadow-2xl">
+        <img src="https://images.restocorano.com/items/corano-logo-header.png" alt="Corano Logo" className="h-20 w-auto object-contain" fetchPriority="high" loading="eager" />
       </Link>
     </div>
   );

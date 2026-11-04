@@ -11,7 +11,7 @@ const Home = () => {
       <section className="relative flex-grow flex flex-col items-center justify-between pb-[calc(5rem+env(safe-area-inset-bottom))] pt-6 md:pt-16 lg:pt-2 shadow-2xl">
         <div className="absolute inset-0 z-0">
           <img
-            src="/hero-chicken.jpg"
+            src="https://images.restocorano.com/items/site-hero-chicken.jpg"
             alt="Delicious roasted chicken"
             className="w-full h-full object-cover"
             fetchPriority="high"
@@ -22,7 +22,7 @@ const Home = () => {
         
         {/* Top Logo */}
         <div className="relative z-10 w-full flex justify-center px-4">
-          <img src="https://res.cloudinary.com/wlgd4zum/image/upload/f_auto,q_auto/corano-logo" alt="Corano Logo" className="h-[18vh] min-h-[100px] max-h-32 md:h-64 lg:h-52 w-auto object-contain drop-shadow-xl -ml-6 md:-ml-8" fetchPriority="high" loading="eager" />
+          <img src="https://images.restocorano.com/items/corano-logo-full.png" alt="Corano Logo" className="h-[18vh] min-h-[100px] max-h-32 md:h-64 lg:h-52 w-auto object-contain drop-shadow-xl -ml-6 md:-ml-8" fetchPriority="high" loading="eager" />
         </div>
         
         {/* Main Content */}

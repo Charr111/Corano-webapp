@@ -102,7 +102,7 @@ const Reviews = () => {
   return (
     <div className="relative min-h-full py-16 px-4 sm:px-6 lg:px-8">
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <img src="/reviews-bg.jpg" alt="Reviews Background" className="w-full h-full object-cover" fetchPriority="high" loading="eager" />
+        <img src="https://images.restocorano.com/items/site-reviews-bg.jpg" alt="Reviews Background" className="w-full h-full object-cover" fetchPriority="high" loading="eager" />
         <div className="absolute inset-0 bg-background/60"></div>
       </div>
       <div className="relative z-10 max-w-7xl mx-auto">
