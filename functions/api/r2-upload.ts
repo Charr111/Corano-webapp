@@ -169,8 +169,15 @@ export const onRequestPost = async (context: any) => {
     const cacheControl = 'public, max-age=31536000, immutable';
     const finalContentType = contentType || 'image/webp';
 
-    // Option A: If Cloudflare Pages has a native R2 bucket binding named BUCKET or CORANO_IMAGES
-    const r2Bucket = env.BUCKET || env.CORANO_IMAGES;
+    // Option A: If Cloudflare Pages has a native R2 bucket binding (e.g., BUCKET, corano-images, CORANO_IMAGES, or any bound R2 bucket)
+    const r2Bucket =
+      env.BUCKET ||
+      env['corano-images'] ||
+      env.CORANO_IMAGES ||
+      env.corano_images ||
+      Object.values(env).find(
+        (val: any) => val && typeof val === 'object' && typeof val.put === 'function'
+      );
     if (r2Bucket && typeof r2Bucket.put === 'function') {
       await r2Bucket.put(objectKey, bytes, {
         httpMetadata: {
