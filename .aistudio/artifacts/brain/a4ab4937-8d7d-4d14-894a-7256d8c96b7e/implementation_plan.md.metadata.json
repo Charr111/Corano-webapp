@@ -1,0 +1,6 @@
+{
+  "summary": "Implementation plan for migrating Corano Restaurant menu images from Cloudinary to Cloudflare R2 (https://image.restocorano.com), adding mobile-safe client-side auto-shrink (< 55 KB) image uploads to the Admin Dashboard, and introducing a dynamic Admin Gmail Access Manager backed by Firebase Firestore.",
+  "updatedAt": "2026-11-04T15:04:58.810155471Z",
+  "requestFeedback": true,
+  "userFacing": true
+}

@@ -1,115 +1,73 @@
 {
   "entities": {
-    "User": {
-      "title": "User",
-      "description": "A user profile in the application.",
+    "MenuCategory": {
+      "title": "MenuCategory",
+      "description": "A menu category in Corano Restaurant.",
       "type": "object",
       "properties": {
-        "uid": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "name": { "type": "string" },
-        "role": { "type": "string", "enum": ["customer", "admin"] },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "deliveryInfo": {
-          "type": "object",
-          "properties": {
-            "name": { "type": "string" },
-            "phone": { "type": "string" },
-            "email": { "type": "string" },
-            "address": { "type": "string" }
-          }
-        }
+        "name": { "type": "string", "maxLength": 100 },
+        "order": { "type": "number" }
       },
-      "required": ["uid", "email", "name", "role"]
+      "required": ["name", "order"]
     },
-    "Order": {
-      "title": "Order",
-      "description": "A customer order.",
+    "MenuItem": {
+      "title": "MenuItem",
+      "description": "A menu item with its R2 or external image URL stored in img.",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "userId": { "type": "string", "description": "Optional user ID for authenticated users." },
-        "guestId": { "type": "string", "description": "Optional guest ID for unauthenticated users." },
-        "cancellable": { "type": "boolean" },
-        "items": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": { "type": "number" },
-              "title": { "type": "string" },
-              "price": { "type": "string" },
-              "qty": { "type": "number" },
-              "img": { "type": "string" }
-            }
-          }
-        },
-        "total": { "type": "string" },
-        "promoCode": { "type": "string" },
-        "discountAmount": { "type": "string" },
-        "status": { "type": "string", "enum": ["pending", "preparing", "delivering", "completed", "cancelled"] },
-        "deliveryDetails": {
-          "type": "object",
-          "properties": {
-            "name": { "type": "string" },
-            "phone": { "type": "string" },
-            "email": { "type": "string" },
-            "address": { "type": "string" },
-            "locationLink": { "type": "string" },
-            "paymentMethod": { "type": "string" }
-          }
-        },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "category": { "type": "string", "maxLength": 100 },
+        "title": { "type": "string", "maxLength": 200 },
+        "price": { "type": "string", "maxLength": 60 },
+        "desc": { "type": "string", "maxLength": 2000 },
+        "img": { "type": "string", "maxLength": 1000 },
+        "available": { "type": "boolean" },
+        "addons": { "type": "array" },
+        "order": { "type": "number" },
+        "isNew": { "type": "boolean" }
       },
-      "required": ["id", "items", "total", "status", "deliveryDetails", "createdAt"]
+      "required": ["category", "title", "price"]
     },
     "Review": {
       "title": "Review",
-      "description": "A review for an order or menu item.",
+      "description": "A customer review for Corano Restaurant.",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "userId": { "type": "string" },
-        "userName": { "type": "string" },
+        "author": { "type": "string", "maxLength": 120 },
+        "text": { "type": "string", "maxLength": 2000 },
         "rating": { "type": "number" },
-        "comment": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "date": { "type": "string", "maxLength": 80 },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] }
       },
-      "required": ["id", "userId", "userName", "rating", "createdAt"]
+      "required": ["author", "text", "rating", "date"]
     },
-    "Promo": {
-      "title": "Promo",
-      "description": "A promotional discount code.",
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "An authorized admin Gmail account granted access by a root or existing admin.",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "code": { "type": "string" },
-        "discountType": { "type": "string", "enum": ["percentage", "fixed"] },
-        "discountValue": { "type": "number" },
-        "maxUsesOverall": { "type": "number" },
-        "maxUsesPerUser": { "type": "number" },
-        "currentUses": { "type": "number" },
-        "usedBy": { "type": "object" }
+        "email": { "type": "string", "format": "email", "maxLength": 254 },
+        "addedBy": { "type": "string", "maxLength": 254 },
+        "createdAt": { "type": "string", "maxLength": 80 }
       },
-      "required": ["id", "code", "discountType", "discountValue", "maxUsesOverall", "maxUsesPerUser", "currentUses"]
+      "required": ["email"]
     }
   },
   "firestore": {
-    "/users/{userId}": {
-      "schema": { "$ref": "#/entities/User" },
-      "description": "Stores user profiles."
+    "/menuCategories/{categoryId}": {
+      "schema": { "$ref": "#/entities/MenuCategory" },
+      "description": "Stores menu categories ordered by index."
     },
-    "/orders/{orderId}": {
-      "schema": { "$ref": "#/entities/Order" },
-      "description": "Stores customer orders."
+    "/menuItems/{itemId}": {
+      "schema": { "$ref": "#/entities/MenuItem" },
+      "description": "Stores menu items and their image URLs (img)."
     },
     "/reviews/{reviewId}": {
       "schema": { "$ref": "#/entities/Review" },
       "description": "Stores customer reviews."
     },
-    "/promos/{promoId}": {
-      "schema": { "$ref": "#/entities/Promo" },
-      "description": "Stores promotional codes."
+    "/admins/{email}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Stores dynamically authorized admin Gmail accounts."
     }
   }
 }

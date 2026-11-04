@@ -25,3 +25,10 @@ export type Review = {
   date: string;
   status?: 'pending' | 'approved' | 'rejected';
 };
+
+export type AdminUser = {
+  id: string;
+  email: string;
+  addedBy?: string;
+  createdAt?: string;
+};

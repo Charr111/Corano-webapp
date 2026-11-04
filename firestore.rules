@@ -1,9 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
+    // Permanent Root Admins + Dynamic Admin Gmails stored in /admins/{email}
     function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'apolokor@gmail.com';
+      return request.auth != null &&
+        request.auth.token.email != null && (
+          request.auth.token.email in ['apolokor@gmail.com', 'rony.daou83@gmail.com'] ||
+          exists(/databases/$(database)/documents/admins/$(request.auth.token.email))
+        );
     }
 
     match /menuCategories/{document=**} {
@@ -16,8 +21,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /admins/{email} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
     match /reviews/{document=**} {
-      // Anyone can read if the status is approved, or if they are the admin
+      // Anyone can read if the status is approved, or if they are an admin
       allow read: if (resource.data.status == 'approved') || isAdmin();
       // Anyone can create a review
       allow create: if true;
