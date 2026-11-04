@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, orderBy, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, orderBy, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { MenuItem, MenuCategory } from '../types';
 import BackToTop from '../components/BackToTop';
+import { DEFAULT_LBP_RATE, formatStorePrice, StoreCurrency } from '../utils/currency';
 
 const Menu = () => {
   const [categories, setCategories] = useState<MenuCategory[]>([]);
@@ -12,11 +13,16 @@ const Menu = () => {
   const [loadingCats, setLoadingCats] = useState(true);
   const [loadingItems, setLoadingItems] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [storeCurrency, setStoreCurrency] = useState<StoreCurrency>('USD');
+  const [exchangeRate, setExchangeRate] = useState<number>(DEFAULT_LBP_RATE);
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchCategoriesAndSettings = async () => {
       try {
-        const catSnap = await getDocs(query(collection(db, 'menuCategories'), orderBy('order')));
+        const [catSnap, settingsSnap] = await Promise.all([
+          getDocs(query(collection(db, 'menuCategories'), orderBy('order'))),
+          getDoc(doc(db, 'settings', 'store')).catch(() => null),
+        ]);
         const cats = catSnap.docs.map(d => ({ id: d.id, ...d.data() } as MenuCategory));
         
         setCategories(cats);
@@ -24,13 +30,23 @@ const Menu = () => {
         if (cats.length > 0) {
           setActiveCategory(cats[0].name.toLowerCase());
         }
+
+        if (settingsSnap && settingsSnap.exists()) {
+          const sData = settingsSnap.data();
+          if (sData.currency === 'LBP' || sData.currency === 'USD') {
+            setStoreCurrency(sData.currency);
+          }
+          if (typeof sData.exchangeRate === 'number' && sData.exchangeRate > 0) {
+            setExchangeRate(sData.exchangeRate);
+          }
+        }
       } catch (error) {
         console.error("Error fetching categories:", error);
       } finally {
         setLoadingCats(false);
       }
     };
-    fetchCategories();
+    fetchCategoriesAndSettings();
   }, []);
 
   useEffect(() => {
@@ -117,16 +133,20 @@ const Menu = () => {
                   className="bg-surface-container-low rounded-2xl overflow-hidden border border-outline-variant/20 cursor-pointer hover:border-primary/50 transition-colors flex md:flex-col"
                 >
                   <div className="w-32 h-32 md:w-full md:h-48 shrink-0 bg-surface-container relative">
-                    {item.isNew && (
+                    {item.available === false ? (
+                      <div className="absolute top-2 right-2 bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full z-10 shadow-md">
+                        Out of Stock
+                      </div>
+                    ) : item.isNew ? (
                       <div className="absolute top-2 right-2 bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full z-10 shadow-md">
                         New Item
                       </div>
-                    )}
+                    ) : null}
                     {item.img ? (
                       <img 
                         src={item.img} 
                         alt={item.title} 
-                        className="w-full h-full object-cover md:group-hover:scale-105 transition-transform duration-500"
+                        className={`w-full h-full object-cover md:group-hover:scale-105 transition-transform duration-500 ${item.available === false ? 'opacity-50 grayscale-[40%]' : ''}`}
                         loading={activeCategory === categories[0]?.name.toLowerCase() ? "eager" : "lazy"}
                         fetchPriority={activeCategory === categories[0]?.name.toLowerCase() ? "high" : "auto"}
                       />
@@ -139,9 +159,15 @@ const Menu = () => {
                   <div className="p-4 flex flex-col flex-grow justify-center">
                     <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2">
                       <h3 className="font-headline text-lg md:text-xl text-on-surface leading-tight mb-1 md:mb-0 pr-2">{item.title}</h3>
-                      <span className="font-bold text-primary whitespace-nowrap">${item.price}</span>
+                      <span className="font-bold text-primary whitespace-nowrap">
+                        {formatStorePrice(item.price, storeCurrency, exchangeRate)}
+                      </span>
                     </div>
-                    {(item.desc || (item.addons && item.addons.length > 0)) ? (
+                    {item.available === false ? (
+                      <p className="text-xs text-error font-bold mt-1">
+                        Out of Stock
+                      </p>
+                    ) : (item.desc || (item.addons && item.addons.length > 0)) ? (
                       <p className="text-sm text-primary italic font-semibold mt-1">
                         View Ingredients
                       </p>
@@ -196,7 +222,9 @@ const Menu = () => {
               <div className="p-6 md:p-8 flex flex-col overflow-y-auto hide-scrollbar pb-safe">
                 <div className="flex justify-between items-start mb-4">
                   <h2 className="font-headline text-2xl md:text-3xl text-on-surface pr-4">{selectedItem.title}</h2>
-                  <span className="text-2xl font-bold text-primary">${selectedItem.price}</span>
+                  <span className="text-2xl font-bold text-primary whitespace-nowrap">
+                    {formatStorePrice(selectedItem.price, storeCurrency, exchangeRate)}
+                  </span>
                 </div>
                 <p className="font-headline text-on-surface-variant leading-relaxed text-lg mb-4 whitespace-pre-wrap">
                   {selectedItem.desc}
@@ -216,7 +244,7 @@ const Menu = () => {
                 )}
                 {selectedItem.available === false && (
                    <div className="bg-error/10 text-error px-4 py-3 rounded-xl text-center font-bold">
-                     Currently Unavailable
+                     Out of Stock
                    </div>
                 )}
               </div>

@@ -21,6 +21,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /settings/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /admins/{email} {
       allow read: if isAdmin();
       allow write: if isAdmin();

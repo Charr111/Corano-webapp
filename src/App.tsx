@@ -10,8 +10,8 @@ import PageMeta from './components/PageMeta';
 
 const Header = () => {
   const location = useLocation();
-  // Don't show header on home page because the hero section has the logo
-  if (location.pathname === '/home' || location.pathname === '/') return null;
+  // Don't show header on home page or admin dashboard
+  if (location.pathname === '/home' || location.pathname === '/' || location.pathname.startsWith('/admin')) return null;
   
   return (
     <div className="fixed top-0 left-0 right-0 w-full z-50 h-28 flex items-center justify-center pointer-events-none bg-background/95 backdrop-blur-md border-b border-outline-variant/20">
@@ -55,12 +55,12 @@ const BottomNav = () => {
 
 const MainLayout = () => {
   const location = useLocation();
-  const isHome = location.pathname === '/' || location.pathname === '/home';
+  const isFullBleed = location.pathname === '/' || location.pathname === '/home' || location.pathname.startsWith('/admin');
 
   return (
     <>
       <PageMeta /><Header />
-      <main className={`flex-grow relative ${isHome ? 'pt-0' : 'pt-28 pb-16'}`}>
+      <main className={`flex-grow relative ${isFullBleed ? 'pt-0' : 'pt-28 pb-16'}`}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Home />} />
