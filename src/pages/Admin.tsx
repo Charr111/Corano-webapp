@@ -106,9 +106,10 @@ const Admin = () => {
   const [editPhotoBadge, setEditPhotoBadge] = useState<string | null>(null);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
 
+  const [showAdminMenu, setShowAdminMenu] = useState(false);
+
   const addFileInputRef = useRef<HTMLInputElement | null>(null);
   const editFileInputRef = useRef<HTMLInputElement | null>(null);
-  const backupRestoreInputRef = useRef<HTMLInputElement | null>(null);
 
   const applyStoreState = (store: StoreDataPayload) => {
     const loadedCats = [...(store.categories || [])].sort(
@@ -552,56 +553,6 @@ const Admin = () => {
     }
   };
 
-  const handleDownloadFullBackup = () => {
-    const backupPayload: StoreDataPayload = {
-      version: Date.now(),
-      updatedAt: new Date().toISOString(),
-      settings: {
-        currency: storeCurrency,
-        exchangeRate: exchangeRate || DEFAULT_LBP_RATE,
-      },
-      categories,
-      items,
-      reviews,
-      admins: dynamicAdmins,
-    };
-    const blob = new Blob([JSON.stringify(backupPayload, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `corano-r2-database-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setStatusNotice('✓ Downloaded full Cloudflare R2 database JSON backup.');
-  };
-
-  const handleRestoreFullBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const parsed = JSON.parse(text);
-      if (!Array.isArray(parsed.items) || !Array.isArray(parsed.categories)) {
-        throw new Error('Invalid backup JSON file: missing items or categories.');
-      }
-      const updatedStore = await mutateR2StoreData('restoreBackup', {
-        backupData: parsed,
-      });
-      applyStoreState(updatedStore);
-      setStatusNotice(
-        `✓ Restored ${updatedStore.items.length} products and ${updatedStore.categories.length} categories to Cloudflare R2.`
-      );
-    } catch (err: any) {
-      console.error('Error restoring backup:', err);
-      setStatusNotice(err?.message || 'Failed to restore JSON backup.');
-    } finally {
-      if (backupRestoreInputRef.current) backupRestoreInputRef.current.value = '';
-    }
-  };
 
   if (loading) {
     return (
@@ -896,32 +847,57 @@ const Admin = () => {
               </button>
             </div>
 
-            {/* Notification Bell (Pending Reviews) */}
-            <button
-              type="button"
-              onClick={() => setActiveSection('reviews')}
-              className="relative min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-on-surface-variant hover:text-on-surface transition-colors"
-              title={`${pendingReviews.length} Pending Reviews`}
-            >
-              <span className="material-symbols-outlined text-[22px]">notifications</span>
-              {pendingReviews.length > 0 && (
-                <span className="w-2 h-2 rounded-full bg-primary absolute top-2 right-2" />
-              )}
-            </button>
-
-            {/* Admin Profile */}
-            <div className="flex items-center gap-2.5 pl-0.5">
-              <div className="w-8 h-8 rounded-full bg-surface-container border border-outline-variant/50 flex items-center justify-center text-xs font-bold text-primary">
-                {user.email?.charAt(0).toUpperCase() || 'A'}
-              </div>
-              <div className="hidden xl:block text-left">
-                <div className="text-xs font-medium text-on-surface flex items-center gap-1 whitespace-nowrap">
-                  <span>Admin (Main)</span>
-                  <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
-                    expand_more
-                  </span>
+            {/* Admin Profile Dropdown */}
+            <div className="relative pl-0.5">
+              <button
+                type="button"
+                onClick={() => setShowAdminMenu((prev) => !prev)}
+                className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 hover:bg-surface-container-low transition-colors cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-full bg-surface-container border border-outline-variant/50 flex items-center justify-center text-xs font-bold text-primary">
+                  {user.email?.charAt(0).toUpperCase() || 'A'}
                 </div>
-              </div>
+                <div className="hidden xl:block text-left">
+                  <div className="text-xs font-medium text-on-surface flex items-center gap-1 whitespace-nowrap">
+                    <span>Admin (Main)</span>
+                    <span
+                      className={`material-symbols-outlined text-[14px] text-on-surface-variant transition-transform ${
+                        showAdminMenu ? 'rotate-180' : ''
+                      }`}
+                    >
+                      expand_more
+                    </span>
+                  </div>
+                </div>
+              </button>
+
+              {showAdminMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowAdminMenu(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-surface-container border border-outline-variant/40 shadow-2xl py-2 z-50">
+                    <div className="px-4 py-2.5 border-b border-outline-variant/30">
+                      <p className="text-[11px] text-on-surface-variant">Signed in as</p>
+                      <p className="text-xs font-mono font-semibold text-on-surface truncate mt-0.5">
+                        {user.email}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAdminMenu(false);
+                        logout();
+                      }}
+                      className="w-full px-4 py-2.5 text-left text-xs font-semibold text-error hover:bg-surface-container-high flex items-center gap-2.5 transition-colors cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">logout</span>
+                      <span>Log out</span>
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </header>
@@ -1579,8 +1555,7 @@ const Admin = () => {
                       Admin Access Manager (Authorized Gmails)
                     </h2>
                     <p className="text-xs text-on-surface-variant mt-1">
-                      Permanent Root Admins and dynamically authorized Gmail accounts stored in Cloudflare R2{' '}
-                      <span className="font-mono text-primary">data/store-data.json</span>. Any Gmail added below automatically receives full Admin Dashboard access.
+                      Any Gmail added in the box will automatically receive full Admin Dashboard access.
                     </p>
                   </div>
 
@@ -1646,45 +1621,6 @@ const Admin = () => {
                 </div>
               </div>
 
-              {/* Cloudflare R2 Database Backup & Restore Card */}
-              <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-5 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-base sm:text-lg font-semibold text-on-surface">
-                      Cloudflare R2 Database Backup (JSON)
-                    </h2>
-                    <p className="text-xs text-on-surface-variant mt-1">
-                      Download a complete JSON snapshot of all {items.length} products, {categories.length} categories, {reviews.length} reviews, and settings stored in{' '}
-                      <span className="font-mono text-primary">corano-images/data/store-data.json</span>, or restore from a saved backup.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={handleDownloadFullBackup}
-                      className="bg-primary text-on-primary px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center gap-1.5"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">download</span>
-                      Download Full Database Backup (JSON)
-                    </button>
-                    <input
-                      ref={backupRestoreInputRef}
-                      type="file"
-                      accept="application/json,.json"
-                      onChange={handleRestoreFullBackup}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => backupRestoreInputRef.current?.click()}
-                      className="bg-surface-container border border-outline-variant/40 text-on-surface px-4 py-2.5 rounded-xl text-xs font-semibold hover:border-primary/50 active:scale-[0.98] transition-all flex items-center gap-1.5"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">upload_file</span>
-                      Restore Backup
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
           )}
         </div>
