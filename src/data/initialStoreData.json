@@ -1,0 +1,1987 @@
+{
+  "version": 1793880249334,
+  "updatedAt": "2026-11-05T12:04:09.334Z",
+  "settings": {
+    "currency": "USD",
+    "exchangeRate": 89000
+  },
+  "categories": [
+    {
+      "id": "2Z3Gzt2trUX1egXbwrz3",
+      "order": 1,
+      "name": "Subs"
+    },
+    {
+      "id": "mSLGRLbZsOGqEgIniiU7",
+      "name": "Burgers",
+      "order": 2
+    },
+    {
+      "id": "DAQZmgGLAPvfM57yizNe",
+      "order": 3,
+      "name": "Mashewe"
+    },
+    {
+      "id": "b6ynVjP7PudaIJ1r5utY",
+      "order": 4,
+      "name": "Sandwiches"
+    },
+    {
+      "id": "lxeD3dg4ndfzhRtcyzFN",
+      "name": "Sajj",
+      "order": 5
+    },
+    {
+      "id": "8P9YxdBkjnzFgdJsxfls",
+      "order": 6,
+      "name": "Appetizers"
+    },
+    {
+      "id": "light-and-healthy",
+      "order": 7,
+      "name": "Light & Healthy"
+    },
+    {
+      "id": "XePdutgyXXPZoOAd5HlQ",
+      "order": 8,
+      "name": "Salads"
+    },
+    {
+      "id": "OXq9W8fi8O1NmSWFWEp6",
+      "order": 9,
+      "name": "Pizza"
+    },
+    {
+      "id": "MlVxI9BNienVSVtIDQvp",
+      "name": "Mezza Lebanese",
+      "order": 10
+    },
+    {
+      "id": "Qu1mjLlafYdxkooGm9Nn",
+      "order": 11,
+      "name": "Hot Mezza"
+    },
+    {
+      "id": "FKeNv3ep1eLABJrwtCsI",
+      "name": "Falafel",
+      "order": 12
+    },
+    {
+      "id": "M41UFCQ55sNUVVE0QOJ9",
+      "name": "Sauce Cups",
+      "order": 13
+    },
+    {
+      "id": "drinks",
+      "name": "Drinks",
+      "order": 21
+    }
+  ],
+  "items": [
+    {
+      "id": "q5jvhwa5JoF7Izrzqewq",
+      "order": 10,
+      "title": "French Fries S.",
+      "price": "2.81",
+      "available": true,
+      "desc": "",
+      "category": "appetizers",
+      "img": "https://images.restocorano.com/items/appetizers-q5jvhwa5jof7izrzqewq-french-fries-s.webp"
+    },
+    {
+      "id": "GkYkiRbusaGE8oQ9VfFX",
+      "available": true,
+      "title": "French Fries M.",
+      "order": 20,
+      "desc": "",
+      "img": "https://images.restocorano.com/items/appetizers-gkykirbusage8oq9vffx-french-fries-m.webp",
+      "price": "4.49",
+      "category": "appetizers"
+    },
+    {
+      "id": "jcsz6TBxegKqGkDWghFa",
+      "available": true,
+      "desc": "",
+      "title": "French Fries XL",
+      "order": 30,
+      "category": "appetizers",
+      "price": "6.18",
+      "img": "https://images.restocorano.com/items/appetizers-jcsz6tbxegkqgkdwghfa-french-fries-xl.webp"
+    },
+    {
+      "id": "q07t8dfpRuoUBfrlgSAU",
+      "img": "https://images.restocorano.com/items/appetizers-q07t8dfpruoubfrlgsau-potato-wedges-s.webp",
+      "price": "3.37",
+      "desc": "",
+      "title": "Potato Wedges S",
+      "order": 31,
+      "available": true,
+      "category": "appetizers"
+    },
+    {
+      "id": "AeL14Wc5dGI7V6qAoZnC",
+      "available": true,
+      "category": "appetizers",
+      "order": 32,
+      "title": "Potato Wedges M",
+      "desc": "",
+      "price": "5.62",
+      "img": "https://images.restocorano.com/items/appetizers-ael14wc5dgi7v6qaoznc-potato-wedges-m.webp"
+    },
+    {
+      "id": "UpZ81t6bcV1EUMIfZqeB",
+      "img": "https://images.restocorano.com/items/appetizers-upz81t6bcv1eumifzqeb-potato-wedges-l.webp",
+      "available": true,
+      "price": "7.30",
+      "title": "Potato Wedges L",
+      "order": 33,
+      "desc": "",
+      "category": "appetizers"
+    },
+    {
+      "id": "IhINzd3x0MIJKXiemFF3",
+      "desc": "",
+      "order": 40,
+      "title": "Baked Potato L.",
+      "category": "appetizers",
+      "price": "5.62",
+      "available": true,
+      "img": "https://images.restocorano.com/items/appetizers-ihinzd3x0mijkxiemff3-baked-potato-l.webp"
+    },
+    {
+      "id": "AygMYteTNBsBNcEvhCpZ",
+      "desc": "",
+      "img": "https://images.restocorano.com/items/appetizers-aygmytetnbsbncevhcpz-baked-potato-m.webp",
+      "available": true,
+      "order": 50,
+      "title": "Baked Potato M.",
+      "price": "3.93",
+      "category": "appetizers"
+    },
+    {
+      "id": "E770KSRQV7HRNNvCkXN5",
+      "img": "https://images.restocorano.com/items/appetizers-e770ksrqv7hrnnvckxn5-crispy-chicken-tenders.webp",
+      "price": "6.74",
+      "order": 60,
+      "title": "Crispy Chicken Tenders",
+      "category": "appetizers",
+      "desc": "4 pcs of fried chicken tenders served with honey mustard sauce",
+      "available": true
+    },
+    {
+      "id": "wSBSCYa4wInGihgDxIwP",
+      "desc": "5pcs crispy chicken , fries , coleslaw , sauce cocktail",
+      "order": 70,
+      "title": "Crispy Platter",
+      "price": "11.24",
+      "available": true,
+      "category": "appetizers",
+      "img": "https://images.restocorano.com/items/appetizers-wsbscya4wingihgdxiwp-crispy-platter.webp"
+    },
+    {
+      "id": "u2kwHqHmNHAlif0tvNpj",
+      "category": "appetizers",
+      "desc": "",
+      "price": "5.62",
+      "img": "https://images.restocorano.com/items/appetizers-u2kwhqhmnhalif0tvnpj-halloumi-sticks-4-pcs.webp",
+      "title": "Halloumi Sticks 4 pcs",
+      "order": 80,
+      "available": true
+    },
+    {
+      "id": "To1y9fXNrm7WYKed50im",
+      "category": "appetizers",
+      "desc": "4 pcs of mozzarella sticks served with cocktail sauce",
+      "available": true,
+      "img": "https://images.restocorano.com/items/appetizers-to1y9fxnrm7wyked50im-mozzarella-sticks.webp",
+      "price": "5.62",
+      "order": 90,
+      "title": "Mozzarella Sticks"
+    },
+    {
+      "id": "j6Z9kCTAyOLVYJKkMVrI",
+      "available": true,
+      "desc": "6 pieces and cocktail sauce",
+      "category": "appetizers",
+      "title": "Nuggets",
+      "order": 100,
+      "price": "5.62",
+      "img": "https://images.restocorano.com/items/appetizers-j6z9kctayolvyjkkmvri-nuggets.webp"
+    },
+    {
+      "id": "truffle-burger",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "isNew": true,
+      "order": 1,
+      "title": "Truffle Burger",
+      "img": "https://images.restocorano.com/items/burgers-truffle-burger-truffle-burger.webp",
+      "desc": "Beef Meat, iceberg, cheddar cheese, bacon, Truffle Sauce.",
+      "price": 8,
+      "category": "burgers"
+    },
+    {
+      "id": "RLxCzt5vZxR1PuUEvvn0",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "category": "burgers",
+      "order": 10,
+      "available": true,
+      "desc": "Beef meat, cheddar pane, lettuce, pickles, chips fries, chedder sauce, And our special sauce.",
+      "title": "Cheddar Pane",
+      "img": "https://images.restocorano.com/items/burgers-rlxczt5vzxr1puuevvn0-cheddar-pane.webp",
+      "price": "7.30"
+    },
+    {
+      "id": "deNdytnTCg6WHaZQgtHc",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "img": "https://images.restocorano.com/items/burgers-dendytntcg6whazqgthc-crispy-cheddar.webp",
+      "order": 20,
+      "category": "burgers",
+      "available": true,
+      "price": "6.74",
+      "title": "Crispy Cheddar",
+      "desc": "Crispy fried chicken, cheddar cheese, chips, lettuce, pickles and garlic mayo sauce"
+    },
+    {
+      "id": "MhW4l7788uas3dzvi5nY",
+      "desc": "Breaded mozzarella, lettuce, pickles, tomato and cocktail sauce",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "title": "Mozzarella Pane",
+      "order": 30,
+      "available": true,
+      "category": "burgers",
+      "price": "5.06",
+      "img": "https://images.restocorano.com/items/burgers-mhw4l7788uas3dzvi5ny-mozzarella-pane.webp"
+    },
+    {
+      "id": "KP7pkXLJ2MybsRP1Rbsg",
+      "available": true,
+      "img": "https://images.restocorano.com/items/burgers-kp7pkxlj2mybsrp1rbsg-bbq-burger.webp",
+      "category": "burgers",
+      "price": "6.74",
+      "order": 40,
+      "title": "BBQ Burger",
+      "desc": "Beef patty or grilled chicken breast, lettuce, pickles, cheddar cheese, bacon, grilled onions with BBQ mayo sauce",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ]
+    },
+    {
+      "id": "mStMNIxUiNU3Hz2lAfiq",
+      "img": "https://images.restocorano.com/items/burgers-mstmnixuinu3hz2lafiq-cheddar-cheese.webp",
+      "category": "burgers",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "price": "6.74",
+      "title": "Cheddar Cheese",
+      "available": true,
+      "order": 50,
+      "desc": "Beef patty, cheddar, lettuce, grilled onions, tomato pickles and our special sauce"
+    },
+    {
+      "id": "Pk7G4chxus9h5siTFzC8",
+      "img": "https://images.restocorano.com/items/burgers-pk7g4chxus9h5sitfzc8-chicken-breast.webp",
+      "price": "5.62",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "category": "burgers",
+      "title": "Chicken Breast",
+      "available": true,
+      "order": 70,
+      "desc": ""
+    },
+    {
+      "id": "8eCEeQG3OJslE5cpygYr",
+      "title": "Classic Burger",
+      "order": 80,
+      "category": "burgers",
+      "price": "5.62",
+      "available": true,
+      "desc": "Beef patty, grilled onions, lettuce, tomatoes, cocktail sauce and pickles.",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "img": "https://images.restocorano.com/items/burgers-8eceeqg3ojsle5cpygyr-classic-burger.webp"
+    },
+    {
+      "id": "kaWjsO8ByTEpAIRpdhVo",
+      "available": true,
+      "img": "https://images.restocorano.com/items/burgers-kawjso8bytepairpdhvo-lebanese-burger.webp",
+      "category": "burgers",
+      "desc": "Beef patty, coleslaw, fries, ketchup",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "price": "5.62",
+      "title": "Lebanese Burger",
+      "order": 90
+    },
+    {
+      "id": "xuJBjOaCYj6Kj4O09Gio",
+      "img": "https://images.restocorano.com/items/drinks-xujbjoacyj6kj4o09gio-pepsi.webp",
+      "price": "1.12",
+      "category": "drinks",
+      "order": 1,
+      "title": "Pepsi",
+      "available": true,
+      "desc": ""
+    },
+    {
+      "id": "INJViy6mNRJN5klRk8sm",
+      "desc": "",
+      "category": "drinks",
+      "title": "7up",
+      "order": 2,
+      "price": "1.12",
+      "available": true,
+      "img": "https://images.restocorano.com/items/drinks-injviy6mnrjn5klrk8sm-7up.webp"
+    },
+    {
+      "id": "fbNCFQuiQmjcTmg6GChv",
+      "img": "https://images.restocorano.com/items/drinks-fbncfquiqmjctmg6gchv-mirinda.webp",
+      "price": "1.12",
+      "title": "Mirinda",
+      "order": 3,
+      "available": true,
+      "desc": "",
+      "category": "drinks"
+    },
+    {
+      "id": "unsmabCwVa9AysJY0Byq",
+      "category": "drinks",
+      "img": "https://images.restocorano.com/items/drinks-unsmabcwva9aysjy0byq-pepsi-1-25.webp",
+      "available": true,
+      "price": "1.69",
+      "title": "Pepsi 1.25",
+      "order": 4,
+      "desc": ""
+    },
+    {
+      "id": "myIGfd3nF1rW7GSOp14W",
+      "price": "2.25",
+      "order": 5,
+      "title": "7up 1.25 L",
+      "img": "https://images.restocorano.com/items/drinks-myigfd3nf1rw7gsop14w-7up-1-25-l.webp",
+      "desc": "",
+      "category": "drinks",
+      "available": true
+    },
+    {
+      "id": "u7dxu9tTNshbjktXFv45",
+      "available": true,
+      "category": "drinks",
+      "title": "Mirinda 1.25L",
+      "order": 6,
+      "desc": "",
+      "price": "2.25",
+      "img": "https://images.restocorano.com/items/drinks-u7dxu9ttnshbjktxfv45-mirinda-1-25l.webp"
+    },
+    {
+      "id": "DaY58MKJOr4PBNQcRp95",
+      "img": "https://images.restocorano.com/items/drinks-day58mkjor4pbnqcrp95-ice-tea-peach.webp",
+      "price": "1.69",
+      "category": "drinks",
+      "order": 7,
+      "title": "Ice Tea Peach",
+      "desc": "",
+      "available": true
+    },
+    {
+      "id": "mbIfJdJRUp770yhvMCGL",
+      "available": true,
+      "img": "https://images.restocorano.com/items/drinks-mbifjdjrup770yhvmcgl-fresh-orange-juice.webp",
+      "desc": "",
+      "category": "drinks",
+      "price": "2.25",
+      "title": "Fresh orange juice",
+      "order": 8
+    },
+    {
+      "id": "6eVOIQoo870p52zQbBrQ",
+      "desc": "",
+      "available": true,
+      "title": "BEER",
+      "order": 9,
+      "price": "2.25",
+      "img": "https://images.restocorano.com/items/drinks-6evoiqoo870p52zqbbrq-beer.webp",
+      "category": "drinks"
+    },
+    {
+      "id": "EQVECWmrpcmhj8ngi70t",
+      "category": "drinks",
+      "desc": "",
+      "title": "Mexican beer",
+      "order": 10,
+      "price": "3.37",
+      "available": true,
+      "img": "https://images.restocorano.com/items/drinks-eqvecwmrpcmhj8ngi70t-mexican-beer.webp"
+    },
+    {
+      "id": "2NilnDdf2ESNv2sG3VrA",
+      "desc": "",
+      "category": "drinks",
+      "order": 11,
+      "title": "H2O orange",
+      "price": "1.12",
+      "available": true,
+      "img": "https://images.restocorano.com/items/drinks-2nilnddf2esnv2sg3vra-h2o-orange.webp"
+    },
+    {
+      "id": "W8mstoGybHnpqWvGBe8Z",
+      "img": "https://images.restocorano.com/items/drinks-w8mstogybhnpqwvgbe8z-h2o-lemon.webp",
+      "price": "1.12",
+      "category": "drinks",
+      "title": "H2O lemon",
+      "order": 12,
+      "available": true,
+      "desc": ""
+    },
+    {
+      "id": "mf3IiqULG2C84xoGN2jb",
+      "available": true,
+      "desc": "",
+      "title": "Perrier",
+      "order": 13,
+      "price": "1.69",
+      "img": "https://images.restocorano.com/items/drinks-mf3iiqulg2c84xogn2jb-perrier.webp",
+      "category": "drinks"
+    },
+    {
+      "id": "zKY7FTK3enuwwyJ6DKYw",
+      "title": "Laban ayran",
+      "order": 14,
+      "price": "1.46",
+      "category": "drinks",
+      "available": true,
+      "desc": "",
+      "img": "https://images.restocorano.com/items/drinks-zky7ftk3enuwwyj6dkyw-laban-ayran.webp"
+    },
+    {
+      "id": "xXd8jTCRa2fBeSzOXqMT",
+      "available": true,
+      "category": "drinks",
+      "desc": "",
+      "order": 15,
+      "title": "Water S.",
+      "price": "0.56",
+      "img": "https://images.restocorano.com/items/drinks-xxd8jtcra2fbeszoxqmt-water-s.webp"
+    },
+    {
+      "id": "ItATEbBvryDhNIUAiSya",
+      "order": 16,
+      "title": "Water L.",
+      "price": "1.12",
+      "img": "https://images.restocorano.com/items/drinks-itatebbvrydhniuaisya-water-l.webp",
+      "desc": "",
+      "category": "drinks",
+      "available": true
+    },
+    {
+      "id": "wtc7qqnpL5jH7v8s6ybF",
+      "img": "https://images.restocorano.com/items/falafel-wtc7qqnpl5jh7v8s6ybf-dozen-falafel.webp",
+      "price": "4.49",
+      "category": "falafel",
+      "title": "Dozen Falafel",
+      "order": 10,
+      "available": true,
+      "desc": ""
+    },
+    {
+      "id": "sFm3YM37nyJyCacknr5f",
+      "img": "https://images.restocorano.com/items/falafel-sfm3ym37nyjycacknr5f-dozen-falafel-extra.webp",
+      "desc": "",
+      "category": "falafel",
+      "available": true,
+      "price": "8.99",
+      "order": 20,
+      "title": "Dozen Falafel extra"
+    },
+    {
+      "id": "2tBSwKun04XSuXJwTcSH",
+      "img": "https://images.restocorano.com/items/falafel-2tbswkun04xsuxjwtcsh-dozen-falafel-with-tarator.webp",
+      "price": "6.74",
+      "order": 30,
+      "title": "Dozen Falafel with tarator",
+      "available": true,
+      "category": "falafel",
+      "desc": ""
+    },
+    {
+      "id": "9sf23lbds848fQoFsCLd",
+      "desc": "",
+      "category": "falafel",
+      "order": 40,
+      "title": "Sandwich Falafel",
+      "price": "2.81",
+      "available": true,
+      "img": "https://images.restocorano.com/items/falafel-9sf23lbds848fqofscld-sandwich-falafel.webp"
+    },
+    {
+      "id": "3XhRJFl1aZ33A3LAGhqv",
+      "desc": "",
+      "title": "Sandwich Falafel Extra",
+      "order": 50,
+      "category": "falafel",
+      "price": "3.15",
+      "img": "https://images.restocorano.com/items/falafel-3xhrjfl1az33a3laghqv-sandwich-falafel-extra.webp",
+      "available": true
+    },
+    {
+      "id": "IJaIt9NN2TXsGGTEDbBV",
+      "img": "https://images.restocorano.com/items/hot-mezza-ijait9nn2txsggtedbbv-batata-harra.webp",
+      "category": "hot mezza",
+      "price": "4.49",
+      "available": true,
+      "order": 10,
+      "title": "Batata Harra",
+      "desc": ""
+    },
+    {
+      "id": "Q4acRawbiCb9gZBY0mT7",
+      "img": "https://images.restocorano.com/items/hot-mezza-q4acrawbicb9gzby0mt7-chicken-liver.webp",
+      "desc": "Garlic, pickles, lemon, and debs remen",
+      "category": "hot mezza",
+      "price": "6.74",
+      "available": true,
+      "order": 20,
+      "title": "Chicken Liver"
+    },
+    {
+      "id": "rmSNrvznXNvuujgc6DLB",
+      "desc": "Pickels, lemon, and debs remen",
+      "title": "Plate makanek",
+      "order": 30,
+      "price": "6.74",
+      "available": true,
+      "img": "https://images.restocorano.com/items/hot-mezza-rmsnrvznxnvuujgc6dlb-plate-makanek.webp",
+      "category": "hot mezza"
+    },
+    {
+      "id": "Fz3UOmAffEfCiN8RPdRJ",
+      "img": "https://images.restocorano.com/items/hot-mezza-fz3uomaffefcin8rpdrj-plate-soujouk.webp",
+      "available": true,
+      "category": "hot mezza",
+      "price": "6.74",
+      "title": "Plate Soujouk",
+      "order": 40,
+      "desc": "Pickles and tomato"
+    },
+    {
+      "id": "R7yOwmp8md4XaadT98rd",
+      "desc": "Grilled chicken, lettuce, pickles, avocado slice, honey mustard sauce, Brown Bread 24cm.",
+      "available": true,
+      "category": "light & healthy",
+      "order": 8,
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "title": "Chicken Avocado",
+      "price": "7.30",
+      "img": "https://images.restocorano.com/items/light-healthy-r7yowmp8md4xaadt98rd-chicken-avocado.webp"
+    },
+    {
+      "id": "2yJwscwSZu3bSKhgPdAd",
+      "category": "light & healthy",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "available": true,
+      "order": 9,
+      "desc": "Chicken breast, iceberg, pickles, tomato, garlic, and light mayo, Brown Bread 24cm",
+      "title": "Light Chicken",
+      "price": "6.74",
+      "img": "https://images.restocorano.com/items/light-healthy-2yjwscwszu3bskhgpdad-light-chicken.webp"
+    },
+    {
+      "id": "R6BcyH2DvrRUreY8rrF5",
+      "desc": "Steak, brown baguette, rocca, tomato and mayo light",
+      "title": "Light Steak",
+      "price": "7.87",
+      "category": "light & healthy",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "available": true,
+      "order": 10,
+      "img": "https://images.restocorano.com/items/light-healthy-r6bcyh2dvrrurey8rrf5-light-steak.webp"
+    },
+    {
+      "id": "34zXEgbnWojetmyK6QiH",
+      "order": 11,
+      "desc": "Chicken 220g , garlic , pickles , sajj bread",
+      "category": "light & healthy",
+      "img": "https://images.restocorano.com/items/light-healthy-34zxegbnwojetmyk6qih-chicken-sandwich-220g.webp",
+      "title": "Chicken sandwich (220g)",
+      "price": "8.99",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "available": true
+    },
+    {
+      "id": "c4mIA9t7aT7tc14Y5i6n",
+      "desc": "Grilled chicken breast, garlic, pickles, grilled potatoes",
+      "img": "https://images.restocorano.com/items/light-healthy-c4mia9t7at7tc14y5i6n-chicken-breast-1-pcs.webp",
+      "available": true,
+      "price": "7.30",
+      "category": "light & healthy",
+      "title": "Chicken Breast 1 pcs",
+      "order": 14
+    },
+    {
+      "id": "bHWv5KbRjh9ZetX6G3qk",
+      "desc": "Grilled chicken breast, garlic, pickles, grilled potatoes",
+      "title": "Chicken Breast 2 pcs",
+      "order": 15,
+      "price": "12.36",
+      "img": "https://images.restocorano.com/items/light-healthy-bhwv5kbrjh9zetx6g3qk-chicken-breast-2-pcs.webp",
+      "available": true,
+      "category": "light & healthy"
+    },
+    {
+      "id": "KVL6mDeR5NKkIz5KsBRZ",
+      "order": 16,
+      "img": "https://images.restocorano.com/items/light-healthy-kvl6mder5nkkiz5ksbrz-corano-salad.webp",
+      "desc": "Lettuce, artichoke, asperges, corn, cucumber, turkey, parmesan, mushroom",
+      "category": "light & healthy",
+      "price": "10.11",
+      "title": "Corano salad",
+      "available": true,
+      "addons": [
+        "Add Chicken breast $3.00"
+      ]
+    },
+    {
+      "id": "31wgMZ4VMMo9l5cQEegv",
+      "desc": "Quinoa, halloumi, Rocca ,pomegranate, walnut, beetroot , cherry tomato and balsamic sauce",
+      "order": 17,
+      "available": true,
+      "price": "7.30",
+      "title": "Quinoa salad",
+      "addons": [
+        "Add Chicken breast $3.00"
+      ],
+      "img": "https://images.restocorano.com/items/light-healthy-31wgmz4vmmo9l5cqeegv-quinoa-salad.webp",
+      "category": "light & healthy"
+    },
+    {
+      "id": "ykXA8cbzTpSw3gYHZN6u",
+      "desc": "Garlic and pickels",
+      "category": "mashewe",
+      "title": "Farrouj delivery",
+      "order": 1,
+      "price": "13.48",
+      "available": true,
+      "img": "https://images.restocorano.com/items/mashewe-ykxa8cbztpsw3gyhzn6u-farrouj-delivery.webp"
+    },
+    {
+      "id": "PtmFvRE079t6A0xJNI7N",
+      "desc": "Garlic and pickels",
+      "order": 2,
+      "title": "Farrouj Dine In",
+      "category": "mashewe",
+      "available": true,
+      "price": "15.73",
+      "img": "https://images.restocorano.com/items/mashewe-ptmfvre079t6a0xjni7n-farrouj-dine-in.webp"
+    },
+    {
+      "id": "ukWchil71vEAl8HWYLqq",
+      "available": true,
+      "category": "mashewe",
+      "img": "https://images.restocorano.com/items/mashewe-ukwchil71veal8hwylqq-1-2-farrouj-deliv.webp",
+      "price": "8.99",
+      "order": 3,
+      "title": "1/2 Farrouj Deliv.",
+      "desc": "Pickles, garlic and fries"
+    },
+    {
+      "id": "36389qGmB92EOdW6sMuD",
+      "desc": "Pickles garlic and fries",
+      "category": "mashewe",
+      "img": "https://images.restocorano.com/items/mashewe-36389qgmb92eodw6smud-1-2-farrouj-dine-in.webp",
+      "available": true,
+      "price": "10.11",
+      "order": 4,
+      "title": "1/2 Farrouj Dine-In"
+    },
+    {
+      "id": "DBV5V13tLrg4JPdNAEIB",
+      "available": true,
+      "order": 5,
+      "title": "Charcoal Tawouk",
+      "price": "12.36",
+      "img": "https://images.restocorano.com/items/mashewe-dbv5v13tlrg4jpdnaeib-charcoal-tawouk.webp",
+      "desc": "Fries, pickles, colslaw, garlic, and tomato",
+      "category": "mashewe"
+    },
+    {
+      "id": "M57SLdCCbnoH5aCKrQqp",
+      "available": true,
+      "title": "Kafta",
+      "order": 6,
+      "img": "https://images.restocorano.com/items/mashewe-m57sldccbnoh5ackrqqp-kafta.webp",
+      "price": "14.04",
+      "desc": "4 chich kafta, Hummus, biwas, tomato, pickles, and fries",
+      "category": "mashewe"
+    },
+    {
+      "id": "TsElIA8Nop38raX9mZ0q",
+      "category": "mashewe",
+      "available": true,
+      "price": "14.04",
+      "img": "https://images.restocorano.com/items/mashewe-tselia8nop38rax9mz0q-kabab.webp",
+      "desc": "4 chich kabab, Hummus, biwas, tomato, pickles, and fries",
+      "title": "Kabab",
+      "order": 7
+    },
+    {
+      "id": "gjferrad79CZX4KsupeH",
+      "available": true,
+      "desc": "4 skewers, hummus, grilled onion and tomato, biwas, pickles, fries.",
+      "img": "https://images.restocorano.com/items/mashewe-gjferrad79czx4ksupeh-lahme-platter.webp",
+      "category": "mashewe",
+      "price": "15.73",
+      "title": "Lahme platter",
+      "order": 8
+    },
+    {
+      "id": "NbT6bvCuFDYtODDJSMLj",
+      "price": "11.24",
+      "title": "Plate Liver",
+      "order": 9,
+      "img": "https://images.restocorano.com/items/mashewe-nbt6bvcufdytoddjsmlj-plate-liver.webp",
+      "available": true,
+      "desc": "2 chich sawda garlic pickles fries",
+      "category": "mashewe"
+    },
+    {
+      "id": "yelWwiQFEb3zKPTJXFQt",
+      "order": 11,
+      "img": "https://images.restocorano.com/items/mashewe-yelwwiqfeb3zkptjxfqt-mixed-grilled.webp",
+      "addons": [
+        "Add shich lahme $3.93",
+        "Add Shish Tawook $3.37",
+        "Add Shish Kafta $3.37",
+        "Add shish Kabab $3.37"
+      ],
+      "desc": "2 shish kafta, 1 shish kabab, 1 shish, taouk, Homos, Biwas, Pickles, Grilled Tomato, French fries, Garlic, Grilled green pepper.",
+      "title": "Mixed Grilled",
+      "price": "15.17",
+      "category": "mashewe",
+      "available": true
+    },
+    {
+      "id": "FGgN4LfbNX1GjqLoIKT9",
+      "desc": "1 kafta, 1 lahme, 1 kabab, 1 tawouk, humus garlic, grilled onion, fries",
+      "title": "Mixed Grill extra",
+      "price": "16.29",
+      "category": "mashewe",
+      "addons": [
+        "Add shich lahme $3.93",
+        "Add Shish Tawook $3.37",
+        "Add Shish Kafta $3.37",
+        "Add shish Kabab $3.37"
+      ],
+      "order": 12,
+      "available": true,
+      "img": "https://images.restocorano.com/items/mashewe-fggn4lfbnx1gjqloikt9-mixed-grill-extra.webp"
+    },
+    {
+      "id": "WJ7EBFYEawh5GkUGIzQY",
+      "desc": "",
+      "available": true,
+      "category": "mashewe",
+      "title": "1/2 KG mixed grilled extra",
+      "order": 13,
+      "img": "https://images.restocorano.com/items/mashewe-wj7ebfyeawh5gkugizqy-1-2-kg-mixed-grilled-extra.webp",
+      "price": "20.22"
+    },
+    {
+      "id": "gMGsB1mi70SlddGa90gM",
+      "img": "https://images.restocorano.com/items/mashewe-gmgsb1mi70slddga90gm-1-2-kg-kabab.webp",
+      "price": "16.85",
+      "available": true,
+      "title": "1/2 kg kabab",
+      "order": 50,
+      "category": "mashewe",
+      "desc": ""
+    },
+    {
+      "id": "LxIyfxCuYe5qFwzJYF8Q",
+      "img": "https://images.restocorano.com/items/mashewe-lxiyfxcuye5qfwzjyf8q-1-2-kg-kafta.webp",
+      "price": "16.85",
+      "available": true,
+      "order": 60,
+      "title": "1/2 kg Kafta",
+      "desc": "",
+      "category": "mashewe"
+    },
+    {
+      "id": "LHC7SmiCO0meBirGzpDM",
+      "desc": "",
+      "available": true,
+      "category": "mashewe",
+      "order": 70,
+      "title": "1/2 kg lahme",
+      "price": "22.47",
+      "img": "https://images.restocorano.com/items/mashewe-lhc7smico0mebirgzpdm-1-2-kg-lahme.webp"
+    },
+    {
+      "id": "sC5N6PsTJ6zd0AFdEA9N",
+      "desc": "",
+      "price": "15.17",
+      "img": "https://images.restocorano.com/items/mashewe-sc5n6pstj6zd0afdea9n-1-2-kg-tawouk.webp",
+      "order": 80,
+      "title": "1/2 KG Tawouk",
+      "category": "mashewe",
+      "available": true
+    },
+    {
+      "id": "E166sG5qvWUXWt4rPuML",
+      "available": true,
+      "category": "mashewe",
+      "desc": "",
+      "title": "1kg kabab",
+      "order": 90,
+      "price": "32.02",
+      "img": "https://images.restocorano.com/items/mashewe-e166sg5qvwuxwt4rpuml-1kg-kabab.webp"
+    },
+    {
+      "id": "FPJVdCFTMh4Tc2t92u8k",
+      "img": "https://images.restocorano.com/items/mashewe-fpjvdcftmh4tc2t92u8k-1kg-kafta.webp",
+      "price": "32.02",
+      "order": 100,
+      "title": "1kg Kafta",
+      "category": "mashewe",
+      "available": true,
+      "desc": ""
+    },
+    {
+      "id": "C7gqlL94Oil3FXhfqyL6",
+      "available": true,
+      "img": "https://images.restocorano.com/items/mashewe-c7gqll94oil3fxhfqyl6-1kg-lahme-ghanam.webp",
+      "category": "mashewe",
+      "price": "39.33",
+      "order": 110,
+      "title": "1KG Lahme Ghanam",
+      "desc": ""
+    },
+    {
+      "id": "PcJ1lGV4v4WJK7DzGdFt",
+      "order": 130,
+      "title": "1kg Tawouk",
+      "price": "25.28",
+      "desc": "",
+      "img": "https://images.restocorano.com/items/mashewe-pcj1lgv4v4wjk7dzgdft-1kg-tawouk.webp",
+      "category": "mashewe",
+      "available": true
+    },
+    {
+      "id": "Mj8IXY8LtOu1Q8fMdyAi",
+      "title": "Mix Grilled 1 kg",
+      "order": 200,
+      "price": "32.02",
+      "category": "mashewe",
+      "img": "https://images.restocorano.com/items/mashewe-mj8ixy8ltou1q8fmdyai-mix-grilled-1-kg.webp",
+      "available": true,
+      "desc": "Kafta+ kabab+ tawook + garlic + pickles+hommos",
+      "addons": [
+        "Add shich lahme $3.93",
+        "Add Shish Tawook $3.37",
+        "Add Shish Kafta $3.37",
+        "Add shish Kabab $3.37"
+      ]
+    },
+    {
+      "id": "VnebVYb0sLhuj6NyHuVx",
+      "title": "1kg Mixed Grill Extra",
+      "price": "35.96",
+      "desc": "",
+      "addons": [
+        "Add shich lahme $3.93",
+        "Add Shish Tawook $3.37",
+        "Add Shish Kafta $3.37",
+        "Add shish Kabab $3.37"
+      ],
+      "order": 210,
+      "available": true,
+      "category": "mashewe",
+      "img": "https://images.restocorano.com/items/mashewe-vnebvyb0slhuj6nyhuvx-1kg-mixed-grill-extra.webp"
+    },
+    {
+      "id": "mhcmX8daNy2GYjiAyB1w",
+      "desc": "",
+      "img": "https://images.restocorano.com/items/mezza-lebanese-mhcmx8dany2gyjiayb1w-hummus.webp",
+      "category": "mezza lebanese",
+      "price": "4.49",
+      "available": true,
+      "title": "Hummus",
+      "order": 1
+    },
+    {
+      "id": "CEZerIVcxXlx9k8TlVKL",
+      "desc": "",
+      "category": "mezza lebanese",
+      "available": true,
+      "order": 2,
+      "title": "Motabal",
+      "img": "https://images.restocorano.com/items/mezza-lebanese-cezerivcxxlx9k8tlvkl-motabal.webp",
+      "price": "5.06"
+    },
+    {
+      "id": "913oDao6MQN0cW2e3Nuk",
+      "available": true,
+      "desc": "",
+      "title": "Wara2 3enab",
+      "order": 3,
+      "price": "5.62",
+      "category": "mezza lebanese",
+      "img": "https://images.restocorano.com/items/mezza-lebanese-913odao6mqn0cw2e3nuk-wara2-3enab.webp"
+    },
+    {
+      "id": "LVvweJPnbNJd9rjKlRAl",
+      "available": true,
+      "category": "mezza lebanese",
+      "desc": "",
+      "title": "Dozen Sambousek lahme",
+      "order": 4,
+      "price": "10.11",
+      "img": "https://images.restocorano.com/items/mezza-lebanese-lvvwejpnbnjd9rjklral-dozen-sambousek-lahme.webp"
+    },
+    {
+      "id": "oovaixsVsWCorjx5dYHX",
+      "desc": "",
+      "img": "https://images.restocorano.com/items/mezza-lebanese-oovaixsvswcorjx5dyhx-dozen-cheese-rolls.webp",
+      "category": "mezza lebanese",
+      "available": true,
+      "price": "10.11",
+      "title": "Dozen Cheese rolls",
+      "order": 5
+    },
+    {
+      "id": "3RWsUcGzFaSJJtIh8C4w",
+      "img": "https://images.restocorano.com/items/mezza-lebanese-3rwsucgzfasjjtih8c4w-dozen-kebbe-2ras.webp",
+      "desc": "",
+      "category": "mezza lebanese",
+      "available": true,
+      "price": "15.17",
+      "order": 6,
+      "title": "Dozen Kebbe 2ras"
+    },
+    {
+      "id": "a0OqAgDZYlOrIb1Atk7y",
+      "price": "10.11",
+      "order": 7,
+      "title": "Mouajanet mchakale",
+      "available": true,
+      "img": "https://images.restocorano.com/items/mezza-lebanese-a0oqagdzylorib1atk7y-mouajanet-mchakale.webp",
+      "category": "mezza lebanese",
+      "desc": ""
+    },
+    {
+      "id": "8lEP9QYi8g20sE7wYR4z",
+      "category": "pizza",
+      "img": "https://images.restocorano.com/items/pizza-8lep9qyi8g20se7wyr4z-lebanese.webp",
+      "available": true,
+      "price": "10.11",
+      "order": 10,
+      "title": "Lebanese",
+      "desc": "Sauce pizza ham and cheese corn olive mushroom"
+    },
+    {
+      "id": "9ZOwPEszN9DblLPoEQxj",
+      "desc": "Sauce pizza cheese and oregano",
+      "category": "pizza",
+      "available": true,
+      "img": "https://images.restocorano.com/items/pizza-9zowpeszn9dbllpoeqxj-marguerita.webp",
+      "order": 20,
+      "title": "Marguerita",
+      "price": "8.99"
+    },
+    {
+      "id": "6kl6j9KgnrQra7cXbIez",
+      "available": true,
+      "img": "https://images.restocorano.com/items/pizza-6kl6j9kgnrqra7cxbiez-pepperoni.jpg",
+      "category": "pizza",
+      "price": "11.24",
+      "desc": "Sauce pizza cheese and pepperoni",
+      "title": "Pepperoni",
+      "order": 30
+    },
+    {
+      "id": "qymkMHn6OU15zCZS4JAJ",
+      "price": "10.11",
+      "img": "https://images.restocorano.com/items/pizza-qymkmhn6ou15zczs4jaj-vegetarian.webp",
+      "available": true,
+      "order": 40,
+      "title": "Vegetarian",
+      "category": "pizza",
+      "desc": "Pizza sauce cheese and vegetable"
+    },
+    {
+      "id": "eX0Ci7SeBWgUGoiEKIza",
+      "order": 10,
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "desc": "",
+      "img": "https://images.restocorano.com/items/sajj-ex0ci7sebwgugoiekiza-chicken-liver.webp",
+      "title": "Chicken liver",
+      "category": "sajj",
+      "price": "6.74",
+      "available": true
+    },
+    {
+      "id": "o2WO6k4URGNIHsRQY7TU",
+      "title": "Charcoal Djeij",
+      "price": "7.30",
+      "img": "https://images.restocorano.com/items/sajj-o2wo6k4urgnihsrqy7tu-charcoal-djeij.webp",
+      "category": "sajj",
+      "available": true,
+      "order": 30,
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "desc": ""
+    },
+    {
+      "id": "GZqvvZ6iyvWEnw3nQDll",
+      "img": "https://images.restocorano.com/items/sajj-gzqvvz6iyvwenw3nqdll-kabab.webp",
+      "price": "7.30",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "title": "Kabab",
+      "order": 40,
+      "category": "sajj",
+      "desc": "",
+      "available": true
+    },
+    {
+      "id": "80GJfDQUZKxfBbuSMbPn",
+      "title": "Kafta",
+      "price": "7.30",
+      "desc": "",
+      "available": true,
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "order": 50,
+      "category": "sajj",
+      "img": "https://images.restocorano.com/items/sajj-80gjfdquzkxfbbusmbpn-kafta.webp"
+    },
+    {
+      "id": "PvGXGASjcOhv25Ecbad9",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "category": "sajj",
+      "order": 60,
+      "img": "https://images.restocorano.com/items/sajj-pvgxgasjcohv25ecbad9-lahme-ghanam.webp",
+      "available": true,
+      "title": "Lahme Ghanam",
+      "desc": "",
+      "price": "8.43"
+    },
+    {
+      "id": "LDKiPuinEIK0m9fHjtB5",
+      "order": 70,
+      "available": true,
+      "desc": "",
+      "img": "https://images.restocorano.com/items/sajj-ldkipuineik0m9fhjtb5-makanek.webp",
+      "category": "sajj",
+      "title": "Makanek",
+      "price": "7.30",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ]
+    },
+    {
+      "id": "egjOPGGUPj5sWtMcaFex",
+      "category": "sajj",
+      "order": 80,
+      "img": "https://images.restocorano.com/items/sajj-egjopggupj5swtmcafex-soujouk.webp",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "title": "Soujouk",
+      "available": true,
+      "desc": "",
+      "price": "7.30"
+    },
+    {
+      "id": "pcAePdSE73fyhuqd8DXy",
+      "desc": "",
+      "available": true,
+      "order": 90,
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "category": "sajj",
+      "title": "Tawouk",
+      "price": "7.30",
+      "img": "https://images.restocorano.com/items/sajj-pcaepdse73fyhuqd8dxy-tawouk.webp"
+    },
+    {
+      "id": "VjUFFJFXBReWkihZnTwJ",
+      "order": 10,
+      "title": "Fatouche L.",
+      "category": "salads",
+      "price": "8.99",
+      "img": "https://images.restocorano.com/items/salads-vjuffjfxbrewkihzntwj-fatouche-l.webp",
+      "available": true,
+      "desc": ""
+    },
+    {
+      "id": "u3ZdtFlQ0HEiUHJd3lPz",
+      "img": "https://images.restocorano.com/items/salads-u3zdtflq0heiuhjd3lpz-fatouche-m.webp",
+      "available": true,
+      "category": "salads",
+      "desc": "",
+      "price": "6.74",
+      "order": 20,
+      "title": "Fatouche M."
+    },
+    {
+      "id": "LCLP0vosTkLt87FDZOWS",
+      "img": "https://images.restocorano.com/items/salads-lclp0vostklt87fdzows-fatouche-s.webp",
+      "available": true,
+      "price": "4.49",
+      "order": 30,
+      "title": "Fatouche S.",
+      "desc": "",
+      "category": "salads"
+    },
+    {
+      "id": "6wF2mITfu3l5AC1BXz49",
+      "order": 40,
+      "title": "Tabbouleh L.",
+      "price": "8.99",
+      "available": true,
+      "desc": "",
+      "category": "salads",
+      "img": "https://images.restocorano.com/items/salads-6wf2mitfu3l5ac1bxz49-tabbouleh-l.webp"
+    },
+    {
+      "id": "8OJ1Dq5a2cr8ho0LQVuu",
+      "available": true,
+      "img": "https://images.restocorano.com/items/salads-8oj1dq5a2cr8ho0lqvuu-tabbouleh-m.webp",
+      "category": "salads",
+      "price": "6.74",
+      "order": 50,
+      "title": "Tabbouleh M.",
+      "desc": ""
+    },
+    {
+      "id": "X3mdg9UmI1bjMX0OlYLD",
+      "price": "4.49",
+      "order": 60,
+      "title": "Tabbouleh S.",
+      "available": true,
+      "category": "salads",
+      "img": "https://images.restocorano.com/items/salads-x3mdg9umi1bjmx0olyld-tabbouleh-s.webp",
+      "desc": ""
+    },
+    {
+      "id": "6PQCrJhLnETDOmDto7m4",
+      "price": "7.87",
+      "img": "https://images.restocorano.com/items/salads-6pqcrjhlnetdomdto7m4-chef-salad.webp",
+      "title": "Chef Salad",
+      "order": 80,
+      "available": true,
+      "category": "salads",
+      "desc": "Iceberg, corn, cherry tomatoes, shredded mozzarella cheese, ,with a chicken breast"
+    },
+    {
+      "id": "FMvBuOokXo15opTpw6Ij",
+      "available": true,
+      "img": "https://images.restocorano.com/items/salads-fmvbuookxo15optpw6ij-coleslaw-l.webp",
+      "desc": "",
+      "category": "salads",
+      "price": "8.43",
+      "order": 90,
+      "title": "Coleslaw L."
+    },
+    {
+      "id": "zUCkXs4kKKy0Kds6zlxh",
+      "price": "5.06",
+      "img": "https://images.restocorano.com/items/salads-zuckxs4kkky0kds6zlxh-coleslaw-m.webp",
+      "order": 100,
+      "title": "Coleslaw M.",
+      "category": "salads",
+      "available": true,
+      "desc": ""
+    },
+    {
+      "id": "gDC8RPlgSHxiPVu9oTPV",
+      "title": "Coleslaw S.",
+      "order": 110,
+      "price": "2.81",
+      "desc": "",
+      "category": "salads",
+      "available": true,
+      "img": "https://images.restocorano.com/items/salads-gdc8rplgshxipvu9otpv-coleslaw-s.webp"
+    },
+    {
+      "id": "sONSE7N2mqrHwBjJhQ61",
+      "desc": "",
+      "available": true,
+      "category": "salads",
+      "order": 150,
+      "title": "Seasonal L.",
+      "img": "https://images.restocorano.com/items/salads-sonse7n2mqrhwbjjhq61-seasonal-l.webp",
+      "price": "6.74"
+    },
+    {
+      "id": "ZmnQLJqTY2h7HPGXVWOk",
+      "desc": "",
+      "available": true,
+      "img": "https://images.restocorano.com/items/salads-zmnqljqty2h7hpgxvwok-seasonal-m.webp",
+      "price": "5.06",
+      "title": "Seasonal M.",
+      "order": 160,
+      "category": "salads"
+    },
+    {
+      "id": "6F1oEkyTn7RLkJM2k3zo",
+      "desc": "",
+      "order": 170,
+      "title": "Seasonal S.",
+      "available": true,
+      "price": "3.37",
+      "category": "salads",
+      "img": "https://images.restocorano.com/items/salads-6f1oekytn7rlkjm2k3zo-seasonal-s.webp"
+    },
+    {
+      "id": "34mstrW6nKrUy3anBghM",
+      "img": "https://images.restocorano.com/items/salads-34mstrw6nkruy3anbghm-tuna-pasta.webp",
+      "price": "7.30",
+      "category": "salads",
+      "title": "Tuna Pasta",
+      "order": 180,
+      "available": true,
+      "desc": "Penne pasta, corn, iceberg, tuna, cucumber cherry tomatoes"
+    },
+    {
+      "id": "pLyYWGn9OCKcKPOFdGVz",
+      "order": 190,
+      "title": "Crab Salad",
+      "desc": "Iceberg, , corn, , avocado , cherry tomatoes, and crab sticks. Cocktail sauce or lemon mustard",
+      "img": "https://images.restocorano.com/items/salads-plyywgn9ockckpofdgvz-crab-salad.webp",
+      "price": "7.87",
+      "available": true,
+      "category": "salads"
+    },
+    {
+      "id": "psXpHUuUrQp9cmXWT8i7",
+      "available": true,
+      "title": "Caesar Salad",
+      "price": "5.06",
+      "img": "https://images.restocorano.com/items/salads-psxphuuurqp9cmxwt8i7-caesar-salad.webp",
+      "desc": "Iceberg, cherry tomatoes, croutons, parmesan cheese and served with Caesar dressing",
+      "order": 200,
+      "category": "salads",
+      "addons": [
+        "Add Chicken $2.81"
+      ]
+    },
+    {
+      "id": "sM7HMeH7eJXJ3IydhtzN",
+      "available": true,
+      "category": "sandwiches",
+      "order": 1,
+      "desc": "Fries, coleslaw, garlic, pickles, and tomato",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "img": "https://images.restocorano.com/items/sandwiches-sm7hmeh7ejxj3iydhtzn-tawouk.webp",
+      "title": "Tawouk",
+      "price": "6.18"
+    },
+    {
+      "id": "PUhEYpQKv8MFTY6EtvPE",
+      "category": "sandwiches",
+      "order": 10,
+      "desc": "Fries, pickles, and garlic",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "available": true,
+      "img": "https://images.restocorano.com/items/sandwiches-puheypqkv8mfty6etvpe-charcoal-djeij.webp",
+      "title": "Charcoal Djeij",
+      "price": "6.18"
+    },
+    {
+      "id": "Xgk0Zqqnu0Fgr3EtUQHS",
+      "available": true,
+      "title": "Special Tawouk",
+      "price": "8.43",
+      "desc": "Cheese ham, garlic, coleslaw, fries, pickles, and tomato or ketchup",
+      "category": "sandwiches",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "order": 12,
+      "img": "https://images.restocorano.com/items/sandwiches-xgk0zqqnu0fgr3etuqhs-special-tawouk.webp"
+    },
+    {
+      "id": "Ap4AJYcaaIJwQ3e3olg7",
+      "available": true,
+      "order": 20,
+      "category": "sandwiches",
+      "desc": "Fries, pickles, garlic. Ham and cheese",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "img": "https://images.restocorano.com/items/sandwiches-ap4ajycaaijwq3e3olg7-djeij-special.webp",
+      "title": "Djeij Special",
+      "price": "8.43"
+    },
+    {
+      "id": "WBef5jcWNkkfl69DHxDH",
+      "desc": "Fries, coleslaw, garlic, pickles, and ketchup",
+      "title": "Fries Sando",
+      "order": 30,
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "price": "2.81",
+      "category": "sandwiches",
+      "img": "https://images.restocorano.com/items/sandwiches-wbef5jcwnkkfl69dhxdh-fries-sando.webp",
+      "available": true
+    },
+    {
+      "id": "l3CyzhckMkpa7HNo6oia",
+      "title": "Charcoal Breast",
+      "available": true,
+      "category": "sandwiches",
+      "price": "6.74",
+      "desc": "Sfinet Djeij aal fahem",
+      "img": "https://images.restocorano.com/items/sandwiches-l3cyzhckmkpa7hno6oia-charcoal-breast.webp",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "order": 40
+    },
+    {
+      "id": "fI17n9FKl2axxL8WVlz9",
+      "img": "https://images.restocorano.com/items/sandwiches-fi17n9fkl2axxl8wvlz9-cheese-kafta.webp",
+      "desc": "Lettuce, cheese, pickles, tomato, fries and mayo sauce",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "available": true,
+      "price": "7.87",
+      "order": 50,
+      "title": "Cheese Kafta",
+      "category": "sandwiches"
+    },
+    {
+      "id": "0c740yagpvDlWEafwEmb",
+      "img": "https://images.restocorano.com/items/sandwiches-0c740yagpvdlweafwemb-crispy-sandwich.webp",
+      "available": true,
+      "price": "6.74",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "order": 60,
+      "title": "Crispy Sandwich",
+      "category": "sandwiches",
+      "desc": "Chicken crispy ,lettuce , pickles , fries , cocktail sauce ."
+    },
+    {
+      "id": "cxyStFyJeh2cl118YGNr",
+      "category": "sandwiches",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "price": "6.18",
+      "title": "Kabab",
+      "img": "https://images.restocorano.com/items/sandwiches-cxystfyjeh2cl118ygnr-kabab.webp",
+      "available": true,
+      "desc": "Hommos, biwas, pickles, fries, and tomato",
+      "order": 70
+    },
+    {
+      "id": "nFXYFCIr5LwvPOqydhRd",
+      "price": "6.18",
+      "title": "Kafta",
+      "order": 80,
+      "img": "https://images.restocorano.com/items/sandwiches-nfxyfcir5lwvpoqydhrd-kafta.webp",
+      "category": "sandwiches",
+      "available": true,
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "desc": "Hommos, biwas, pickles, fries, and tomato"
+    },
+    {
+      "id": "SnUqfSVrBI6aJY2nBfYN",
+      "img": "https://images.restocorano.com/items/sandwiches-snuqfsvrbi6ajy2nbfyn-makanek.webp",
+      "price": "6.18",
+      "available": true,
+      "order": 90,
+      "title": "Makanek",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "desc": "Hommos, pickles, tomato, and fries",
+      "category": "sandwiches"
+    },
+    {
+      "id": "GGH1ydfnexgcCaPPbXxL",
+      "img": "https://images.restocorano.com/items/sandwiches-ggh1ydfnexgccappbxxl-sheesh-tawouk.webp",
+      "price": "6.74",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "title": "Sheesh Tawouk",
+      "category": "sandwiches",
+      "available": true,
+      "order": 100,
+      "desc": ""
+    },
+    {
+      "id": "NWd565civYKYYStaawIC",
+      "img": "https://images.restocorano.com/items/sandwiches-nwd565civykyystaawic-chicken-liver.webp",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "price": "6.18",
+      "title": "Chicken Liver",
+      "order": 110,
+      "category": "sandwiches",
+      "available": true,
+      "desc": "Fries, garlic, pickles, and tomato"
+    },
+    {
+      "id": "AtoKyVhxL2yDwG6pg8JF",
+      "available": true,
+      "category": "sandwiches",
+      "title": "Sheep Meat لحم غنم",
+      "order": 120,
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "desc": "Sheep meat homos pickles tomato fries and biwaz",
+      "price": "8.43",
+      "img": "https://images.restocorano.com/items/sandwiches-atokyvhxl2ydwg6pg8jf-sheep-meat.webp"
+    },
+    {
+      "id": "UqQ3cP0nk3ZH0cQHbWSy",
+      "available": true,
+      "category": "sandwiches",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "img": "https://images.restocorano.com/items/sandwiches-uqq3cp0nk3zh0cqhbwsy-soujouk.webp",
+      "order": 130,
+      "title": "Soujouk",
+      "desc": "Hommos, pickles, tomato, and fries",
+      "price": "6.18"
+    },
+    {
+      "id": "Xpqxp8jBGPqRsmtZVqKS",
+      "category": "sauce cups",
+      "order": 10,
+      "title": "Aioli sauce",
+      "price": "0.56",
+      "available": true,
+      "img": "https://images.restocorano.com/items/sauce-cups-xpqxp8jbgpqrsmtzvqks-aioli-sauce.webp",
+      "desc": ""
+    },
+    {
+      "id": "vglvLhBKNkqmSyO7XnTW",
+      "order": 20,
+      "title": "BBQ sauce",
+      "price": "0.56",
+      "available": true,
+      "category": "sauce cups",
+      "desc": "",
+      "img": "https://images.restocorano.com/items/sauce-cups-vglvlhbknkqmsyo7xntw-bbq-sauce.webp"
+    },
+    {
+      "id": "W6wLyxhGK1CfOE67cKag",
+      "category": "sauce cups",
+      "price": "1.12",
+      "img": "https://images.restocorano.com/items/sauce-cups-w6wlyxhgk1cfoe67ckag-caesar-sauce.webp",
+      "order": 30,
+      "title": "Caesar sauce",
+      "available": true,
+      "desc": ""
+    },
+    {
+      "id": "oTkc7J5sDlLWzec9Eet7",
+      "img": "https://images.restocorano.com/items/sauce-cups-otkc7j5sdllwzec9eet7-cheddar-sauce.webp",
+      "available": true,
+      "price": "0.56",
+      "desc": "",
+      "title": "Cheddar sauce",
+      "order": 40,
+      "category": "sauce cups"
+    },
+    {
+      "id": "AOJrh85KhShxKSb84smb",
+      "available": true,
+      "category": "sauce cups",
+      "desc": "",
+      "order": 50,
+      "title": "Cocktail sauce",
+      "price": "0.34",
+      "img": "https://images.restocorano.com/items/sauce-cups-aojrh85khshxksb84smb-cocktail-sauce.webp"
+    },
+    {
+      "id": "oCRDi3rC7wsffWpIhZfz",
+      "available": true,
+      "desc": "",
+      "img": "https://images.restocorano.com/items/sauce-cups-ocrdi3rc7wsffwpihzfz-garlic-sauce.webp",
+      "price": "0.56",
+      "title": "Garlic sauce",
+      "order": 60,
+      "category": "sauce cups"
+    },
+    {
+      "id": "eVVyMgXaXSR3NhVzff6F",
+      "price": "1.12",
+      "img": "https://images.restocorano.com/items/sauce-cups-evvymgxaxsr3nhvzff6f-hummus-cup.webp",
+      "order": 70,
+      "title": "Hummus Cup",
+      "category": "sauce cups",
+      "available": true,
+      "desc": ""
+    },
+    {
+      "id": "0UNvT3u9R5tBxT9JdTxr",
+      "desc": "",
+      "category": "sauce cups",
+      "title": "Mayonnaise",
+      "order": 80,
+      "price": "0.56",
+      "available": true,
+      "img": "https://images.restocorano.com/items/sauce-cups-0unvt3u9r5tbxt9jdtxr-mayonnaise.webp"
+    },
+    {
+      "id": "HoMQiGvH52KHuxnCqIhF",
+      "category": "sauce cups",
+      "order": 99,
+      "title": "Burger Sauce",
+      "price": "0.56",
+      "desc": "",
+      "img": "https://images.restocorano.com/items/sauce-cups-homqigvh52khuxncqihf-burger-sauce.webp"
+    },
+    {
+      "id": "Pfnij1CDJLMwbhcH2NCj",
+      "img": "https://images.restocorano.com/items/sauce-cups-pfnij1cdjlmwbhch2ncj-debes-remmen.webp",
+      "category": "sauce cups",
+      "price": "0.56",
+      "title": "Debes Remmen",
+      "order": 99,
+      "desc": ""
+    },
+    {
+      "id": "bIOxnTRaboYiAuM0m9MC",
+      "img": "https://images.restocorano.com/items/sauce-cups-bioxntraboyiaum0m9mc-lemon-mustard.webp",
+      "desc": "",
+      "category": "sauce cups",
+      "price": "0.56",
+      "order": 99,
+      "title": "Lemon Mustard"
+    },
+    {
+      "id": "vKLKR7r8So7BS8s1a5oE",
+      "category": "sauce cups",
+      "desc": "",
+      "img": "https://images.restocorano.com/items/sauce-cups-vklkr7r8so7bs8s1a5oe-thiery-sauce.webp",
+      "price": "0.56",
+      "order": 99,
+      "title": "Thiery Sauce"
+    },
+    {
+      "id": "xFfsqcuVQ3lMytJyMAw5",
+      "desc": "",
+      "category": "sauce cups",
+      "img": "https://images.restocorano.com/items/sauce-cups-xffsqcuvq3lmytjymaw5-balsamic.webp",
+      "order": 99,
+      "title": "Balsamic",
+      "price": "0.56"
+    },
+    {
+      "id": "NKvQxrisSRi3V1lEyo2H",
+      "img": "https://images.restocorano.com/items/sauce-cups-nkvqxrissri3v1leyo2h-garlic-large.webp",
+      "price": "2.81",
+      "available": true,
+      "desc": "",
+      "order": 100,
+      "title": "Garlic large",
+      "category": "sauce cups"
+    },
+    {
+      "id": "AqUAmqT3Gygv0oe9LrY7",
+      "desc": "",
+      "available": true,
+      "order": 110,
+      "title": "Garlic small",
+      "price": "1.12",
+      "img": "https://images.restocorano.com/items/sauce-cups-aquamqt3gygv0oe9lry7-garlic-small.webp",
+      "category": "sauce cups"
+    },
+    {
+      "id": "0YcmaIbW0MphAmr7AVfc",
+      "price": "0.56",
+      "title": "Honey mustard sauce",
+      "order": 120,
+      "img": "https://images.restocorano.com/items/sauce-cups-0ycmaibw0mphamr7avfc-honey-mustard-sauce.webp",
+      "category": "sauce cups",
+      "desc": "",
+      "available": true
+    },
+    {
+      "id": "0G3b9WFjyatCWquD4INk",
+      "img": "https://images.restocorano.com/items/sauce-cups-0g3b9wfjyatcwqud4ink-kabis-box.webp",
+      "available": true,
+      "category": "sauce cups",
+      "desc": "",
+      "price": "0.56",
+      "order": 130,
+      "title": "Kabis box"
+    },
+    {
+      "id": "1esdC84Yr4i9JhvTI6ro",
+      "desc": "",
+      "available": true,
+      "img": "https://images.restocorano.com/items/sauce-cups-1esdc84yr4i9jhvti6ro-reb-7ar.webp",
+      "order": 140,
+      "title": "Reb 7ar",
+      "category": "sauce cups",
+      "price": "0.56"
+    },
+    {
+      "id": "hK9DQevf4n5q1FfjlOYP",
+      "title": "Steak sauce",
+      "order": 150,
+      "price": "1.12",
+      "category": "sauce cups",
+      "img": "https://images.restocorano.com/items/sauce-cups-hk9dqevf4n5q1ffjloyp-steak-sauce.webp",
+      "available": true,
+      "desc": ""
+    },
+    {
+      "id": "78QNZHlD7RI9Dz2Ct5mI",
+      "category": "sauce cups",
+      "desc": "",
+      "img": "https://images.restocorano.com/items/sauce-cups-78qnzhld7ri9dz2ct5mi-toum-w-7ar.webp",
+      "available": true,
+      "price": "1.12",
+      "order": 170,
+      "title": "Toum w 7ar"
+    },
+    {
+      "id": "d7RltNIWPyWLRnyzeVah",
+      "desc": "Chicken breast, cheese, onions, sweet pepper, special sauce.",
+      "order": 20,
+      "available": true,
+      "price": "7.87",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "img": "https://images.restocorano.com/items/subs-d7rltniwpywlrnyzevah-chicken-corano.webp",
+      "title": "Chicken Corano",
+      "category": "subs"
+    },
+    {
+      "id": "fxX6eE8IiQzeinVa5Ziq",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "available": true,
+      "category": "subs",
+      "order": 30,
+      "desc": "Marinated chicken breast, fries, salameh, cheese, and honey mustard.",
+      "img": "https://images.restocorano.com/items/subs-fxx6ee8iiqzeinva5ziq-chicken-thierry.webp",
+      "price": "7.87",
+      "title": "Chicken Thierry"
+    },
+    {
+      "id": "iz1mCu7K1iLWQqokgC7d",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "category": "subs",
+      "available": true,
+      "order": 40,
+      "img": "https://images.restocorano.com/items/subs-iz1mcu7k1ilwqqokgc7d-chicken-sub.webp",
+      "desc": "Chicken breast, lettuce, tomato, pickles, Mixed cheese, aioli sauce.",
+      "price": "7.87",
+      "title": "Chicken Sub"
+    },
+    {
+      "id": "Nq7KJSNympo4WkMvQ7BI",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "img": "https://images.restocorano.com/items/subs-nq7kjsnympo4wkmvq7bi-chicken-bbq.webp",
+      "category": "subs",
+      "available": true,
+      "price": "7.87",
+      "title": "Chicken BBQ",
+      "order": 50,
+      "desc": "Chicken breast, onion, cheese, lettuce, pickles, BBQ sauce, and mayo sauce."
+    },
+    {
+      "id": "YU6XPAxWu09bgPYZdl24",
+      "price": "7.87",
+      "category": "subs",
+      "order": 70,
+      "title": "Chicken honey mustard",
+      "img": "https://images.restocorano.com/items/subs-yu6xpaxwu09bgpyzdl24-chicken-honey-mustard.webp",
+      "available": true,
+      "desc": "Crispy chicken, cheddar cheese, chips, lettuce, pickles, honey mustard sauce",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ]
+    },
+    {
+      "id": "arVxkEJIOX5auDZPNMWb",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "available": true,
+      "category": "subs",
+      "order": 80,
+      "desc": "Crab sticks, lettuce, avocado, carrot, cocktail sauce, Brown Bread 24cm",
+      "img": "https://images.restocorano.com/items/subs-arvxkejiox5audzpnmwb-crab-sub.webp",
+      "price": "6.18",
+      "title": "Crab Sub"
+    },
+    {
+      "id": "Sxbprpwostvow0HyeoYA",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "category": "subs",
+      "img": "https://images.restocorano.com/items/subs-sxbprpwostvow0hyeoya-crispy-sub.webp",
+      "price": "7.30",
+      "order": 90,
+      "title": "Crispy sub",
+      "desc": "Chicken crispy, lettuce, pickles, fries, cocktail sauce.",
+      "available": true
+    },
+    {
+      "id": "y2bQXbwZ4oOlOgDLPjAA",
+      "order": 100,
+      "img": "https://images.restocorano.com/items/subs-y2bqxbwz4oologdlpjaa-charcoal-djeij.webp",
+      "category": "subs",
+      "desc": " Djej aal fahem bl Sub",
+      "price": "6.74",
+      "title": "Charcoal Djeij",
+      "available": true,
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ]
+    },
+    {
+      "id": "1YsUMiTfk2OBDpJpNnuQ",
+      "category": "subs",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "available": true,
+      "order": 110,
+      "desc": "Crispy chicken, lettuce, pickles, mixed cheese, chips, bbq and honey mustard sauce.",
+      "title": "Famous Crispy BBQ",
+      "price": "7.87",
+      "img": "https://images.restocorano.com/items/subs-1ysumitfk2obdpjpnnuq-famous-crispy-bbq.webp"
+    },
+    {
+      "id": "KtATTat3Me8He7ci5giG",
+      "category": "subs",
+      "order": 130,
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "img": "https://images.restocorano.com/items/subs-ktattat3me8he7ci5gig-philly-steak.webp",
+      "desc": "Beef, onion, mushroom, cheese, green pepper, mayo",
+      "price": "8.43",
+      "title": "Philly Steak",
+      "available": true
+    },
+    {
+      "id": "JpU0NKzIkKa63B8rY7cj",
+      "price": "8.43",
+      "category": "subs",
+      "title": "Steak sub",
+      "order": 150,
+      "img": "https://images.restocorano.com/items/subs-jpu0nkzikka63b8ry7cj-steak-sub.webp",
+      "available": true,
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "desc": "Beef steak lettuce corn cheese and steak sauce"
+    },
+    {
+      "id": "z1zCDZI88ZtLGQz6NU7J",
+      "img": "https://images.restocorano.com/items/subs-z1zcdzi88ztlgqz6nu7j-submarine.webp",
+      "category": "subs",
+      "desc": "Ham salameh, mixed cheese, lettuce, tomato, pickles, corn, and mayo sauce",
+      "available": true,
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "price": "7.30",
+      "title": "Submarine",
+      "order": 160
+    },
+    {
+      "id": "A7zM6TtNbNZsaoEvSQA9",
+      "desc": "Marinated chicken breast, lettuce, tomato, pickles, mixed cheese and our speciale sauce",
+      "title": "Tandoori",
+      "price": "7.87",
+      "category": "subs",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "order": 170,
+      "available": true,
+      "img": "https://images.restocorano.com/items/subs-a7zm6ttnbnzsaoevsqa9-tandoori.webp"
+    },
+    {
+      "id": "cZKK7yX1HQULjY9c7a33",
+      "price": "5.62",
+      "order": 180,
+      "title": "Tuna",
+      "img": "https://images.restocorano.com/items/subs-czkk7yx1hquljy9c7a33-tuna.webp",
+      "category": "subs",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "available": true,
+      "desc": "White tuna, coleslaw, pickles, corn, and lemon mustard sauce."
+    },
+    {
+      "id": "mysBDZvOqVcPP452xpT4",
+      "desc": "Grilled chicken breast coleslaw pickles fries cheese and honey mustard sauce",
+      "title": "Tweety",
+      "price": "7.87",
+      "available": true,
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "category": "subs",
+      "order": 190,
+      "img": "https://images.restocorano.com/items/subs-mysbdzvoqvcpp452xpt4-tweety.webp"
+    },
+    {
+      "id": "hvmRZRle04s9GeceTpck",
+      "desc": "",
+      "addons": [
+        "Make it combo (Fries & Drink) $2.81"
+      ],
+      "available": true,
+      "category": "subs",
+      "title": "Ham and cheese",
+      "order": 200,
+      "img": "https://images.restocorano.com/items/subs-hvmrzrle04s9gecetpck-ham-and-cheese.webp",
+      "price": "5.06"
+    }
+  ],
+  "reviews": [
+    {
+      "id": "86kEunUWU3qcx5rS0JQw",
+      "text": "Akel ra2e3, jarbo thiery sub!!!",
+      "status": "approved",
+      "rating": 5,
+      "date": "8/19/2026",
+      "author": "GouGou"
+    },
+    {
+      "id": "IXKSmlJhjIWzNbUxkBVx",
+      "text": "It was my first time at the new location and it is been maybe two years since i had my last chicken corano sandwich. It was amazing, maybe better. This sandwich is highly recommended. The new place is way much better than the old one. The staff is friendly and welcoming, you feel at home. One thing, the order took around 20 minutes, except of that all is good. I saw the cutest cat outside the restaurant.",
+      "author": "Rima issa",
+      "date": "8/19/2026",
+      "status": "approved",
+      "rating": 5
+    },
+    {
+      "id": "KSYYyLomQuh5NWrvq1SI",
+      "date": "8/19/2026",
+      "author": "Antoine El-khoury",
+      "rating": 5,
+      "text": "Family management, considerate and cosy",
+      "status": "approved"
+    },
+    {
+      "id": "KW4nAURrr7W4srxuCj2v",
+      "author": "Eli Doueri",
+      "date": "8/19/2026",
+      "rating": 5,
+      "status": "approved",
+      "text": "Second time hitting up this spot—locals sent me here like it was a hidden gem, and turns out, they knew what they were talking about. It’s a good, honest, family-run place, and you can feel they actually care about their customers—not just serving food, but serving it right.\nI tried the chicken sandwiches and the burgers. Verdict? Solid.Nothing fancy, just real, tasty food done properly.\nDefinitely worth checking out. Good people, good food, no regrets."
+    },
+    {
+      "id": "LEfoEnhkZRSTg2Z90wjv",
+      "text": "Atyab tawouk aal fahem bl majarra",
+      "author": "Tony",
+      "status": "approved",
+      "date": "8/19/2026",
+      "rating": 5
+    },
+    {
+      "id": "WnCUhWAkwBgsttktYKXX",
+      "status": "approved",
+      "text": "Great tasty experience. I had a douzen of Falafel they were huge and crunchy + 1 taouk sandwich . You must try this place once you're around Byblos.",
+      "rating": 5,
+      "author": "Jason Debs",
+      "date": "8/19/2026"
+    },
+    {
+      "id": "b8j7TpYlG19jYBEmtqay",
+      "text": "Corano is a name with a history",
+      "status": "approved",
+      "rating": 5,
+      "date": "8/19/2026",
+      "author": "المهندس محمد السيد"
+    },
+    {
+      "id": "hazyhHdunidMokwgGW0X",
+      "status": "approved",
+      "text": "Best tawouk",
+      "rating": 5,
+      "date": "8/19/2026",
+      "author": "Tarek el hachem"
+    },
+    {
+      "id": "kBKG2fZ4cLKJlr6mzdjL",
+      "date": "8/19/2026",
+      "author": "Dr. Roger Achkar",
+      "text": "A bit loud atmosphere but delicious sandwiches, especially the crunchy chicken.",
+      "rating": 5,
+      "status": "approved"
+    },
+    {
+      "id": "t8fkADcxuR05GIIPxhTz",
+      "status": "approved",
+      "rating": 5,
+      "text": "Very friendly team, good food, best prices",
+      "author": "Carlos Bejjani",
+      "date": "8/19/2026"
+    },
+    {
+      "id": "ttpywIYQdKKSZERW34Zr",
+      "date": "8/19/2026",
+      "author": "Aggy",
+      "text": "It feels like home!",
+      "rating": 5,
+      "status": "approved"
+    }
+  ],
+  "admins": []
+}

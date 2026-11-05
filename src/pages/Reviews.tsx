@@ -1,13 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, query, where, or } from 'firebase/firestore';
-import { db } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { Review } from '../types';
 import BackToTop from '../components/BackToTop';
+import {
+  fetchLiveStoreData,
+  getCachedStoreData,
+  mutateR2StoreData,
+} from '../utils/r2DataClient';
+
+function sortApprovedReviews(rawReviews: Review[]): Review[] {
+  const approvedRevs = (rawReviews || []).filter(
+    (r) => !r.status || r.status === 'approved'
+  );
+
+  // Sort to push Rima issa and Eli Doueri to the end
+  approvedRevs.sort((a, b) => {
+    const aIsRimaOrEli = a.author === 'Rima issa' || a.author === 'Eli Doueri';
+    const bIsRimaOrEli = b.author === 'Rima issa' || b.author === 'Eli Doueri';
+
+    if (aIsRimaOrEli && !bIsRimaOrEli) return 1;
+    if (!aIsRimaOrEli && bIsRimaOrEli) return -1;
+
+    if (aIsRimaOrEli && bIsRimaOrEli) {
+      if (a.author === 'Rima issa' && b.author === 'Eli Doueri') return -1;
+      if (a.author === 'Eli Doueri' && b.author === 'Rima issa') return 1;
+    }
+
+    return 0;
+  });
+
+  return approvedRevs;
+}
 
 const Reviews = () => {
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
+  const initialStore = getCachedStoreData();
+  const [reviews, setReviews] = useState<Review[]>(
+    sortApprovedReviews(initialStore.reviews || [])
+  );
+  const [loading, setLoading] = useState<boolean>(false);
   const [showForm, setShowForm] = useState(false);
   
   // Form State
@@ -23,35 +53,8 @@ const Reviews = () => {
 
   const fetchReviews = async () => {
     try {
-      // Due to Firebase security rules, we must explicitly filter for 'approved' or no status
-      // Note: Firestore doesn't easily support querying for missing fields, 
-      // but we will rely on the Admin side to approve reviews. We query all 
-      // where status in ['approved']
-      const q = query(collection(db, 'reviews'), where('status', '==', 'approved'));
-      const snap = await getDocs(q);
-      const revs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Review));
-      
-      const approvedRevs = revs;
-      
-      // Sort to push Rima issa and Eli Doueri to the end
-      approvedRevs.sort((a, b) => {
-        const aIsRimaOrEli = a.author === 'Rima issa' || a.author === 'Eli Doueri';
-        const bIsRimaOrEli = b.author === 'Rima issa' || b.author === 'Eli Doueri';
-        
-        if (aIsRimaOrEli && !bIsRimaOrEli) return 1;
-        if (!aIsRimaOrEli && bIsRimaOrEli) return -1;
-        
-        // If both are the target reviews, ensure Eli is after Rima or vice-versa
-        // Let's just keep them relatively in whatever order they were, or hardcode it
-        if (aIsRimaOrEli && bIsRimaOrEli) {
-           if (a.author === 'Rima issa' && b.author === 'Eli Doueri') return -1;
-           if (a.author === 'Eli Doueri' && b.author === 'Rima issa') return 1;
-        }
-        
-        return 0;
-      });
-      
-      setReviews(approvedRevs);
+      const liveStore = await fetchLiveStoreData();
+      setReviews(sortApprovedReviews(liveStore.reviews || []));
     } catch (error) {
       console.error("Error fetching reviews:", error);
     } finally {
@@ -66,15 +69,11 @@ const Reviews = () => {
     setSubmitting(true);
     setSubmitMessage('');
     try {
-      const newReview: Omit<Review, 'id'> = {
+      await mutateR2StoreData('submitPublicReview', {
         author,
         text,
         rating,
-        date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-        status: 'pending'
-      };
-      
-      await addDoc(collection(db, 'reviews'), newReview);
+      });
       setSubmitMessage('Thank you! Your review has been submitted and is pending approval.');
       setAuthor('');
       setText('');

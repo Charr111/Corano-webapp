@@ -2,6 +2,7 @@ export type MenuCategory = {
   id: string;
   name: string;
   order: number;
+  description?: string;
 };
 
 export type MenuItem = {
@@ -31,4 +32,19 @@ export type AdminUser = {
   email: string;
   addedBy?: string;
   createdAt?: string;
+};
+
+export type StoreSettings = {
+  currency: 'USD' | 'LBP';
+  exchangeRate: number;
+};
+
+export type StoreDataPayload = {
+  version: number;
+  updatedAt: string;
+  settings: StoreSettings;
+  categories: MenuCategory[];
+  items: MenuItem[];
+  reviews: Review[];
+  admins: AdminUser[];
 };

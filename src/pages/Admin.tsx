@@ -1,17 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { auth, db, googleProvider } from '../firebase';
+import { auth, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import {
-  collection,
-  addDoc,
-  getDocs,
-  getDoc,
-  deleteDoc,
-  doc,
-  setDoc,
-} from 'firebase/firestore';
-import { MenuItem, MenuCategory, Review, AdminUser } from '../types';
+import { MenuItem, MenuCategory, Review, AdminUser, StoreDataPayload } from '../types';
 import {
   buildCollisionProofFileName,
   compressImageToBudget,
@@ -25,6 +16,11 @@ import {
   formatStorePrice,
   StoreCurrency,
 } from '../utils/currency';
+import {
+  fetchLiveStoreData,
+  getCachedStoreData,
+  mutateR2StoreData,
+} from '../utils/r2DataClient';
 
 export const ROOT_ADMIN_EMAILS = ['apolokor@gmail.com', 'rony.daou83@gmail.com'];
 
@@ -112,42 +108,38 @@ const Admin = () => {
 
   const addFileInputRef = useRef<HTMLInputElement | null>(null);
   const editFileInputRef = useRef<HTMLInputElement | null>(null);
+  const backupRestoreInputRef = useRef<HTMLInputElement | null>(null);
+
+  const applyStoreState = (store: StoreDataPayload) => {
+    const loadedCats = [...(store.categories || [])].sort(
+      (a, b) => (a.order ?? 99) - (b.order ?? 99)
+    );
+    setCategories(loadedCats);
+    setItems(store.items || []);
+    setReviews(store.reviews || []);
+    setDynamicAdmins(store.admins || []);
+    if (store.settings?.currency === 'LBP' || store.settings?.currency === 'USD') {
+      setStoreCurrency(store.settings.currency);
+    }
+    if (typeof store.settings?.exchangeRate === 'number' && store.settings.exchangeRate > 0) {
+      setExchangeRate(store.settings.exchangeRate);
+    }
+  };
 
   const fetchAdminData = async () => {
     try {
-      const [catSnap, itemSnap, revSnap, adminSnap, settingsSnap] = await Promise.all([
-        getDocs(collection(db, 'menuCategories')),
-        getDocs(collection(db, 'menuItems')),
-        getDocs(collection(db, 'reviews')),
-        getDocs(collection(db, 'admins')),
-        getDoc(doc(db, 'settings', 'store')).catch(() => null),
-      ]);
-
-      const loadedCats = catSnap.docs
-        .map((d) => ({ id: d.id, ...d.data() } as MenuCategory))
-        .sort((a, b) => a.order - b.order);
-
-      setCategories(loadedCats);
-      setItems(itemSnap.docs.map((d) => ({ id: d.id, ...d.data() } as MenuItem)));
-      setReviews(revSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Review)));
-      setDynamicAdmins(adminSnap.docs.map((d) => ({ id: d.id, ...d.data() } as AdminUser)));
-
-      if (settingsSnap && settingsSnap.exists()) {
-        const sData = settingsSnap.data();
-        if (sData.currency === 'LBP' || sData.currency === 'USD') {
-          setStoreCurrency(sData.currency);
-        }
-        if (typeof sData.exchangeRate === 'number' && sData.exchangeRate > 0) {
-          setExchangeRate(sData.exchangeRate);
-        }
-      }
+      const liveStore = await fetchLiveStoreData(true);
+      applyStoreState(liveStore);
     } catch (e) {
-      console.error('Error loading admin data:', e);
-      setStatusNotice('Error loading data from Firestore.');
+      console.error('Error loading admin data from R2:', e);
+      setStatusNotice('Error loading data from Cloudflare R2.');
     }
   };
 
   useEffect(() => {
+    const cached = getCachedStoreData();
+    applyStoreState(cached);
+
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (!u || !u.email) {
@@ -159,21 +151,24 @@ const Admin = () => {
       const normalizedEmail = u.email.toLowerCase();
       let authorized = ROOT_ADMIN_EMAILS.includes(normalizedEmail);
 
-      if (!authorized) {
-        try {
-          const adminDoc = await getDoc(doc(db, 'admins', normalizedEmail));
-          authorized = adminDoc.exists();
-        } catch {
-          authorized = false;
+      try {
+        const liveStore = await fetchLiveStoreData(true);
+        applyStoreState(liveStore);
+        if (!authorized) {
+          authorized = (liveStore.admins || []).some(
+            (a) => String(a.email || '').trim().toLowerCase() === normalizedEmail
+          );
+        }
+      } catch {
+        if (!authorized) {
+          authorized = (cached.admins || []).some(
+            (a) => String(a.email || '').trim().toLowerCase() === normalizedEmail
+          );
         }
       }
 
       setIsAuthorizedAdmin(authorized);
       setLoading(false);
-
-      if (authorized) {
-        fetchAdminData();
-      }
     });
     return () => unsub();
   }, []);
@@ -194,15 +189,11 @@ const Admin = () => {
     setSavingCurrency(true);
     setStoreCurrency(targetCurrency);
     try {
-      await setDoc(
-        doc(db, 'settings', 'store'),
-        sanitizeFirestorePayload({
-          currency: targetCurrency,
-          exchangeRate: exchangeRate || DEFAULT_LBP_RATE,
-          updatedAt: new Date().toISOString(),
-        }),
-        { merge: true }
-      );
+      const updatedStore = await mutateR2StoreData('updateSettings', {
+        currency: targetCurrency,
+        exchangeRate: exchangeRate || DEFAULT_LBP_RATE,
+      });
+      applyStoreState(updatedStore);
       setStatusNotice(
         targetCurrency === 'LBP'
           ? `✓ Website prices are now displayed in L.L. (${(exchangeRate || DEFAULT_LBP_RATE).toLocaleString()} L.L. = $1)`
@@ -210,7 +201,7 @@ const Admin = () => {
       );
     } catch (err: any) {
       console.error('Failed to update store currency:', err);
-      setStatusNotice('Failed to update currency setting.');
+      setStatusNotice(err?.message || 'Failed to update currency setting.');
     } finally {
       setSavingCurrency(false);
     }
@@ -227,11 +218,11 @@ const Admin = () => {
     );
 
     try {
-      await setDoc(
-        doc(db, 'menuItems', item.id),
-        sanitizeFirestorePayload({ available: nextAvailable }),
-        { merge: true }
-      );
+      const updatedStore = await mutateR2StoreData('toggleItemStock', {
+        id: item.id,
+        available: nextAvailable,
+      });
+      applyStoreState(updatedStore);
       setStatusNotice(
         nextAvailable
           ? `✓ "${item.title}" is now In Stock.`
@@ -322,9 +313,10 @@ const Admin = () => {
       setEditingItem(updatedItem);
 
       if (editingItem.id) {
-        const sanitized = sanitizeFirestorePayload(updatedItem);
-        await setDoc(doc(db, 'menuItems', editingItem.id), sanitized, { merge: true });
-        await fetchAdminData();
+        const updatedStore = await mutateR2StoreData('saveItem', {
+          item: updatedItem,
+        });
+        applyStoreState(updatedStore);
       }
 
       setEditPhotoBadge(
@@ -388,7 +380,12 @@ const Admin = () => {
         available: newItem.available !== false,
         order: newItem.order ?? 99,
       });
-      await addDoc(collection(db, 'menuItems'), payload);
+
+      const updatedStore = await mutateR2StoreData('saveItem', {
+        item: payload,
+      });
+      applyStoreState(updatedStore);
+
       setNewItem({
         category: categories[0]?.name.toLowerCase() || 'subs',
         title: '',
@@ -401,11 +398,10 @@ const Admin = () => {
       setNewItemRawPriceInput('');
       setAddPhotoBadge(null);
       setShowAddProductModal(false);
-      await fetchAdminData();
       setStatusNotice('✓ Product added to menu.');
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setStatusNotice('Error adding item.');
+      setStatusNotice(e?.message || 'Error adding item.');
     }
   };
 
@@ -419,65 +415,79 @@ const Admin = () => {
           ? convertLbpInputToUsdString(editItemRawPriceInput, exchangeRate)
           : editItemRawPriceInput.replace(/^\$/, '').trim();
 
-      const sanitized = sanitizeFirestorePayload({
+      const itemPayload = {
         ...editingItem,
         price: finalUsdPrice || editingItem.price || '0',
         category: editingItem.category.toLowerCase(),
+      };
+      const updatedStore = await mutateR2StoreData('saveItem', {
+        item: itemPayload,
       });
-      await setDoc(doc(db, 'menuItems', editingItem.id), sanitized, { merge: true });
+      applyStoreState(updatedStore);
       setEditingItem(null);
       setEditPhotoBadge(null);
-      await fetchAdminData();
       setStatusNotice('✓ Product updated.');
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setStatusNotice('Error updating item.');
+      setStatusNotice(e?.message || 'Error updating item.');
     }
   };
 
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const sanitized = sanitizeFirestorePayload({
-        name: newCat.name || '',
-        order: newCat.order ?? categories.length + 1,
+      const updatedStore = await mutateR2StoreData('saveCategory', {
+        category: {
+          name: newCat.name || '',
+          order: newCat.order ?? categories.length + 1,
+        },
       });
-      await addDoc(collection(db, 'menuCategories'), sanitized);
-      setNewCat({ name: '', order: categories.length + 2 });
+      applyStoreState(updatedStore);
+      setNewCat({ name: '', order: (updatedStore.categories?.length || categories.length) + 1 });
       setShowAddCategoryModal(false);
-      await fetchAdminData();
       setStatusNotice('✓ Category added.');
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setStatusNotice(e?.message || 'Error adding category.');
     }
   };
 
   const handleAddReview = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const sanitized = sanitizeFirestorePayload({
-        author: newReview.author || '',
-        text: newReview.text || '',
-        rating: newReview.rating || 5,
-        date: new Date().toLocaleDateString(),
-        status: 'approved',
+      const updatedStore = await mutateR2StoreData('addAdminReview', {
+        review: {
+          author: newReview.author || '',
+          text: newReview.text || '',
+          rating: newReview.rating || 5,
+          date: new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
+          status: 'approved',
+        },
       });
-      await addDoc(collection(db, 'reviews'), sanitized);
+      applyStoreState(updatedStore);
       setNewReview({ author: '', text: '', rating: 5 });
-      await fetchAdminData();
       setStatusNotice('✓ Review added.');
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setStatusNotice(e?.message || 'Error adding review.');
     }
   };
 
   const handleApproveReview = async (id: string) => {
     try {
-      await setDoc(doc(db, 'reviews', id), { status: 'approved' }, { merge: true });
-      await fetchAdminData();
+      const updatedStore = await mutateR2StoreData('updateReviewStatus', {
+        id,
+        status: 'approved',
+      });
+      applyStoreState(updatedStore);
       setStatusNotice('✓ Review approved.');
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setStatusNotice(e?.message || 'Error approving review.');
     }
   };
 
@@ -486,20 +496,22 @@ const Admin = () => {
     setIsDeleting(true);
     try {
       if (deleteConfirm.type === 'item') {
-        await deleteDoc(doc(db, 'menuItems', deleteConfirm.id));
+        const updatedStore = await mutateR2StoreData('deleteItem', { id: deleteConfirm.id });
+        applyStoreState(updatedStore);
         setStatusNotice(`✓ Deleted product "${deleteConfirm.label}".`);
       } else if (deleteConfirm.type === 'category') {
-        await deleteDoc(doc(db, 'menuCategories', deleteConfirm.id));
+        const updatedStore = await mutateR2StoreData('deleteCategory', { id: deleteConfirm.id });
+        applyStoreState(updatedStore);
         setStatusNotice(`✓ Deleted category "${deleteConfirm.label}".`);
       } else if (deleteConfirm.type === 'review') {
-        await deleteDoc(doc(db, 'reviews', deleteConfirm.id));
+        const updatedStore = await mutateR2StoreData('deleteReview', { id: deleteConfirm.id });
+        applyStoreState(updatedStore);
         setStatusNotice(`✓ Deleted review by "${deleteConfirm.label}".`);
       }
       setDeleteConfirm(null);
-      await fetchAdminData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting record:', err);
-      setStatusNotice('Failed to delete record.');
+      setStatusNotice(err?.message || 'Failed to delete record.');
     } finally {
       setIsDeleting(false);
     }
@@ -514,14 +526,11 @@ const Admin = () => {
       return;
     }
     try {
-      const payload = sanitizeFirestorePayload({
+      const updatedStore = await mutateR2StoreData('addAdminEmail', {
         email: normalized,
-        addedBy: user?.email || 'root-admin',
-        createdAt: new Date().toISOString(),
       });
-      await setDoc(doc(db, 'admins', normalized), payload);
+      applyStoreState(updatedStore);
       setNewAdminEmail('');
-      await fetchAdminData();
       setAdminStatusMsg(`✓ Added ${normalized} as an authorized Admin.`);
     } catch (err: any) {
       console.error('Error adding admin email:', err);
@@ -532,12 +541,65 @@ const Admin = () => {
   const handleRemoveAdminEmail = async (emailId: string) => {
     setAdminStatusMsg(null);
     try {
-      await deleteDoc(doc(db, 'admins', emailId.toLowerCase()));
-      await fetchAdminData();
+      const updatedStore = await mutateR2StoreData('removeAdminEmail', {
+        email: emailId.toLowerCase(),
+      });
+      applyStoreState(updatedStore);
       setAdminStatusMsg(`Removed ${emailId} from dynamic admins.`);
     } catch (err: any) {
       console.error('Error removing admin email:', err);
       setAdminStatusMsg(err?.message || 'Failed to remove admin email.');
+    }
+  };
+
+  const handleDownloadFullBackup = () => {
+    const backupPayload: StoreDataPayload = {
+      version: Date.now(),
+      updatedAt: new Date().toISOString(),
+      settings: {
+        currency: storeCurrency,
+        exchangeRate: exchangeRate || DEFAULT_LBP_RATE,
+      },
+      categories,
+      items,
+      reviews,
+      admins: dynamicAdmins,
+    };
+    const blob = new Blob([JSON.stringify(backupPayload, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `corano-r2-database-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setStatusNotice('✓ Downloaded full Cloudflare R2 database JSON backup.');
+  };
+
+  const handleRestoreFullBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if (!Array.isArray(parsed.items) || !Array.isArray(parsed.categories)) {
+        throw new Error('Invalid backup JSON file: missing items or categories.');
+      }
+      const updatedStore = await mutateR2StoreData('restoreBackup', {
+        backupData: parsed,
+      });
+      applyStoreState(updatedStore);
+      setStatusNotice(
+        `✓ Restored ${updatedStore.items.length} products and ${updatedStore.categories.length} categories to Cloudflare R2.`
+      );
+    } catch (err: any) {
+      console.error('Error restoring backup:', err);
+      setStatusNotice(err?.message || 'Failed to restore JSON backup.');
+    } finally {
+      if (backupRestoreInputRef.current) backupRestoreInputRef.current.value = '';
     }
   };
 
@@ -1514,11 +1576,11 @@ const Admin = () => {
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div>
                     <h2 className="text-base sm:text-lg font-semibold text-on-surface">
-                      Admin Access Manager (Firebase Authorized Gmails)
+                      Admin Access Manager (Authorized Gmails)
                     </h2>
                     <p className="text-xs text-on-surface-variant mt-1">
-                      Permanent Root Admins and dynamically authorized Gmail accounts stored in Firestore{' '}
-                      <span className="font-mono text-primary">/admins/&#123;email&#125;</span>. Any Gmail added below automatically receives full Admin Dashboard &amp; Firestore access.
+                      Permanent Root Admins and dynamically authorized Gmail accounts stored in Cloudflare R2{' '}
+                      <span className="font-mono text-primary">data/store-data.json</span>. Any Gmail added below automatically receives full Admin Dashboard access.
                     </p>
                   </div>
 
@@ -1581,6 +1643,46 @@ const Admin = () => {
                         </button>
                       </div>
                     ))}
+                </div>
+              </div>
+
+              {/* Cloudflare R2 Database Backup & Restore Card */}
+              <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-5 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-semibold text-on-surface">
+                      Cloudflare R2 Database Backup (JSON)
+                    </h2>
+                    <p className="text-xs text-on-surface-variant mt-1">
+                      Download a complete JSON snapshot of all {items.length} products, {categories.length} categories, {reviews.length} reviews, and settings stored in{' '}
+                      <span className="font-mono text-primary">corano-images/data/store-data.json</span>, or restore from a saved backup.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleDownloadFullBackup}
+                      className="bg-primary text-on-primary px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center gap-1.5"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">download</span>
+                      Download Full Database Backup (JSON)
+                    </button>
+                    <input
+                      ref={backupRestoreInputRef}
+                      type="file"
+                      accept="application/json,.json"
+                      onChange={handleRestoreFullBackup}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => backupRestoreInputRef.current?.click()}
+                      className="bg-surface-container border border-outline-variant/40 text-on-surface px-4 py-2.5 rounded-xl text-xs font-semibold hover:border-primary/50 active:scale-[0.98] transition-all flex items-center gap-1.5"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">upload_file</span>
+                      Restore Backup
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

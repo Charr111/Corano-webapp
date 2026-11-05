@@ -1,6 +1,12 @@
 // Zero-dependency Cloudflare Pages Function for https://restocorano.com/api/r2-upload
-// Supports either native Cloudflare R2 Bucket binding (env.BUCKET) or S3-compatible API credentials
-// using standard Web Crypto API (crypto.subtle) with zero Node-only npm packages.
+// Protected by Google Admin Bearer Token verification, MIME validation, and 150 KB size cap.
+
+import firebaseConfig from '../../firebase-applet-config.json';
+
+const STORE_DATA_KEY = 'data/store-data.json';
+const ROOT_ADMIN_EMAILS = ['apolokor@gmail.com', 'rony.daou83@gmail.com'];
+const ALLOWED_UPLOAD_MIMES = ['image/webp', 'image/jpeg', 'image/png', 'image/avif'];
+const MAX_UPLOAD_BYTES = 150 * 1024; // 150 KB hard cap for shrunk menu photos
 
 const R2_CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -52,7 +58,12 @@ async function hmacSha256(key: ArrayBuffer | Uint8Array, message: string): Promi
   return crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(message));
 }
 
-async function getSignatureKey(secretKey: string, dateStamp: string, region: string, service: string): Promise<ArrayBuffer> {
+async function getSignatureKey(
+  secretKey: string,
+  dateStamp: string,
+  region: string,
+  service: string
+): Promise<ArrayBuffer> {
   const kDate = await hmacSha256(new TextEncoder().encode('AWS4' + secretKey), dateStamp);
   const kRegion = await hmacSha256(kDate, region);
   const kService = await hmacSha256(kRegion, service);
@@ -60,7 +71,7 @@ async function getSignatureKey(secretKey: string, dateStamp: string, region: str
 }
 
 async function signedR2Request(params: {
-  method: 'PUT' | 'DELETE';
+  method: 'GET' | 'PUT' | 'DELETE';
   accountId: string;
   accessKeyId: string;
   secretAccessKey: string;
@@ -141,6 +152,113 @@ async function signedR2Request(params: {
   });
 }
 
+function getBoundR2Bucket(env: any): any {
+  if (!env || typeof env !== 'object') return null;
+  return (
+    env.BUCKET ||
+    env['corano-images'] ||
+    env.CORANO_IMAGES ||
+    env.corano_images ||
+    Object.values(env).find(
+      (val: any) => val && typeof val === 'object' && typeof val.put === 'function'
+    )
+  );
+}
+
+async function readDynamicAdminsFromEnv(env: any): Promise<any[]> {
+  try {
+    const r2Bucket = getBoundR2Bucket(env);
+    if (r2Bucket && typeof r2Bucket.get === 'function') {
+      const obj = await r2Bucket.get(STORE_DATA_KEY);
+      if (obj) {
+        const parsed = JSON.parse(await obj.text());
+        if (Array.isArray(parsed?.admins)) return parsed.admins;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return [];
+}
+
+async function verifyAdminAuthorization(
+  authHeader: string | null,
+  env: any
+): Promise<{ ok: boolean; email?: string; error?: string }> {
+  const token = String(authHeader || '')
+    .replace(/^Bearer\s+/i, '')
+    .trim();
+  if (!token) {
+    return { ok: false, error: 'Missing Authorization Bearer token.' };
+  }
+
+  let verifiedEmail = '';
+
+  // Method 1: Official Google Identity Toolkit verification for Firebase Auth ID tokens
+  try {
+    const apiKey = firebaseConfig.apiKey;
+    const lookupRes = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: token }),
+      }
+    );
+    if (lookupRes.ok) {
+      const lookupData: any = await lookupRes.json();
+      const userObj = lookupData?.users?.[0];
+      if (userObj && userObj.email && userObj.emailVerified !== false) {
+        verifiedEmail = String(userObj.email).trim().toLowerCase();
+      }
+    }
+  } catch {
+    // fallback to oauth2 tokeninfo below
+  }
+
+  // Method 2: Google OAuth2 tokeninfo verification fallback
+  if (!verifiedEmail) {
+    try {
+      const infoRes = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`
+      );
+      if (infoRes.ok) {
+        const infoData: any = await infoRes.json();
+        if (
+          infoData?.email &&
+          (infoData.email_verified === 'true' || infoData.email_verified === true)
+        ) {
+          verifiedEmail = String(infoData.email).trim().toLowerCase();
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!verifiedEmail) {
+    return { ok: false, error: 'Invalid or expired Google Admin authentication token.' };
+  }
+
+  if (ROOT_ADMIN_EMAILS.includes(verifiedEmail)) {
+    return { ok: true, email: verifiedEmail };
+  }
+
+  const dynamicAdmins = await readDynamicAdminsFromEnv(env);
+  const isDynamic = dynamicAdmins.some(
+    (a: any) => String(a?.email || '').trim().toLowerCase() === verifiedEmail
+  );
+
+  if (!isDynamic) {
+    return {
+      ok: false,
+      error: `Account ${verifiedEmail} is not authorized as an Admin.`,
+    };
+  }
+
+  return { ok: true, email: verifiedEmail };
+}
+
 export const onRequestOptions = async () => {
   return new Response(null, {
     status: 204,
@@ -149,35 +267,58 @@ export const onRequestOptions = async () => {
 };
 
 export const onRequestPost = async (context: any) => {
+  const jsonHeaders = { ...R2_CORS_HEADERS, 'Content-Type': 'application/json' };
   try {
     const env = context.env || {};
+    const authHeader = context.request.headers.get('Authorization');
+    const authCheck = await verifyAdminAuthorization(authHeader, env);
+    if (!authCheck.ok) {
+      return new Response(
+        JSON.stringify({ error: authCheck.error || 'Unauthorized photo upload attempt.' }),
+        { status: 403, headers: jsonHeaders }
+      );
+    }
+
     const body = await context.request.json();
     const { fileName, contentType, base64Data, oldImageUrl, skipDeleteOld } = body || {};
 
     if (!fileName || !base64Data) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields: fileName and base64Data' }),
-        { status: 400, headers: { ...R2_CORS_HEADERS, 'Content-Type': 'application/json' } }
+        { status: 400, headers: jsonHeaders }
+      );
+    }
+
+    const finalContentType = String(contentType || 'image/webp').toLowerCase().trim();
+    if (!ALLOWED_UPLOAD_MIMES.includes(finalContentType)) {
+      return new Response(
+        JSON.stringify({
+          error: `Unsupported image MIME type: ${finalContentType}. Allowed: WebP, JPEG, PNG, AVIF.`,
+        }),
+        { status: 400, headers: jsonHeaders }
       );
     }
 
     const cleanFileName = sanitizeFileName(fileName);
     const objectKey = `items/${cleanFileName}`;
     const bytes = base64ToUint8Array(String(base64Data));
-    const publicBaseUrl = String(env.R2_PUBLIC_BASE_URL || 'https://images.restocorano.com').replace(/\/+$/, '');
+
+    if (bytes.byteLength === 0 || bytes.byteLength > MAX_UPLOAD_BYTES) {
+      return new Response(
+        JSON.stringify({
+          error: `Image size (${Math.round(bytes.byteLength / 1024)} KB) exceeds the 150 KB maximum limit for menu items.`,
+        }),
+        { status: 400, headers: jsonHeaders }
+      );
+    }
+
+    const publicBaseUrl = String(
+      env.R2_PUBLIC_BASE_URL || 'https://images.restocorano.com'
+    ).replace(/\/+$/, '');
     const bucketName = String(env.R2_BUCKET_NAME || 'corano-images');
     const cacheControl = 'public, max-age=31536000, immutable';
-    const finalContentType = contentType || 'image/webp';
 
-    // Option A: If Cloudflare Pages has a native R2 bucket binding (e.g., BUCKET, corano-images, CORANO_IMAGES, or any bound R2 bucket)
-    const r2Bucket =
-      env.BUCKET ||
-      env['corano-images'] ||
-      env.CORANO_IMAGES ||
-      env.corano_images ||
-      Object.values(env).find(
-        (val: any) => val && typeof val === 'object' && typeof val.put === 'function'
-      );
+    const r2Bucket = getBoundR2Bucket(env);
     if (r2Bucket && typeof r2Bucket.put === 'function') {
       await r2Bucket.put(objectKey, bytes, {
         httpMetadata: {
@@ -187,7 +328,12 @@ export const onRequestPost = async (context: any) => {
       });
 
       const r2Prefix = `${publicBaseUrl}/items/`;
-      if (!skipDeleteOld && oldImageUrl && typeof oldImageUrl === 'string' && oldImageUrl.startsWith(r2Prefix)) {
+      if (
+        !skipDeleteOld &&
+        oldImageUrl &&
+        typeof oldImageUrl === 'string' &&
+        oldImageUrl.startsWith(r2Prefix)
+      ) {
         const oldFileName = oldImageUrl.slice(r2Prefix.length).split('?')[0];
         const oldKey = `items/${sanitizeFileName(oldFileName)}`;
         if (oldKey && oldKey !== objectKey && typeof r2Bucket.delete === 'function') {
@@ -195,7 +341,6 @@ export const onRequestPost = async (context: any) => {
         }
       }
     } else {
-      // Option B: S3-compatible API using Web Crypto AWS Signature V4
       const accountId = String(env.R2_ACCOUNT_ID || '').trim();
       const accessKeyId = String(env.R2_ACCESS_KEY_ID || '').trim();
       const secretAccessKey = String(env.R2_SECRET_ACCESS_KEY || '').trim();
@@ -203,9 +348,10 @@ export const onRequestPost = async (context: any) => {
       if (!accountId || !accessKeyId || !secretAccessKey) {
         return new Response(
           JSON.stringify({
-            error: 'Missing Cloudflare R2 environment variables (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY) or BUCKET binding on Cloudflare Pages.',
+            error:
+              'Missing Cloudflare R2 environment variables (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY) or BUCKET binding on Cloudflare Pages.',
           }),
-          { status: 400, headers: { ...R2_CORS_HEADERS, 'Content-Type': 'application/json' } }
+          { status: 400, headers: jsonHeaders }
         );
       }
 
@@ -225,12 +371,17 @@ export const onRequestPost = async (context: any) => {
         const errText = await putRes.text();
         return new Response(
           JSON.stringify({ error: `R2 PUT failed (${putRes.status}): ${errText}` }),
-          { status: 502, headers: { ...R2_CORS_HEADERS, 'Content-Type': 'application/json' } }
+          { status: 502, headers: jsonHeaders }
         );
       }
 
       const r2Prefix = `${publicBaseUrl}/items/`;
-      if (!skipDeleteOld && oldImageUrl && typeof oldImageUrl === 'string' && oldImageUrl.startsWith(r2Prefix)) {
+      if (
+        !skipDeleteOld &&
+        oldImageUrl &&
+        typeof oldImageUrl === 'string' &&
+        oldImageUrl.startsWith(r2Prefix)
+      ) {
         const oldFileName = oldImageUrl.slice(r2Prefix.length).split('?')[0];
         const oldKey = `items/${sanitizeFileName(oldFileName)}`;
         if (oldKey && oldKey !== objectKey) {
@@ -254,13 +405,13 @@ export const onRequestPost = async (context: any) => {
       }),
       {
         status: 200,
-        headers: { ...R2_CORS_HEADERS, 'Content-Type': 'application/json' },
+        headers: jsonHeaders,
       }
     );
   } catch (error: any) {
     return new Response(
       JSON.stringify({ error: error?.message || 'Internal R2 upload error' }),
-      { status: 500, headers: { ...R2_CORS_HEADERS, 'Content-Type': 'application/json' } }
+      { status: 500, headers: jsonHeaders }
     );
   }
 };

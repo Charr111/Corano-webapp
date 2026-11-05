@@ -1,75 +1,88 @@
 import React, { useState, useEffect } from 'react';
-import { collection, doc, getDoc, getDocs, orderBy, query, where } from 'firebase/firestore';
-import { db } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
-import { MenuItem, MenuCategory } from '../types';
+import { MenuItem, MenuCategory, StoreDataPayload } from '../types';
 import BackToTop from '../components/BackToTop';
 import { DEFAULT_LBP_RATE, formatStorePrice, StoreCurrency } from '../utils/currency';
+import { fetchLiveStoreData, getCachedStoreData } from '../utils/r2DataClient';
 
 const Menu = () => {
-  const [categories, setCategories] = useState<MenuCategory[]>([]);
-  const [itemsByCat, setItemsByCat] = useState<Record<string, MenuItem[]>>({});
-  const [activeCategory, setActiveCategory] = useState<string>('');
-  const [loadingCats, setLoadingCats] = useState(true);
-  const [loadingItems, setLoadingItems] = useState(false);
+  const initialStore = getCachedStoreData();
+  const sortedInitialCats = [...(initialStore.categories || [])].sort(
+    (a, b) => (a.order ?? 99) - (b.order ?? 99)
+  );
+
+  const [categories, setCategories] = useState<MenuCategory[]>(sortedInitialCats);
+  const [allItems, setAllItems] = useState<MenuItem[]>(initialStore.items || []);
+  const [activeCategory, setActiveCategory] = useState<string>(
+    sortedInitialCats[0]?.name.toLowerCase() || ''
+  );
+  const [loadingCats, setLoadingCats] = useState<boolean>(sortedInitialCats.length === 0);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  const [storeCurrency, setStoreCurrency] = useState<StoreCurrency>('USD');
-  const [exchangeRate, setExchangeRate] = useState<number>(DEFAULT_LBP_RATE);
+  const [storeCurrency, setStoreCurrency] = useState<StoreCurrency>(
+    initialStore.settings?.currency === 'LBP' ? 'LBP' : 'USD'
+  );
+  const [exchangeRate, setExchangeRate] = useState<number>(
+    initialStore.settings?.exchangeRate || DEFAULT_LBP_RATE
+  );
+
+  const applyStorePayload = (store: StoreDataPayload) => {
+    const cats = [...(store.categories || [])].sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+    setCategories(cats);
+    setAllItems(store.items || []);
+    setStoreCurrency(store.settings?.currency === 'LBP' ? 'LBP' : 'USD');
+    setExchangeRate(
+      typeof store.settings?.exchangeRate === 'number' && store.settings.exchangeRate > 0
+        ? store.settings.exchangeRate
+        : DEFAULT_LBP_RATE
+    );
+    setActiveCategory((prev) => {
+      if (
+        prev &&
+        cats.some(
+          (c) =>
+            c.name.toLowerCase() === prev.toLowerCase() ||
+            c.id.toLowerCase() === prev.toLowerCase()
+        )
+      ) {
+        return prev;
+      }
+      return cats[0]?.name.toLowerCase() || '';
+    });
+  };
 
   useEffect(() => {
-    const fetchCategoriesAndSettings = async () => {
-      try {
-        const [catSnap, settingsSnap] = await Promise.all([
-          getDocs(query(collection(db, 'menuCategories'), orderBy('order'))),
-          getDoc(doc(db, 'settings', 'store')).catch(() => null),
-        ]);
-        const cats = catSnap.docs.map(d => ({ id: d.id, ...d.data() } as MenuCategory));
-        
-        setCategories(cats);
-        
-        if (cats.length > 0) {
-          setActiveCategory(cats[0].name.toLowerCase());
-        }
+    let mounted = true;
+    fetchLiveStoreData()
+      .then((liveStore) => {
+        if (!mounted) return;
+        applyStorePayload(liveStore);
+      })
+      .catch((err) => {
+        console.error('Error refreshing live R2 menu data:', err);
+      })
+      .finally(() => {
+        if (mounted) setLoadingCats(false);
+      });
 
-        if (settingsSnap && settingsSnap.exists()) {
-          const sData = settingsSnap.data();
-          if (sData.currency === 'LBP' || sData.currency === 'USD') {
-            setStoreCurrency(sData.currency);
-          }
-          if (typeof sData.exchangeRate === 'number' && sData.exchangeRate > 0) {
-            setExchangeRate(sData.exchangeRate);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      } finally {
-        setLoadingCats(false);
-      }
+    return () => {
+      mounted = false;
     };
-    fetchCategoriesAndSettings();
   }, []);
 
-  useEffect(() => {
-    const fetchItemsForCategory = async () => {
-      if (!activeCategory || itemsByCat[activeCategory]) return;
-      
-      setLoadingItems(true);
-      try {
-        const q = query(collection(db, 'menuItems'), where('category', '==', activeCategory));
-        const itemSnap = await getDocs(q);
-        const itms = itemSnap.docs.map(d => ({ id: d.id, ...d.data() } as MenuItem));
-        
-        setItemsByCat(prev => ({ ...prev, [activeCategory]: itms }));
-      } catch (error) {
-        console.error("Error fetching items:", error);
-      } finally {
-        setLoadingItems(false);
-      }
-    };
-    fetchItemsForCategory();
-  }, [activeCategory, itemsByCat]);
+  const activeCategoryObj = categories.find(
+    (c) =>
+      c.name.toLowerCase() === activeCategory.toLowerCase() ||
+      c.id.toLowerCase() === activeCategory.toLowerCase()
+  );
 
-  const activeItems = (itemsByCat[activeCategory] || []).sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+  const activeItems = allItems
+    .filter((item) => {
+      const itemCat = (item.category || '').toLowerCase().trim();
+      const targetName = activeCategory.toLowerCase().trim();
+      const targetId = (activeCategoryObj?.id || '').toLowerCase().trim();
+      return itemCat === targetName || (targetId && itemCat === targetId);
+    })
+    .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
 
   if (loadingCats) {
     return (
@@ -111,75 +124,69 @@ const Menu = () => {
         </div>
 
         {/* Items Grid */}
-        {loadingItems && activeItems.length === 0 ? (
-          <div className="flex justify-center py-12">
-             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-          </div>
-        ) : (
-          <motion.div 
-            layout
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            <AnimatePresence mode="popLayout">
-              {activeItems.map((item) => (
-                <motion.div
-                  layout
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  key={item.id}
-                  onClick={() => setSelectedItem(item)}
-                  className="bg-surface-container-low rounded-2xl overflow-hidden border border-outline-variant/20 cursor-pointer hover:border-primary/50 transition-colors flex md:flex-col"
-                >
-                  <div className="w-32 h-32 md:w-full md:h-48 shrink-0 bg-surface-container relative">
-                    {item.available === false ? (
-                      <div className="absolute top-2 right-2 bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full z-10 shadow-md">
-                        Out of Stock
-                      </div>
-                    ) : item.isNew ? (
-                      <div className="absolute top-2 right-2 bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full z-10 shadow-md">
-                        New Item
-                      </div>
-                    ) : null}
-                    {item.img ? (
-                      <img 
-                        src={item.img} 
-                        alt={item.title} 
-                        className={`w-full h-full object-cover md:group-hover:scale-105 transition-transform duration-500 ${item.available === false ? 'opacity-50 grayscale-[40%]' : ''}`}
-                        loading={activeCategory === categories[0]?.name.toLowerCase() ? "eager" : "lazy"}
-                        fetchPriority={activeCategory === categories[0]?.name.toLowerCase() ? "high" : "auto"}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="material-symbols-outlined text-4xl text-outline-variant">restaurant</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4 flex flex-col flex-grow justify-center">
-                    <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2">
-                      <h3 className="font-headline text-lg md:text-xl text-on-surface leading-tight mb-1 md:mb-0 pr-2">{item.title}</h3>
-                      <span className="font-bold text-primary whitespace-nowrap">
-                        {formatStorePrice(item.price, storeCurrency, exchangeRate)}
-                      </span>
+        <motion.div 
+          layout
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          <AnimatePresence mode="popLayout">
+            {activeItems.map((item) => (
+              <motion.div
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                key={item.id}
+                onClick={() => setSelectedItem(item)}
+                className="bg-surface-container-low rounded-2xl overflow-hidden border border-outline-variant/20 cursor-pointer hover:border-primary/50 transition-colors flex md:flex-col"
+              >
+                <div className="w-32 h-32 md:w-full md:h-48 shrink-0 bg-surface-container relative">
+                  {item.available === false ? (
+                    <div className="absolute top-2 right-2 bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full z-10 shadow-md">
+                      Out of Stock
                     </div>
-                    {item.available === false ? (
-                      <p className="text-xs text-error font-bold mt-1">
-                        Out of Stock
-                      </p>
-                    ) : (item.desc || (item.addons && item.addons.length > 0)) ? (
-                      <p className="text-sm text-primary italic font-semibold mt-1">
-                        View Ingredients
-                      </p>
-                    ) : null}
+                  ) : item.isNew ? (
+                    <div className="absolute top-2 right-2 bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full z-10 shadow-md">
+                      New Item
+                    </div>
+                  ) : null}
+                  {item.img ? (
+                    <img 
+                      src={item.img} 
+                      alt={item.title} 
+                      className={`w-full h-full object-cover md:group-hover:scale-105 transition-transform duration-500 ${item.available === false ? 'opacity-50 grayscale-[40%]' : ''}`}
+                      loading={activeCategory === categories[0]?.name.toLowerCase() ? "eager" : "lazy"}
+                      fetchPriority={activeCategory === categories[0]?.name.toLowerCase() ? "high" : "auto"}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <span className="material-symbols-outlined text-4xl text-outline-variant">restaurant</span>
+                    </div>
+                  )}
+                </div>
+                <div className="p-4 flex flex-col flex-grow justify-center">
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2">
+                    <h3 className="font-headline text-lg md:text-xl text-on-surface leading-tight mb-1 md:mb-0 pr-2">{item.title}</h3>
+                    <span className="font-bold text-primary whitespace-nowrap">
+                      {formatStorePrice(item.price, storeCurrency, exchangeRate)}
+                    </span>
                   </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
-        )}
+                  {item.available === false ? (
+                    <p className="text-xs text-error font-bold mt-1">
+                      Out of Stock
+                    </p>
+                  ) : (item.desc || (item.addons && item.addons.length > 0)) ? (
+                    <p className="text-sm text-primary italic font-semibold mt-1">
+                      View Ingredients
+                    </p>
+                  ) : null}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
         
-        {!loadingItems && activeItems.length === 0 && (
+        {activeItems.length === 0 && (
           <div className="text-center text-on-surface-variant py-12">
             No items available in this category yet.
           </div>
