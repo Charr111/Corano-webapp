@@ -286,7 +286,7 @@ const Menu = () => {
                   <img
                     src={selectedItem.img}
                     alt={selectedItem.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain p-2 bg-surface"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
