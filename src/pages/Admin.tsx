@@ -37,8 +37,8 @@ function getCategoryIconName(catName: string): string {
   if (lower.includes('pizza') || lower.includes('saj')) return 'local_pizza';
   if (lower.includes('burger') || lower.includes('sub') || lower.includes('sandwich'))
     return 'lunch_dining';
-  if (lower.includes('salad') || lower.includes('healthy') || lower.includes('light'))
-    return 'salad';
+  if (lower.includes('salad')) return 'eco';
+  if (lower.includes('healthy') || lower.includes('light')) return 'spa';
   if (lower.includes('dessert') || lower.includes('sweet')) return 'cake';
   if (lower.includes('drink') || lower.includes('beverage') || lower.includes('juice'))
     return 'local_cafe';

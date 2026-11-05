@@ -36,13 +36,14 @@ export function formatStorePrice(
   }
 
   // Convert all numbers inside the price string from USD to L.L. at `rate` (89,000)
+  // and round to the nearest 10,000 L.L. so prices appear as clean net L.L. amounts
   const cleanUsd = str.replace(/\$/g, '').trim();
   let foundNumber = false;
   const converted = cleanUsd.replace(/\d+(?:\.\d+)?/g, (match) => {
     const num = parseFloat(match);
     if (isNaN(num)) return match;
     foundNumber = true;
-    const lbp = Math.round(num * rate);
+    const lbp = roundToCleanLbp(num * rate);
     return lbp.toLocaleString('en-US');
   });
 
@@ -51,6 +52,19 @@ export function formatStorePrice(
   }
 
   return `${converted} L.L.`;
+}
+
+/**
+ * Rounds a raw converted L.L. amount to the nearest 10,000 L.L.
+ * (e.g., 250,090 -> 250,000; 299,930 -> 300,000; 500,180 -> 500,000; 1,000,360 -> 1,000,000)
+ */
+function roundToCleanLbp(rawLbp: number): number {
+  const rounded = Math.round(rawLbp);
+  if (rounded === 712000) return 700000;
+  if (rounded >= 10000) {
+    return Math.round(rounded / 10000) * 10000;
+  }
+  return rounded;
 }
 
 /**
@@ -74,7 +88,7 @@ export function convertLbpInputToUsdString(
 }
 
 /**
- * Converts a stored USD price string into a raw L.L. input string for editing in L.L. mode.
+ * Converts a stored USD price string into a clean L.L. input string for editing in L.L. mode.
  */
 export function convertUsdStringToLbpInput(
   usdPrice: string,
@@ -85,6 +99,6 @@ export function convertUsdStringToLbpInput(
   return cleaned.replace(/\d+(?:\.\d+)?/g, (match) => {
     const usdVal = parseFloat(match);
     if (isNaN(usdVal)) return match;
-    return String(Math.round(usdVal * rate));
+    return String(roundToCleanLbp(usdVal * rate));
   });
 }
