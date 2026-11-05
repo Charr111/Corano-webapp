@@ -92,7 +92,12 @@ const Menu = () => {
       const targetId = (activeCategoryObj?.id || '').toLowerCase().trim();
       return itemCat === targetName || (targetId && itemCat === targetId);
     })
-    .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+    .sort((a, b) => {
+      const aPop = a.popular ? 1 : 0;
+      const bPop = b.popular ? 1 : 0;
+      if (aPop !== bPop) return bPop - aPop;
+      return (a.order ?? 99) - (b.order ?? 99);
+    });
 
   const handleCategoryClick = (
     catNameLower: string,

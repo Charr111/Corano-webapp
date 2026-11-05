@@ -661,6 +661,9 @@ const Admin = () => {
     })
     .sort((a, b) => {
       if (a.category !== b.category) return a.category.localeCompare(b.category);
+      const aPop = a.popular ? 1 : 0;
+      const bPop = b.popular ? 1 : 0;
+      if (aPop !== bPop) return bPop - aPop;
       return (a.order ?? 99) - (b.order ?? 99);
     });
 
