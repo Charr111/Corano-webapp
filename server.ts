@@ -431,6 +431,7 @@ async function startServer() {
             ? rawItem.addons.map((a: any) => String(a).trim()).filter(Boolean)
             : [],
           isNew: Boolean(rawItem.isNew),
+          popular: Boolean(rawItem.popular),
         });
 
         const existingIdx = storeData.items.findIndex((i: any) => i.id === itemId);
@@ -454,6 +455,18 @@ async function startServer() {
         target.available = available;
         const saved = await writeStoreDataToR2(storeData);
         return res.status(200).json({ ok: true, id: itemId, available, storeData: saved });
+      }
+
+      if (action === 'toggleItemPopular') {
+        const itemId = String(body.id || '').trim();
+        const popular = Boolean(body.popular);
+        const target = storeData.items.find((i: any) => i.id === itemId);
+        if (!target) {
+          return res.status(404).json({ error: 'Menu item not found.' });
+        }
+        target.popular = popular;
+        const saved = await writeStoreDataToR2(storeData);
+        return res.status(200).json({ ok: true, id: itemId, popular, storeData: saved });
       }
 
       if (action === 'deleteItem') {

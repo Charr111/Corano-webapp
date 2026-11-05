@@ -16,6 +16,7 @@ export type MenuItem = {
   addons?: string[];
   order?: number;
   isNew?: boolean;
+  popular?: boolean;
 };
 
 export type Review = {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MenuItem, MenuCategory, StoreDataPayload } from '../types';
 import BackToTop from '../components/BackToTop';
@@ -16,6 +16,7 @@ const Menu = () => {
   const [activeCategory, setActiveCategory] = useState<string>(
     sortedInitialCats[0]?.name.toLowerCase() || ''
   );
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [loadingCats, setLoadingCats] = useState<boolean>(sortedInitialCats.length === 0);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [storeCurrency, setStoreCurrency] = useState<StoreCurrency>(
@@ -24,6 +25,8 @@ const Menu = () => {
   const [exchangeRate, setExchangeRate] = useState<number>(
     initialStore.settings?.exchangeRate || DEFAULT_LBP_RATE
   );
+
+  const categoryScrollRef = useRef<HTMLDivElement | null>(null);
 
   const applyStorePayload = (store: StoreDataPayload) => {
     const cats = [...(store.categories || [])].sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
@@ -75,14 +78,41 @@ const Menu = () => {
       c.id.toLowerCase() === activeCategory.toLowerCase()
   );
 
+  const trimmedQuery = searchQuery.trim().toLowerCase();
+
   const activeItems = allItems
     .filter((item) => {
+      if (trimmedQuery) {
+        const titleMatch = (item.title || '').toLowerCase().includes(trimmedQuery);
+        const descMatch = (item.desc || '').toLowerCase().includes(trimmedQuery);
+        return titleMatch || descMatch;
+      }
       const itemCat = (item.category || '').toLowerCase().trim();
       const targetName = activeCategory.toLowerCase().trim();
       const targetId = (activeCategoryObj?.id || '').toLowerCase().trim();
       return itemCat === targetName || (targetId && itemCat === targetId);
     })
     .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+
+  const handleCategoryClick = (
+    catNameLower: string,
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    setActiveCategory(catNameLower);
+    if (searchQuery) setSearchQuery('');
+
+    // Pure horizontal scroll centering on the category container only (never scrollIntoView)
+    const container = categoryScrollRef.current;
+    const btn = e.currentTarget;
+    if (container && btn) {
+      const targetLeft =
+        btn.offsetLeft - container.clientWidth / 2 + btn.offsetWidth / 2;
+      container.scrollTo({
+        left: Math.max(0, targetLeft),
+        behavior: 'smooth',
+      });
+    }
+  };
 
   if (loadingCats) {
     return (
@@ -95,31 +125,64 @@ const Menu = () => {
   return (
     <div className="relative min-h-full py-8 px-4 sm:px-6 lg:px-8 bg-background">
       <div className="relative z-10 max-w-7xl mx-auto">
-        <div className="text-center mb-8 md:mb-12">
+        <div className="text-center mb-6 md:mb-8">
           <h1 className="font-headline text-3xl md:text-4xl text-primary mb-2">Our Menu</h1>
           <div className="w-20 h-1 bg-primary mx-auto rounded-full mt-4"></div>
         </div>
 
+        {/* Instant Menu Search Bar (Below heading, above category bar) */}
+        <div className="max-w-md mx-auto mb-6">
+          <div className="relative flex items-center">
+            <span className="material-symbols-outlined text-[20px] text-on-surface-variant absolute left-3.5 pointer-events-none">
+              search
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search dishes or ingredients..."
+              aria-label="Search menu items"
+              className="w-full bg-[#181818] border border-outline-variant/40 focus:border-[#E4CD86] rounded-xl pl-10 pr-10 py-2.5 text-base sm:text-sm text-on-surface placeholder-on-surface-variant/60 focus:outline-none transition-colors"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
+                className="absolute right-2.5 min-w-[32px] min-h-[32px] flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Categories Tab Bar */}
         <div className="pb-2 mb-8 -mx-4 px-4 sm:mx-0 sm:px-0">
-          <div className="flex overflow-x-auto hide-scrollbar border-b border-outline-variant/30 gap-6 justify-start">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.name.toLowerCase())}
-                className={`font-headline whitespace-nowrap pb-3 mb-2 px-2 text-lg font-medium transition-colors relative ${
-                  activeCategory === cat.name.toLowerCase() ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'
-                }`}
-              >
-                {cat.name}
-                {activeCategory === cat.name.toLowerCase() && (
-                  <motion.div 
-                    layoutId="activeCategory"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                  />
-                )}
-              </button>
-            ))}
+          <div
+            ref={categoryScrollRef}
+            className="flex overflow-x-auto hide-scrollbar border-b border-outline-variant/30 gap-6 justify-start"
+          >
+            {categories.map((cat) => {
+              const isSelected = !trimmedQuery && activeCategory === cat.name.toLowerCase();
+              return (
+                <button
+                  key={cat.id}
+                  onClick={(e) => handleCategoryClick(cat.name.toLowerCase(), e)}
+                  className={`font-headline whitespace-nowrap pb-3 mb-2 px-2 text-lg font-medium transition-colors relative ${
+                    isSelected ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                >
+                  {cat.name}
+                  {isSelected && (
+                    <motion.div
+                      layoutId="activeCategory"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                    />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -141,6 +204,11 @@ const Menu = () => {
                 className="bg-surface-container-low rounded-2xl overflow-hidden border border-outline-variant/20 cursor-pointer hover:border-primary/50 transition-colors flex md:flex-col"
               >
                 <div className="w-32 h-32 md:w-full md:h-48 shrink-0 bg-surface-container relative">
+                  {item.available !== false && item.popular && (
+                    <div className="absolute top-3 left-3 bg-[#101010]/90 text-[#E4CD86] border border-[#E4CD86]/50 font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full z-10 shadow-md">
+                      ★ Popular
+                    </div>
+                  )}
                   {item.available === false ? (
                     <div className="absolute top-2 right-2 bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full z-10 shadow-md">
                       Out of Stock
@@ -188,12 +256,14 @@ const Menu = () => {
         
         {activeItems.length === 0 && (
           <div className="text-center text-on-surface-variant py-12">
-            No items available in this category yet.
+            {trimmedQuery
+              ? `No menu items found matching "${searchQuery.trim()}".`
+              : 'No items available in this category yet.'}
           </div>
         )}
       </div>
 
-      {/* Item Details Popup */}
+      {/* Item Details Popup (Full-Bleed Top Dish Photo) */}
       <AnimatePresence>
         {selectedItem && (
           <motion.div 
@@ -211,17 +281,27 @@ const Menu = () => {
               onClick={(e) => e.stopPropagation()}
               className="bg-surface-container w-full max-w-2xl rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col max-h-[90vh]"
             >
-              <div className="relative w-full h-64 md:h-80 bg-surface-container-lowest shrink-0">
+              <div className="relative w-full h-64 md:h-80 bg-surface-container-lowest shrink-0 overflow-hidden">
                 {selectedItem.img ? (
-                  <img src={selectedItem.img} alt={selectedItem.title} className="w-full h-full object-contain p-4 bg-surface" />
+                  <img
+                    src={selectedItem.img}
+                    alt={selectedItem.title}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <span className="material-symbols-outlined text-6xl text-outline-variant">restaurant</span>
                   </div>
                 )}
+                {selectedItem.available !== false && selectedItem.popular && (
+                  <div className="absolute top-3 left-3 bg-[#101010]/90 text-[#E4CD86] border border-[#E4CD86]/50 font-bold text-xs uppercase tracking-wider px-3 py-1 rounded-full shadow-md">
+                    ★ Popular
+                  </div>
+                )}
                 <button 
                   onClick={() => setSelectedItem(null)} 
-                  className="absolute top-4 right-4 bg-black/50 text-white rounded-full p-2 backdrop-blur-md"
+                  aria-label="Close item details"
+                  className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white rounded-full p-2 hover:bg-black/80 transition-colors"
                 >
                   <span className="material-symbols-outlined">close</span>
                 </button>

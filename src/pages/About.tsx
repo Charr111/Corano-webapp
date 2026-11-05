@@ -1,7 +1,25 @@
 import React from 'react';
 import { motion } from 'motion/react';
 
+const getBeirutOpenStatus = (): boolean => {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Beirut',
+      hour: 'numeric',
+      hour12: false,
+    });
+    const hourStr = formatter.format(new Date());
+    const hour = parseInt(hourStr, 10) % 24;
+    // Open daily 11:00 AM (11) until 12:00 AM midnight (23:59)
+    return hour >= 11 && hour <= 23;
+  } catch {
+    return true;
+  }
+};
+
 const About = () => {
+  const isOpenNow = getBeirutOpenStatus();
+
   return (
     <motion.div 
       initial={{ opacity: 0 }} 
@@ -30,6 +48,19 @@ const About = () => {
               Monday - Sunday<br />
               11:00 AM - 12:00 AM
             </p>
+            <div className="mt-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface-container border border-outline-variant/40 text-xs sm:text-sm font-headline font-semibold text-on-surface">
+              {isOpenNow ? (
+                <>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <span>Open Now · Closes at 12:00 AM</span>
+                </>
+              ) : (
+                <>
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />
+                  <span>Closed · Opens at 11:00 AM</span>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Map Embed (Shrunk by 20%) */}

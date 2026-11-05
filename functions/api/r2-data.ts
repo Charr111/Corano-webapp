@@ -550,6 +550,7 @@ export const onRequestPost = async (context: any) => {
           ? rawItem.addons.map((a: any) => String(a).trim()).filter(Boolean)
           : [],
         isNew: Boolean(rawItem.isNew),
+        popular: Boolean(rawItem.popular),
       });
 
       const existingIdx = storeData.items.findIndex((i: any) => i.id === itemId);
@@ -580,6 +581,24 @@ export const onRequestPost = async (context: any) => {
       const saved = await writeStoreDataToEnv(env, storeData);
       return new Response(
         JSON.stringify({ ok: true, id: itemId, available, storeData: saved }),
+        { status: 200, headers: jsonHeaders }
+      );
+    }
+
+    if (action === 'toggleItemPopular') {
+      const itemId = String(body.id || '').trim();
+      const popular = Boolean(body.popular);
+      const target = storeData.items.find((i: any) => i.id === itemId);
+      if (!target) {
+        return new Response(JSON.stringify({ error: 'Menu item not found.' }), {
+          status: 404,
+          headers: jsonHeaders,
+        });
+      }
+      target.popular = popular;
+      const saved = await writeStoreDataToEnv(env, storeData);
+      return new Response(
+        JSON.stringify({ ok: true, id: itemId, popular, storeData: saved }),
         { status: 200, headers: jsonHeaders }
       );
     }

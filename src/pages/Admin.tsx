@@ -238,6 +238,36 @@ const Admin = () => {
     }
   };
 
+  // Toggle Item Popular (★) directly from Products List
+  const handleToggleItemPopular = async (item: MenuItem) => {
+    const currentPopular = Boolean(item.popular);
+    const nextPopular = !currentPopular;
+
+    // Optimistic UI update
+    setItems((prev) =>
+      prev.map((i) => (i.id === item.id ? { ...i, popular: nextPopular } : i))
+    );
+
+    try {
+      const updatedStore = await mutateR2StoreData('toggleItemPopular', {
+        id: item.id,
+        popular: nextPopular,
+      });
+      applyStoreState(updatedStore);
+      setStatusNotice(
+        nextPopular
+          ? `✓ "${item.title}" marked as ★ Popular.`
+          : `✓ "${item.title}" removed from Popular.`
+      );
+    } catch (err) {
+      console.error('Error toggling popular status:', err);
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, popular: currentPopular } : i))
+      );
+      setStatusNotice('Failed to update popular status.');
+    }
+  };
+
   // Photo Auto-Shrink + Live R2 Upload for Add New Item Form
   const handleAddFormPhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -379,6 +409,7 @@ const Admin = () => {
         desc: newItem.desc || '',
         img: newItem.img || '',
         available: newItem.available !== false,
+        popular: Boolean(newItem.popular),
         order: newItem.order ?? 99,
       });
 
@@ -394,6 +425,7 @@ const Admin = () => {
         price: '',
         img: '',
         available: true,
+        popular: false,
         order: 99,
       });
       setNewItemRawPriceInput('');
@@ -652,6 +684,7 @@ const Admin = () => {
       price: '',
       img: '',
       available: true,
+      popular: false,
       order: 99,
     });
     setNewItemInputCurrency(storeCurrency);
@@ -1145,6 +1178,12 @@ const Admin = () => {
                                   <span className="font-mono tabular-nums">
                                     #{item.order ?? 99}
                                   </span>
+                                  {item.popular && (
+                                    <>
+                                      <span aria-hidden="true">·</span>
+                                      <span className="text-primary font-semibold">★ Popular</span>
+                                    </>
+                                  )}
                                   {!isAvailable && (
                                     <>
                                       <span aria-hidden="true">·</span>
@@ -1160,7 +1199,7 @@ const Admin = () => {
                               {formatStorePrice(item.price, storeCurrency, exchangeRate)}
                             </div>
 
-                            {/* Bottom / Right: Stock Toggle Switch + Edit + Delete (44px touch targets on mobile) */}
+                            {/* Bottom / Right: Stock Toggle Switch + Popular Star + Edit + Delete */}
                             <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 pt-2 sm:pt-0 border-t border-outline-variant/20 sm:border-0 shrink-0">
                               <button
                                 type="button"
@@ -1199,6 +1238,30 @@ const Admin = () => {
                               </button>
 
                               <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleItemPopular(item)}
+                                  title={
+                                    item.popular
+                                      ? 'Marked as Popular (Tap to remove)'
+                                      : 'Mark as Popular (★)'
+                                  }
+                                  className={`min-w-[40px] min-h-[40px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center rounded-xl hover:bg-surface-container active:scale-95 transition-all ${
+                                    item.popular
+                                      ? 'text-primary'
+                                      : 'text-on-surface-variant hover:text-primary'
+                                  }`}
+                                >
+                                  <span
+                                    className="material-symbols-outlined text-[20px]"
+                                    style={{
+                                      fontVariationSettings: item.popular ? "'FILL' 1" : "'FILL' 0",
+                                    }}
+                                  >
+                                    star
+                                  </span>
+                                </button>
+
                                 <button
                                   type="button"
                                   onClick={() => openEditModal(item)}
@@ -1839,6 +1902,30 @@ const Admin = () => {
                 </div>
               </div>
 
+              <div className="flex items-center justify-between bg-surface-container border border-outline/40 rounded-xl px-3.5 py-2.5 h-[44px] sm:h-[42px]">
+                <span className="text-xs text-on-surface-variant">Mark as Popular (★)</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setNewItem((prev) => ({
+                      ...prev,
+                      popular: !prev.popular,
+                    }))
+                  }
+                  className={`w-10 h-5 rounded-full p-0.5 flex items-center ${
+                    newItem.popular
+                      ? 'bg-primary justify-end'
+                      : 'bg-surface-container-high justify-start'
+                  }`}
+                >
+                  <span
+                    className={`w-4 h-4 rounded-full ${
+                      newItem.popular ? 'bg-on-primary' : 'bg-on-surface-variant/60'
+                    }`}
+                  />
+                </button>
+              </div>
+
               <div className="flex gap-3 pt-3">
                 <button
                   type="button"
@@ -2100,6 +2187,32 @@ const Admin = () => {
                     />
                   </button>
                 </div>
+              </div>
+
+              <div className="flex items-center justify-between bg-surface-container border border-outline/40 rounded-xl px-3.5 py-2.5 h-[44px] sm:h-[42px]">
+                <span className="text-xs text-on-surface-variant">Mark as Popular (★)</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setEditingItem({
+                      ...editingItem,
+                      popular: !editingItem.popular,
+                    })
+                  }
+                  className={`w-10 h-5 rounded-full p-0.5 flex items-center ${
+                    editingItem.popular
+                      ? 'bg-primary justify-end'
+                      : 'bg-surface-container-high justify-start'
+                  }`}
+                >
+                  <span
+                    className={`w-4 h-4 rounded-full ${
+                      editingItem.popular
+                        ? 'bg-on-primary'
+                        : 'bg-on-surface-variant/60'
+                    }`}
+                  />
+                </button>
               </div>
 
               <div className="flex gap-3 pt-3">
