@@ -4,7 +4,7 @@ import firebaseConfig from '../../firebase-applet-config.json';
 const STORE_DATA_KEY = 'data/store-data.json';
 const AI_CONVERSATIONS_KEY = 'data/ai-conversations.json';
 const MAX_AI_CONVERSATIONS = 200;
-const ROOT_ADMIN_EMAILS = ['apolokor@gmail.com', 'rony.daou83@gmail.com'];
+const ROOT_ADMIN_EMAILS = ['apolokor@gmail.com'];
 
 const R2_CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -330,9 +330,14 @@ async function verifyAdminAuthorization(
   }
 
   const isRoot = ROOT_ADMIN_EMAILS.includes(verifiedEmail);
-  const isDynamic = (storeData.admins || []).some(
-    (a: any) => String(a.email || '').trim().toLowerCase() === verifiedEmail
-  );
+  const removed = Array.isArray(storeData.removedAdmins)
+    ? storeData.removedAdmins.map((e: any) => String(e || '').trim().toLowerCase())
+    : [];
+  const isDynamic =
+    (storeData.admins || []).some(
+      (a: any) => String(a.email || '').trim().toLowerCase() === verifiedEmail
+    ) ||
+    (verifiedEmail === 'rony.daou83@gmail.com' && !removed.includes('rony.daou83@gmail.com'));
 
   if (!isRoot && !isDynamic) {
     return { ok: false, error: `Email ${verifiedEmail} is not authorized as an Admin.` };

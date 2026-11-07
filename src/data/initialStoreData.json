@@ -1983,5 +1983,18 @@
       "status": "approved"
     }
   ],
-  "admins": []
+  "admins": [
+    {
+      "id": "rony.daou83@gmail.com",
+      "email": "rony.daou83@gmail.com",
+      "addedBy": "apolokor@gmail.com",
+      "createdAt": "2026-11-05T12:04:09.334Z"
+    },
+    {
+      "id": "ghassan1w2@gmail.com",
+      "email": "ghassan1w2@gmail.com",
+      "addedBy": "apolokor@gmail.com",
+      "createdAt": "2026-11-07T17:16:14.779Z"
+    }
+  ]
 }

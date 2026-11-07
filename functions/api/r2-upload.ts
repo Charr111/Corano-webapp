@@ -4,7 +4,7 @@
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const STORE_DATA_KEY = 'data/store-data.json';
-const ROOT_ADMIN_EMAILS = ['apolokor@gmail.com', 'rony.daou83@gmail.com'];
+const ROOT_ADMIN_EMAILS = ['apolokor@gmail.com'];
 const ALLOWED_UPLOAD_MIMES = ['image/webp', 'image/jpeg', 'image/png', 'image/avif'];
 const MAX_UPLOAD_BYTES = 150 * 1024; // 150 KB hard cap for shrunk menu photos
 
@@ -172,13 +172,25 @@ async function readDynamicAdminsFromEnv(env: any): Promise<any[]> {
       const obj = await r2Bucket.get(STORE_DATA_KEY);
       if (obj) {
         const parsed = JSON.parse(await obj.text());
-        if (Array.isArray(parsed?.admins)) return parsed.admins;
+        const baseAdmins = Array.isArray(parsed?.admins) ? [...parsed.admins] : [];
+        const removed = Array.isArray(parsed?.removedAdmins)
+          ? parsed.removedAdmins.map((e: any) => String(e || '').trim().toLowerCase())
+          : [];
+        if (
+          !baseAdmins.some(
+            (a: any) => String(a?.email || '').trim().toLowerCase() === 'rony.daou83@gmail.com'
+          ) &&
+          !removed.includes('rony.daou83@gmail.com')
+        ) {
+          baseAdmins.push({ email: 'rony.daou83@gmail.com' });
+        }
+        return baseAdmins;
       }
     }
   } catch {
     // ignore
   }
-  return [];
+  return [{ email: 'rony.daou83@gmail.com' }, { email: 'ghassan1w2@gmail.com' }];
 }
 
 async function verifyAdminAuthorization(

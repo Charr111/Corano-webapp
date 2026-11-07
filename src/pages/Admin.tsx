@@ -24,14 +24,23 @@ import {
   mutateR2StoreData,
 } from '../utils/r2DataClient';
 
-export const ROOT_ADMIN_EMAILS = ['apolokor@gmail.com', 'rony.daou83@gmail.com'];
+export const ROOT_ADMIN_EMAILS = ['apolokor@gmail.com'];
 
 type AdminSection = 'dashboard' | 'products' | 'categories' | 'reviews' | 'ai' | 'settings';
 
 interface DeleteConfirmationState {
-  type: 'item' | 'category' | 'review' | 'ai_session' | 'ai_clear_all';
+  type: 'item' | 'category' | 'review' | 'ai_session' | 'ai_clear_all' | 'admin_email';
   id: string;
   label: string;
+}
+
+function parseCategoryOrder(raw: string | number | undefined, fallback: number): number {
+  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+  const cleaned = String(raw ?? '')
+    .trim()
+    .replace(/,/g, '.');
+  const parsed = parseFloat(cleaned);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function getCategoryIconName(catName: string): string {
@@ -98,6 +107,9 @@ const Admin = () => {
   const [editItemRawPriceInput, setEditItemRawPriceInput] = useState<string>('');
 
   const [newCat, setNewCat] = useState<Partial<MenuCategory>>({ name: '', order: 1 });
+  const [newCatOrderInput, setNewCatOrderInput] = useState<string>('1');
+  const [editingCategory, setEditingCategory] = useState<MenuCategory | null>(null);
+  const [editCatOrderInput, setEditCatOrderInput] = useState<string>('');
   const [newReview, setNewReview] = useState<Partial<Review>>({ rating: 5 });
 
   // Delete Confirmation Modal State
@@ -125,6 +137,7 @@ const Admin = () => {
       (a, b) => (a.order ?? 99) - (b.order ?? 99)
     );
     setCategories(loadedCats);
+    setNewCatOrderInput((prev) => (prev === '1' && loadedCats.length > 0 ? String(loadedCats.length + 1) : prev));
     setItems(store.items || []);
     setReviews(store.reviews || []);
     setDynamicAdmins(store.admins || []);
@@ -605,19 +618,55 @@ const Admin = () => {
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const parsedOrder = parseCategoryOrder(newCatOrderInput, categories.length + 1);
       const updatedStore = await mutateR2StoreData('saveCategory', {
         category: {
-          name: newCat.name || '',
-          order: newCat.order ?? categories.length + 1,
+          name: (newCat.name || '').trim(),
+          order: parsedOrder,
         },
       });
       applyStoreState(updatedStore);
-      setNewCat({ name: '', order: (updatedStore.categories?.length || categories.length) + 1 });
+      const nextDefaultOrder = (updatedStore.categories?.length || categories.length) + 1;
+      setNewCat({ name: '', order: nextDefaultOrder });
+      setNewCatOrderInput(String(nextDefaultOrder));
       setShowAddCategoryModal(false);
       setStatusNotice('✓ Category added.');
     } catch (e: any) {
       console.error(e);
       setStatusNotice(e?.message || 'Error adding category.');
+    }
+  };
+
+  const openEditCategoryModal = (cat: MenuCategory) => {
+    setEditingCategory({ ...cat });
+    setEditCatOrderInput(String(cat.order ?? ''));
+  };
+
+  const handleUpdateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCategory || !editingCategory.name.trim()) return;
+    try {
+      const previousCat = categories.find((c) => c.id === editingCategory.id);
+      const parsedOrder = parseCategoryOrder(editCatOrderInput, editingCategory.order ?? 1);
+      const updatedStore = await mutateR2StoreData('saveCategory', {
+        category: {
+          id: editingCategory.id,
+          name: editingCategory.name.trim(),
+          order: parsedOrder,
+        },
+      });
+      applyStoreState(updatedStore);
+      if (
+        previousCat &&
+        selectedQuickCategory.toLowerCase() === previousCat.name.toLowerCase()
+      ) {
+        setSelectedQuickCategory(editingCategory.name.trim().toLowerCase());
+      }
+      setEditingCategory(null);
+      setStatusNotice('✓ Category updated.');
+    } catch (e: any) {
+      console.error(e);
+      setStatusNotice(e?.message || 'Error updating category.');
     }
   };
 
@@ -684,6 +733,13 @@ const Admin = () => {
         const remaining = await deleteAiConversations({ clearAll: true });
         setAiConversations(remaining);
         setStatusNotice('✓ All AI conversations cleared.');
+      } else if (deleteConfirm.type === 'admin_email') {
+        const updatedStore = await mutateR2StoreData('removeAdminEmail', {
+          email: deleteConfirm.id.toLowerCase(),
+        });
+        applyStoreState(updatedStore);
+        setAdminStatusMsg(`✓ Removed ${deleteConfirm.label} from authorized admins.`);
+        setStatusNotice(`✓ Removed admin "${deleteConfirm.label}".`);
       }
       setDeleteConfirm(null);
     } catch (err: any) {
@@ -871,7 +927,9 @@ const Admin = () => {
   };
 
   const openNewCategorySheet = () => {
-    setNewCat({ name: '', order: categories.length + 1 });
+    const nextOrder = categories.length + 1;
+    setNewCat({ name: '', order: nextOrder });
+    setNewCatOrderInput(String(nextOrder));
     setShowAddCategoryModal(true);
   };
 
@@ -1596,15 +1654,15 @@ const Admin = () => {
                   </div>
                   <div>
                     <label className="block text-xs mb-1.5 text-on-surface-variant">
-                      Order Index
+                      Order Number (e.g. 6, 5.5 or 5,5)
                     </label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       required
-                      value={newCat.order ?? categories.length + 1}
-                      onChange={(e) =>
-                        setNewCat({ ...newCat, order: parseInt(e.target.value) || 0 })
-                      }
+                      value={newCatOrderInput}
+                      onChange={(e) => setNewCatOrderInput(e.target.value)}
+                      placeholder="e.g. 6 or 5.5 or 5,5"
                       className="w-full bg-surface-container border border-outline/40 rounded-xl px-3.5 py-2.5 text-base sm:text-sm text-on-surface font-mono tabular-nums focus:outline-none focus:border-primary"
                     />
                   </div>
@@ -1626,9 +1684,14 @@ const Admin = () => {
                       className="px-4 sm:px-6 py-4 flex justify-between items-center hover:bg-surface-container/40"
                     >
                       <div className="flex items-center gap-3.5">
-                        <span className="bg-surface-container text-primary w-9 h-9 flex items-center justify-center rounded-xl text-xs font-bold font-mono tabular-nums border border-outline-variant/30">
+                        <button
+                          type="button"
+                          onClick={() => openEditCategoryModal(cat)}
+                          title="Edit category number or name"
+                          className="bg-surface-container hover:border-primary/60 text-primary min-w-[36px] px-2 h-9 flex items-center justify-center rounded-xl text-xs font-bold font-mono tabular-nums border border-outline-variant/30 transition-colors"
+                        >
                           {cat.order}
-                        </span>
+                        </button>
                         <div>
                           <h4 className="font-semibold text-on-surface">{cat.name}</h4>
                           <span className="text-xs text-on-surface-variant font-mono tabular-nums">
@@ -1636,19 +1699,30 @@ const Admin = () => {
                           </span>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setDeleteConfirm({
-                            type: 'category',
-                            id: cat.id,
-                            label: cat.name,
-                          })
-                        }
-                        className="min-w-[44px] min-h-[44px] flex items-center justify-center text-on-surface-variant hover:text-error rounded-xl hover:bg-surface-container"
-                      >
-                        <span className="material-symbols-outlined text-[20px]">delete</span>
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openEditCategoryModal(cat)}
+                          title="Edit category"
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-on-surface-variant hover:text-primary rounded-xl hover:bg-surface-container transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDeleteConfirm({
+                              type: 'category',
+                              id: cat.id,
+                              label: cat.name,
+                            })
+                          }
+                          title="Delete category"
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-on-surface-variant hover:text-error rounded-xl hover:bg-surface-container transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">delete</span>
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -2220,7 +2294,13 @@ const Admin = () => {
                         </span>
                         <button
                           type="button"
-                          onClick={() => handleRemoveAdminEmail(adminDoc.email)}
+                          onClick={() =>
+                            setDeleteConfirm({
+                              type: 'admin_email',
+                              id: adminDoc.email,
+                              label: adminDoc.email,
+                            })
+                          }
                           className="text-error hover:underline font-semibold"
                         >
                           Remove
@@ -2570,14 +2650,16 @@ const Admin = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs mb-1 text-on-surface-variant">Order Index</label>
+                <label className="block text-xs mb-1 text-on-surface-variant">
+                  Order Number (e.g. 6, 5.5 or 5,5)
+                </label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   required
-                  value={newCat.order ?? categories.length + 1}
-                  onChange={(e) =>
-                    setNewCat({ ...newCat, order: parseInt(e.target.value) || 0 })
-                  }
+                  value={newCatOrderInput}
+                  onChange={(e) => setNewCatOrderInput(e.target.value)}
+                  placeholder="e.g. 6 or 5.5 or 5,5"
                   className="w-full bg-surface-container border border-outline/40 rounded-xl px-3.5 py-2.5 text-base sm:text-sm text-on-surface font-mono tabular-nums focus:outline-none focus:border-primary"
                 />
               </div>
@@ -2594,6 +2676,73 @@ const Admin = () => {
                   className="flex-1 bg-primary text-on-primary py-3 sm:py-2.5 rounded-xl text-sm font-bold"
                 >
                   Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT CATEGORY MODAL (Mobile Bottom Sheet + Desktop Centered Modal) */}
+      {editingCategory && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-end sm:items-center justify-center z-50 sm:p-4"
+          onClick={() => setEditingCategory(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-surface-container-low border-t sm:border border-outline-variant/40 p-5 sm:p-6 rounded-t-3xl sm:rounded-2xl w-full max-w-sm text-on-surface pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6"
+          >
+            <div className="w-10 h-1.5 bg-outline-variant rounded-full mx-auto mb-4 sm:hidden" />
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-lg text-primary">Edit Category</h3>
+              <button
+                type="button"
+                onClick={() => setEditingCategory(null)}
+                className="min-w-[36px] min-h-[36px] flex items-center justify-center text-on-surface-variant hover:text-on-surface"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <form onSubmit={handleUpdateCategory} className="space-y-4">
+              <div>
+                <label className="block text-xs mb-1 text-on-surface-variant">Category Name</label>
+                <input
+                  required
+                  value={editingCategory.name}
+                  onChange={(e) =>
+                    setEditingCategory({ ...editingCategory, name: e.target.value })
+                  }
+                  className="w-full bg-surface-container border border-outline/40 rounded-xl px-3.5 py-2.5 text-base sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-xs mb-1 text-on-surface-variant">
+                  Order Number (e.g. 6, 5.5 or 5,5)
+                </label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  required
+                  value={editCatOrderInput}
+                  onChange={(e) => setEditCatOrderInput(e.target.value)}
+                  placeholder="e.g. 6 or 5.5 or 5,5"
+                  className="w-full bg-surface-container border border-outline/40 rounded-xl px-3.5 py-2.5 text-base sm:text-sm text-on-surface font-mono tabular-nums focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingCategory(null)}
+                  className="flex-1 bg-surface-container text-on-surface py-3 sm:py-2.5 rounded-xl text-sm font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-primary text-on-primary py-3 sm:py-2.5 rounded-xl text-sm font-bold"
+                >
+                  Save Changes
                 </button>
               </div>
             </form>
@@ -2844,10 +2993,25 @@ const Admin = () => {
             <div className="w-12 h-12 rounded-full bg-error/15 text-error flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-[26px]">warning</span>
             </div>
-            <h3 className="font-semibold text-lg mb-2">Are you sure you want to delete?</h3>
+            <h3 className="font-semibold text-lg mb-2">
+              {deleteConfirm.type === 'admin_email'
+                ? 'Are you sure you want to remove?'
+                : 'Are you sure you want to delete?'}
+            </h3>
             <p className="text-xs text-on-surface-variant leading-relaxed mb-6">
-              You are about to permanently delete{' '}
-              <strong className="text-on-surface">"{deleteConfirm.label}"</strong>. This action cannot be undone.
+              {deleteConfirm.type === 'admin_email' ? (
+                <>
+                  You are about to remove{' '}
+                  <strong className="text-on-surface">"{deleteConfirm.label}"</strong> from Admin
+                  access.
+                </>
+              ) : (
+                <>
+                  You are about to permanently delete{' '}
+                  <strong className="text-on-surface">"{deleteConfirm.label}"</strong>. This action
+                  cannot be undone.
+                </>
+              )}
             </p>
             <div className="flex gap-3">
               <button
@@ -2864,7 +3028,13 @@ const Admin = () => {
                 onClick={handleConfirmDelete}
                 className="flex-1 bg-error hover:bg-error/90 text-on-error py-3 sm:py-2.5 rounded-xl text-sm font-bold disabled:opacity-50"
               >
-                {isDeleting ? 'Deleting...' : 'Yes, Delete'}
+                {isDeleting
+                  ? deleteConfirm.type === 'admin_email'
+                    ? 'Removing...'
+                    : 'Deleting...'
+                  : deleteConfirm.type === 'admin_email'
+                  ? 'Yes, Remove'
+                  : 'Yes, Delete'}
               </button>
             </div>
           </div>

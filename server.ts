@@ -21,7 +21,7 @@ const PORT = 3000;
 const STORE_DATA_KEY = 'data/store-data.json';
 const AI_CONVERSATIONS_KEY = 'data/ai-conversations.json';
 const MAX_AI_CONVERSATIONS = 200;
-const ROOT_ADMIN_EMAILS = ['apolokor@gmail.com', 'rony.daou83@gmail.com'];
+const ROOT_ADMIN_EMAILS = ['apolokor@gmail.com'];
 const ALLOWED_UPLOAD_MIMES = ['image/webp', 'image/jpeg', 'image/png', 'image/avif'];
 const MAX_UPLOAD_BYTES = 150 * 1024; // 150 KB hard cap for shrunk menu photos
 
@@ -120,7 +120,25 @@ function normalizeStoreData(raw: any): any {
     categories: Array.isArray(raw.categories) ? raw.categories : fallback.categories || [],
     items: Array.isArray(raw.items) ? raw.items : fallback.items || [],
     reviews: Array.isArray(raw.reviews) ? raw.reviews : fallback.reviews || [],
-    admins: Array.isArray(raw.admins) ? raw.admins : fallback.admins || [],
+    removedAdmins: Array.isArray(raw.removedAdmins) ? raw.removedAdmins : [],
+    admins: (() => {
+      const baseAdmins = Array.isArray(raw.admins) ? [...raw.admins] : [...(fallback.admins || [])];
+      const removed = Array.isArray(raw.removedAdmins)
+        ? raw.removedAdmins.map((e: any) => String(e || '').trim().toLowerCase())
+        : [];
+      const hasRony = baseAdmins.some(
+        (a: any) => String(a?.email || '').trim().toLowerCase() === 'rony.daou83@gmail.com'
+      );
+      if (!hasRony && !removed.includes('rony.daou83@gmail.com')) {
+        baseAdmins.unshift({
+          id: 'rony.daou83@gmail.com',
+          email: 'rony.daou83@gmail.com',
+          addedBy: 'apolokor@gmail.com',
+          createdAt: '2026-11-05T12:04:09.334Z',
+        });
+      }
+      return baseAdmins;
+    })(),
   };
 }
 
@@ -2369,22 +2387,44 @@ async function startServer() {
             ? String(rawCat.id).trim()
             : name.toLowerCase().replace(/\s+/g, '-');
 
+        const parsedOrder =
+          typeof rawCat.order === 'number' && Number.isFinite(rawCat.order)
+            ? rawCat.order
+            : parseFloat(String(rawCat.order ?? '').trim().replace(/,/g, '.'));
+
         const cleanCat = sanitizeRecord({
           id: catId,
           name,
-          order:
-            typeof rawCat.order === 'number'
-              ? rawCat.order
-              : (storeData.categories?.length || 0) + 1,
+          order: Number.isFinite(parsedOrder)
+            ? parsedOrder
+            : (storeData.categories?.length || 0) + 1,
           description: rawCat.description ? String(rawCat.description).trim() : undefined,
         });
 
         const existingIdx = storeData.categories.findIndex((c: any) => c.id === catId);
         if (existingIdx >= 0) {
+          const previousNameLower = String(storeData.categories[existingIdx]?.name || '')
+            .trim()
+            .toLowerCase();
+          const nextNameLower = name.toLowerCase();
           storeData.categories[existingIdx] = {
             ...storeData.categories[existingIdx],
             ...cleanCat,
           };
+
+          if (
+            previousNameLower &&
+            previousNameLower !== nextNameLower &&
+            Array.isArray(storeData.items)
+          ) {
+            storeData.items = storeData.items.map((item: any) => {
+              const itemCatLower = String(item?.category || '').trim().toLowerCase();
+              if (itemCatLower === previousNameLower || itemCatLower === catId.toLowerCase()) {
+                return { ...item, category: nextNameLower };
+              }
+              return item;
+            });
+          }
         } else {
           storeData.categories.push(cleanCat);
         }
@@ -2491,6 +2531,9 @@ async function startServer() {
         } else {
           storeData.admins = [...(storeData.admins || []), newAdmin];
         }
+        storeData.removedAdmins = (storeData.removedAdmins || []).filter(
+          (e: any) => String(e || '').toLowerCase() !== email
+        );
         const saved = await writeStoreDataToR2(storeData);
         return res.status(200).json({ ok: true, admin: newAdmin, storeData: saved });
       }
@@ -2502,6 +2545,11 @@ async function startServer() {
         storeData.admins = (storeData.admins || []).filter(
           (a: any) => String(a.email || '').toLowerCase() !== email
         );
+        const removedSet = new Set(
+          (storeData.removedAdmins || []).map((e: any) => String(e || '').toLowerCase())
+        );
+        removedSet.add(email);
+        storeData.removedAdmins = Array.from(removedSet);
         const saved = await writeStoreDataToR2(storeData);
         return res.status(200).json({ ok: true, email, storeData: saved });
       }
@@ -2906,9 +2954,23 @@ async function startServer() {
 }
 
 async function viteConfigServer(createViteServer: any) {
+  process.env.DISABLE_HMR = 'true';
   return createViteServer({
-    server: { middlewareMode: true },
+    server: { middlewareMode: true, hmr: false, ws: false },
     appType: 'spa',
+    plugins: [
+      {
+        name: 'disable-vite-client-ws',
+        transform(code: string, id: string) {
+          if (id.includes('vite/dist/client/client.mjs')) {
+            return code.replace(
+              'transport.connect(createHMRHandler(handleMessage));',
+              '/* WebSocket HMR disabled in preview */'
+            );
+          }
+        },
+      },
+    ],
   });
 }
 

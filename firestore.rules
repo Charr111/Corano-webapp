@@ -6,7 +6,7 @@ service cloud.firestore {
     function isAdmin() {
       return request.auth != null &&
         request.auth.token.email != null && (
-          request.auth.token.email in ['apolokor@gmail.com', 'rony.daou83@gmail.com'] ||
+          request.auth.token.email in ['apolokor@gmail.com'] ||
           exists(/databases/$(database)/documents/admins/$(request.auth.token.email))
         );
     }
