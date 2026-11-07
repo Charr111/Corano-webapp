@@ -147,7 +147,7 @@ export async function mutateR2StoreData(
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data?.error || `R2 update failed (${res.status})`);
+    throw new Error(data?.error || `Save failed (${res.status})`);
   }
 
   const updatedStore = normalizePayload(data.storeData || data);

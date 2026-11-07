@@ -334,7 +334,7 @@ export async function uploadCompressedToR2(params: {
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.url) {
-    throw new Error(data.error || `R2 upload failed with status ${res.status}`);
+    throw new Error(data.error || `Photo upload failed (${res.status})`);
   }
   return data;
 }

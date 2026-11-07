@@ -329,6 +329,49 @@ function expandLebaneseFrancoToken(word: string): string[] {
         .replace(/9/g, 's')
     );
   }
+
+  for (const v of Array.from(variants)) {
+    if (
+      v === 'hommos' ||
+      v === 'homos' ||
+      v === 'hummus' ||
+      v === 'humus' ||
+      v === '7ommos' ||
+      v === '7omos' ||
+      v === '7ummus' ||
+      v === 'حمص'
+    ) {
+      variants.add('hummus');
+      variants.add('hommos');
+      variants.add('homos');
+      variants.add('humus');
+    } else if (v === 'toum' || v === 'thoum' || v === 'tom' || v === 'garlic' || v === 'ثوم' || v === 'توم') {
+      variants.add('garlic');
+      variants.add('toum');
+    } else if (
+      v === 'sandwiche' ||
+      v === 'sandwish' ||
+      v === 'sandwiches' ||
+      v === 'sando' ||
+      v === 'sandos' ||
+      v === 'سندويش' ||
+      v === 'ساندويش'
+    ) {
+      variants.add('sandwich');
+    } else if (v === 'mayo' || v === 'mayonnaise' || v === 'مايونيز' || v === 'مايو') {
+      variants.add('mayo');
+      variants.add('mayonnaise');
+    } else if (v === 'debes' || v === 'debs' || v === 'remen' || v === 'remmen' || v === 'دبس') {
+      variants.add('debes');
+      variants.add('debs');
+      variants.add('remen');
+      variants.add('remmen');
+    } else if (v === 'kabis' || v === 'kabbis' || v === 'pickle' || v === 'pickles' || v === 'كبيس') {
+      variants.add('kabis');
+      variants.add('pickles');
+    }
+  }
+
   return Array.from(variants).filter((v) => v.length > 2);
 }
 
@@ -715,6 +758,30 @@ function extractPositiveQueryWords(
     'men',
     'sa7en',
     'sahen',
+    'kamen',
+    'kaman',
+    'kmn',
+    'كمان',
+    'alba',
+    '2alba',
+    'qalba',
+    'kalba',
+    'balba',
+    'b2alba',
+    'قلبها',
+    'بقلبها',
+    'fiha',
+    'fiya',
+    'fia',
+    'fih',
+    'فيها',
+    'فيه',
+    'inside',
+    'into',
+    '3elbet',
+    'elbet',
+    'aalbet',
+    'علبة',
     'under',
     'below',
     'less',
@@ -1032,12 +1099,16 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
       w === 'sandwich' ||
       w === 'sandwiches' ||
       w === 'sandwish' ||
+      w === 'sandwiche' ||
       w === 'sando' ||
-      w === 'ساندويش' ||
-      w === 'سندويش'
+      w === 'sandos' ||
+      w === 'سندويش' ||
+      w === 'ساندويش'
     ) {
       if (catLower.includes('sandwich') || titleLower.includes('sandwich') || titleLower.includes('sando')) {
-        score += 20;
+        score += 24;
+      } else if (catLower.includes('sub') || catLower.includes('saj') || catLower.includes('light')) {
+        score += 14;
       }
       continue;
     }
@@ -1053,18 +1124,72 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
   return score;
 }
 
+const DISH_CARRIER_REGEX =
+  /\b(sandwich|sandwiches|sandwish|sandwiche|sando|sandos|sub|subs|burger|burgers|wrap|wraps|saj|sajj|platter|platters|sa7en|sahen|wajbe|wajbet|meal|meals|salad|salads|pizza|pasta|سندويش|ساندويش|ساب|برغر|صاج|صحن|وجبة|سلطة|بيتزا|باستا)\b/i;
+
+const INSIDE_DISH_PHRASE_REGEX =
+  /\b(b\s*alba|b\s*2alba|balba|b2alba|fiha|fiya|fia|with\s+[\w\s]{1,25}\s+in\b|فيها|بقلبها)\b/i;
+
+const STANDALONE_SAUCE_OR_MEZZA_REGEX =
+  /\b(sauce|sauces|dip|dips|hommos|7ommos|homos|7omos|hummus|7ummus|humus|toum|thoum|garlic|aioli|bbq|barbecue|caesar|cheddar\s+sauce|cocktail|mayo|mayonnaise|mustard|debes|debs|remen|remmen|balsamic|kabis|reb\s+7ar|reb\s+har|steak\s+sauce|thiery|burger\s+sauce|صوص|حمص|ثوم|توم|مايونيز|خردل|كبيس|دبس)\b/i;
+
+const CARRIER_WORD_SET = new Set([
+  'sandwich',
+  'sandwiches',
+  'sandwish',
+  'sandwiche',
+  'sando',
+  'sandos',
+  'sub',
+  'subs',
+  'burger',
+  'burgers',
+  'wrap',
+  'wraps',
+  'saj',
+  'sajj',
+  'salad',
+  'salads',
+  'pizza',
+  'pasta',
+  'platter',
+  'platters',
+  'mashewe',
+  'mashawi',
+  'mashawe',
+  'meshwe',
+  'mechwe',
+  'سندويش',
+  'ساندويش',
+  'ساب',
+  'برغر',
+  'صاج',
+  'سلطة',
+  'بيتزا',
+  'باستا',
+  'مشاوي',
+  'مشوي',
+]);
+
 function getStrictPositiveMatchedItems(
   message: string,
   storeData: any,
   excludedTerms: string[],
   budgetSpec?: BudgetAndComboSpec
 ): any[] {
-  const q = message.toLowerCase();
   const rate = storeData.settings?.exchangeRate || 89000;
   const activeBudgetSpec = budgetSpec || extractBudgetAndComboSpec(message, rate);
+  const qCombined = `${message} ${normalizeLebaneseFrancoText(message)}`.toLowerCase();
+  const wantsDishWithIngredient =
+    DISH_CARRIER_REGEX.test(qCombined) || INSIDE_DISH_PHRASE_REGEX.test(qCombined);
+  const mentionsSauceOrMezza = STANDALONE_SAUCE_OR_MEZZA_REGEX.test(qCombined);
+
   const isAskingForDrinkOrSauce =
     !activeBudgetSpec.wantsCombo &&
-    /\b(drink|drinks|pepsi|water|juice|sauce|dip|مشروب|عصير|مياه|صوص)\b/i.test(q);
+    !wantsDishWithIngredient &&
+    (/\b(drink|drinks|pepsi|7up|mirinda|water|juice|مشروب|عصير|مياه)\b/i.test(qCombined) ||
+      mentionsSauceOrMezza);
+
   const allSafeItems = (storeData.items || []).filter(
     (i: any) => i.available !== false && !itemContainsExcludedTerm(i, excludedTerms)
   );
@@ -1078,7 +1203,13 @@ function getStrictPositiveMatchedItems(
   const budgetFilteredPool = basePool.filter((i: any) => itemFitsBudgetAndCombo(i, activeBudgetSpec));
   const pool = budgetFilteredPool.length > 0 ? budgetFilteredPool : basePool;
 
-  const words = extractPositiveQueryWords(message, excludedTerms, activeBudgetSpec);
+  const rawWords = extractPositiveQueryWords(message, excludedTerms, activeBudgetSpec);
+  // When asking for a dish with a specific sauce (e.g. "sando with bbq sauce"), drop generic word "sauce" so other sauces don't match
+  const words =
+    wantsDishWithIngredient && rawWords.length > 1
+      ? rawWords.filter((w) => w !== 'sauce' && w !== 'sauces' && w !== 'صوص')
+      : rawWords;
+
   if (!words.length) {
     if (
       (activeBudgetSpec.maxBudgetUsd !== null || activeBudgetSpec.wantsCombo) &&
@@ -1094,19 +1225,59 @@ function getStrictPositiveMatchedItems(
     return [];
   }
 
-  const matched = pool
-    .map((item: any) => ({
-      item,
-      posScore: computePositiveKeywordScore(item, words),
-    }))
-    .filter((entry: any) => entry.posScore > 0)
-    .sort((a: any, b: any) => {
-      if (b.posScore !== a.posScore) return b.posScore - a.posScore;
-      const aPop = a.item.popular ? 1 : 0;
-      const bPop = b.item.popular ? 1 : 0;
-      if (aPop !== bPop) return bPop - aPop;
-      return (a.item.order ?? 99) - (b.item.order ?? 99);
+  const carrierWords = words.filter((w) => CARRIER_WORD_SET.has(w));
+  const ingredientWords = words.filter((w) => !CARRIER_WORD_SET.has(w));
+
+  let matched = pool
+    .map((item: any) => {
+      let posScore = computePositiveKeywordScore(item, words);
+      const hasCarrierMatch =
+        carrierWords.length > 0 ? computePositiveKeywordScore(item, carrierWords) > 0 : true;
+      const hasIngredientMatch =
+        ingredientWords.length > 0 ? computePositiveKeywordScore(item, ingredientWords) > 0 : false;
+
+      // Compound bonus when an item satisfies BOTH the requested dish type (e.g. sandwich/sando/sub) AND the requested sauce/ingredient inside it
+      if (wantsDishWithIngredient && hasCarrierMatch && hasIngredientMatch) {
+        posScore += 45;
+      }
+      return {
+        item,
+        posScore,
+        hasCarrierMatch,
+        hasIngredientMatch,
+      };
+    })
+    .filter((entry: any) => entry.posScore > 0);
+
+  // Case 1: Guest asked for a Sandwich/Sub/Burger/Dish WITH a specific sauce/ingredient inside (e.g. "sando with toum in", "bade sandwiche b alba toum")
+  if (wantsDishWithIngredient && ingredientWords.length > 0) {
+    const bothMatched = matched.filter((e: any) => e.hasCarrierMatch && e.hasIngredientMatch);
+    const ingredientOnlyMatched = matched.filter((e: any) => e.hasIngredientMatch);
+    if (bothMatched.length > 0) {
+      matched = bothMatched;
+    } else if (ingredientOnlyMatched.length > 0) {
+      matched = ingredientOnlyMatched;
+    }
+  }
+  // Case 2: Guest asked for a standalone Sauce / Dip / Mezza (e.g. "bade 7ommos kamen", "bade toum", "honey mustard") without asking for a sandwich/platter
+  else if (!wantsDishWithIngredient && mentionsSauceOrMezza) {
+    const titleOrCatMatched = matched.filter((e: any) => {
+      const titleLower = String(e.item?.title || '').toLowerCase();
+      const catLower = String(e.item?.category || '').toLowerCase();
+      return words.some((w) => titleLower.includes(w) || catLower.includes(w));
     });
+    if (titleOrCatMatched.length > 0) {
+      matched = titleOrCatMatched;
+    }
+  }
+
+  matched.sort((a: any, b: any) => {
+    if (b.posScore !== a.posScore) return b.posScore - a.posScore;
+    const aPop = a.item.popular ? 1 : 0;
+    const bPop = b.item.popular ? 1 : 0;
+    if (aPop !== bPop) return bPop - aPop;
+    return (a.item.order ?? 99) - (b.item.order ?? 99);
+  });
 
   return matched.map((m: any) => m.item);
 }

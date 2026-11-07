@@ -145,8 +145,8 @@ const Admin = () => {
       const liveStore = await fetchLiveStoreData(true);
       applyStoreState(liveStore);
     } catch (e) {
-      console.error('Error loading admin data from R2:', e);
-      setStatusNotice('Error loading data from Cloudflare R2.');
+      console.error('Error loading admin data:', e);
+      setStatusNotice('Error loading menu data.');
     }
   };
 
@@ -279,7 +279,7 @@ const Admin = () => {
         aiBubbleLabel: cleaned,
       });
       applyStoreState(updatedStore);
-      setStatusNotice(`✓ Outside AI bubble name updated to "${cleaned}".`);
+      setStatusNotice(`✓ Corano AI name updated to "${cleaned}".`);
     } catch (err: any) {
       console.error('Failed to update AI bubble label:', err);
       setStatusNotice(err?.message || 'Failed to update AI bubble name.');
@@ -438,7 +438,7 @@ const Admin = () => {
       );
     } catch (err: any) {
       console.error('Add photo upload failed:', err);
-      setStatusNotice(err?.message || 'Failed to shrink & upload photo to R2');
+      setStatusNotice(err?.message || 'Failed to upload photo.');
     } finally {
       setUploadingAddPhoto(false);
       if (addFileInputRef.current) addFileInputRef.current.value = '';
@@ -491,7 +491,7 @@ const Admin = () => {
       );
     } catch (err: any) {
       console.error('Edit photo upload failed:', err);
-      setStatusNotice(err?.message || 'Failed to shrink & upload photo to R2');
+      setStatusNotice(err?.message || 'Failed to upload photo.');
     } finally {
       setUploadingEditPhoto(false);
       if (editFileInputRef.current) editFileInputRef.current.value = '';
@@ -679,11 +679,11 @@ const Admin = () => {
       } else if (deleteConfirm.type === 'ai_session') {
         const remaining = await deleteAiConversations({ id: deleteConfirm.id });
         setAiConversations(remaining);
-        setStatusNotice('✓ Conversation deleted from Cloudflare R2.');
+        setStatusNotice('✓ Conversation deleted.');
       } else if (deleteConfirm.type === 'ai_clear_all') {
         const remaining = await deleteAiConversations({ clearAll: true });
         setAiConversations(remaining);
-        setStatusNotice('✓ All AI conversations cleared from Cloudflare R2.');
+        setStatusNotice('✓ All AI conversations cleared.');
       }
       setDeleteConfirm(null);
     } catch (err: any) {
@@ -1896,10 +1896,10 @@ const Admin = () => {
                   </span>
                   <div className="min-w-0">
                     <span className="text-xs font-semibold text-on-surface block truncate">
-                      Outside Bubble Name
+                      Corano ai name
                     </span>
                     <span className="text-[11px] text-on-surface-variant block truncate">
-                      Badge text shown above the floating AI button on the website
+                      Change the name Of the Ai whenever you want
                     </span>
                   </div>
                 </div>
@@ -1936,7 +1936,7 @@ const Admin = () => {
                     {aiConversations.length}
                   </div>
                   <div className="text-[10px] sm:text-[11px] text-on-surface-variant/70 mt-0.5 truncate">
-                    Saved in R2
+                    Saved chats
                   </div>
                 </div>
 
@@ -2010,7 +2010,7 @@ const Admin = () => {
 
                 {loadingAiLogs && aiConversations.length === 0 ? (
                   <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-10 text-center text-sm text-on-surface-variant">
-                    Loading AI conversations from Cloudflare R2...
+                    Loading AI conversations...
                   </div>
                 ) : aiConversations.length === 0 ? (
                   <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-10 text-center space-y-2">
@@ -2083,7 +2083,7 @@ const Admin = () => {
                                     label: `${session.guestName ? `${session.guestName}: ` : ''}${session.summary || 'AI Conversation'}`,
                                   })
                                 }
-                                title="Delete conversation from Cloudflare R2"
+                                title="Delete conversation"
                                 className="min-w-[32px] min-h-[32px] rounded-lg flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-surface-container-high transition-colors cursor-pointer"
                               >
                                 <span className="material-symbols-outlined text-[18px]">
@@ -2423,7 +2423,7 @@ const Admin = () => {
 
               <div>
                 <label className="block text-xs mb-1 text-on-surface-variant">
-                  Image URL (Cloudflare R2 or Direct Link)
+                  Image URL
                 </label>
                 <div className="flex gap-2">
                   <input
