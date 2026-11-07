@@ -178,7 +178,19 @@ function normalizeStoreData(raw: any): any {
           : 'Corano AI',
     },
     categories: Array.isArray(raw.categories) ? raw.categories : fallback.categories || [],
-    items: Array.isArray(raw.items) ? raw.items : fallback.items || [],
+    items: (Array.isArray(raw.items) ? raw.items : fallback.items || []).map((item: any) =>
+      typeof item?.desc === 'string' && item.desc
+        ? {
+            ...item,
+            desc: item.desc
+              .replace(/\bPickels\b/g, 'Pickles')
+              .replace(/\bpickels\b/g, 'pickles')
+              .replace(/\bcolslaw\b/gi, 'coleslaw')
+              .replace(/\bchedder\b/gi, 'cheddar')
+              .replace(/\bspeciale\b/gi, 'special'),
+          }
+        : item
+    ),
     reviews: Array.isArray(raw.reviews) ? raw.reviews : fallback.reviews || [],
     admins: Array.isArray(raw.admins) ? raw.admins : fallback.admins || [],
   };

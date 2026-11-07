@@ -229,7 +229,7 @@
       "category": "burgers",
       "order": 10,
       "available": true,
-      "desc": "Beef meat, cheddar pane, lettuce, pickles, chips fries, chedder sauce, And our special sauce.",
+      "desc": "Beef meat, cheddar pane, lettuce, pickles, chips fries, cheddar sauce, And our special sauce.",
       "title": "Cheddar Pane",
       "img": "https://images.restocorano.com/items/burgers-rlxczt5vzxr1puuevvn0-cheddar-pane.webp",
       "price": "7.30"
@@ -557,7 +557,7 @@
     },
     {
       "id": "rmSNrvznXNvuujgc6DLB",
-      "desc": "Pickels, lemon, and debs remen",
+      "desc": "Pickles, lemon, and debs remen",
       "title": "Plate makanek",
       "order": 30,
       "price": "6.74",
@@ -675,7 +675,7 @@
     },
     {
       "id": "ykXA8cbzTpSw3gYHZN6u",
-      "desc": "Garlic and pickels",
+      "desc": "Garlic and pickles",
       "category": "mashewe",
       "title": "Farrouj delivery",
       "order": 1,
@@ -685,7 +685,7 @@
     },
     {
       "id": "PtmFvRE079t6A0xJNI7N",
-      "desc": "Garlic and pickels",
+      "desc": "Garlic and pickles",
       "order": 2,
       "title": "Farrouj Dine In",
       "category": "mashewe",
@@ -720,7 +720,7 @@
       "title": "Charcoal Tawouk",
       "price": "12.36",
       "img": "https://images.restocorano.com/items/mashewe-dbv5v13tlrg4jpdnaeib-charcoal-tawouk.webp",
-      "desc": "Fries, pickles, colslaw, garlic, and tomato",
+      "desc": "Fries, pickles, coleslaw, garlic, and tomato",
       "category": "mashewe"
     },
     {
@@ -1842,7 +1842,7 @@
     },
     {
       "id": "A7zM6TtNbNZsaoEvSQA9",
-      "desc": "Marinated chicken breast, lettuce, tomato, pickles, mixed cheese and our speciale sauce",
+      "desc": "Marinated chicken breast, lettuce, tomato, pickles, mixed cheese and our special sauce",
       "title": "Tandoori",
       "price": "7.87",
       "category": "subs",

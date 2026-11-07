@@ -118,7 +118,19 @@ function normalizeStoreData(raw: any): any {
           : 'Corano AI',
     },
     categories: Array.isArray(raw.categories) ? raw.categories : fallback.categories || [],
-    items: Array.isArray(raw.items) ? raw.items : fallback.items || [],
+    items: (Array.isArray(raw.items) ? raw.items : fallback.items || []).map((item: any) =>
+      typeof item?.desc === 'string' && item.desc
+        ? {
+            ...item,
+            desc: item.desc
+              .replace(/\bPickels\b/g, 'Pickles')
+              .replace(/\bpickels\b/g, 'pickles')
+              .replace(/\bcolslaw\b/gi, 'coleslaw')
+              .replace(/\bchedder\b/gi, 'cheddar')
+              .replace(/\bspeciale\b/gi, 'special'),
+          }
+        : item
+    ),
     reviews: Array.isArray(raw.reviews) ? raw.reviews : fallback.reviews || [],
     admins: Array.isArray(raw.admins) ? raw.admins : fallback.admins || [],
   };
@@ -369,6 +381,62 @@ function expandLebaneseFrancoToken(word: string): string[] {
     } else if (v === 'kabis' || v === 'kabbis' || v === 'pickle' || v === 'pickles' || v === 'كبيس') {
       variants.add('kabis');
       variants.add('pickles');
+    } else if (
+      v === 'siyam' ||
+      v === 'syam' ||
+      v === 'siyame' ||
+      v === 'syame' ||
+      v === '9iyam' ||
+      v === '9yam' ||
+      v === 'vegan' ||
+      v === 'صيامي' ||
+      v === 'صيام'
+    ) {
+      variants.add('siyam');
+      variants.add('vegetarian');
+    } else if (
+      v === 'nebate' ||
+      v === 'nabati' ||
+      v === 'nabate' ||
+      v === 'vegetarian' ||
+      v === 'meatless' ||
+      v === 'veggie' ||
+      v === 'نباتي'
+    ) {
+      variants.add('vegetarian');
+    } else if (
+      v === 'kilo' ||
+      v === 'kilos' ||
+      v === '1kg' ||
+      v === 'كيلو' ||
+      v === 'بالكيلو' ||
+      v === 'nos' ||
+      v === 'noss' ||
+      v === 'half' ||
+      v === 'نص' ||
+      v === 'نصف'
+    ) {
+      variants.add('kilo');
+    } else if (
+      v === '3ayle' ||
+      v === 'aayle' ||
+      v === 'ayle' ||
+      v === '3aile' ||
+      v === 'family' ||
+      v === 'group' ||
+      v === 'groups' ||
+      v === 'sharing' ||
+      v === 'share' ||
+      v === 'jem3a' ||
+      v === 'jam3a' ||
+      v === 'sahra' ||
+      v === 'عيلة' ||
+      v === 'عائلة' ||
+      v === 'جمعة' ||
+      v === 'سهرة' ||
+      v === 'مجموعة'
+    ) {
+      variants.add('sharing');
     }
   }
 
@@ -496,8 +564,8 @@ const INGREDIENT_EXCLUSION_GROUPS: Array<{
     labelEn: 'pickles',
     labelLb: 'kabis (pickles)',
     labelAr: 'كبيس',
-    queryTriggers: /\b(pickle|pickles|kabis|kabbis)\b|كبيس|مخلل/i,
-    itemMatchTerms: ['pickle', 'pickles'],
+    queryTriggers: /\b(pickle|pickles|pickels|kabis|kabbis)\b|كبيس|مخلل/i,
+    itemMatchTerms: ['pickle', 'pickles', 'pickels', 'kabis'],
   },
   {
     labelEn: 'tomatoes',
@@ -519,6 +587,49 @@ const INGREDIENT_EXCLUSION_GROUPS: Array<{
     labelAr: 'أفوكادو',
     queryTriggers: /\b(avocado)\b|أفوكادو|افوكادو/i,
     itemMatchTerms: ['avocado'],
+  },
+  {
+    labelEn: 'meat or chicken',
+    labelLb: 'la7me aw djej (meat/chicken)',
+    labelAr: 'لحم أو دجاج',
+    queryTriggers:
+      /\b(meat|meatless|la7me|lahme|la7em|lahem|beef|chicken|djej|djeij|lamb|8anam|ghanam)\b|لحمة|لحم|دجاج|فروج/i,
+    itemMatchTerms: [
+      'beef',
+      'chicken',
+      'djeij',
+      'djej',
+      'tawouk',
+      'tawook',
+      'taouk',
+      'kafta',
+      'kabab',
+      'kebab',
+      'lahme',
+      'makanek',
+      'soujouk',
+      'sawda',
+      'liver',
+      'ham',
+      'salameh',
+      'bacon',
+      'pepperoni',
+      'crab',
+      'tuna',
+      'farrouj',
+      'farouj',
+      'steak',
+      'fajita',
+      'francisco',
+      'rosted',
+      'philadelphia',
+      'twister',
+      'crispy',
+      'crunchy',
+      'shish',
+      'chich',
+      'skewers',
+    ],
   },
 ];
 
@@ -1087,6 +1198,73 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
       }
       continue;
     }
+    if (w === 'siyam' || w === 'vegetarian') {
+      const hasMeatOrFish =
+        /\b(beef|chicken|djeij|djej|tawouk|tawook|taouk|kafta|kabab|kebab|lahme|makanek|soujouk|sawda|liver|ham|salameh|bacon|pepperoni|crab|tuna|farrouj|farouj|steak|fajita|francisco|rosted|philadelphia|twister|crispy|crunchy|shish|chich|skewers|mashewe)\b/i.test(
+          combined
+        );
+      if (hasMeatOrFish) continue;
+      const hasDairyOrCheese =
+        /\b(cheese|cheddar|mozzarella|halloumi|halloum|parmesan|feta|kashkaval|cream|mayo|mayonnaise|laban)\b/i.test(
+          combined
+        );
+      if (w === 'siyam') {
+        if (hasDairyOrCheese) continue;
+        if (
+          catLower.includes('falafel') ||
+          titleLower.includes('hummus') ||
+          titleLower.includes('motabal') ||
+          titleLower.includes('wara2') ||
+          titleLower.includes('batata harra') ||
+          titleLower.includes('fatouche') ||
+          titleLower.includes('tabbouleh') ||
+          titleLower.includes('french fries') ||
+          titleLower.includes('wedges')
+        ) {
+          score += 48;
+        }
+      } else {
+        if (
+          catLower.includes('falafel') ||
+          titleLower.includes('hummus') ||
+          titleLower.includes('motabal') ||
+          titleLower.includes('wara2') ||
+          titleLower.includes('batata harra') ||
+          titleLower.includes('cheese') ||
+          titleLower.includes('halloumi') ||
+          titleLower.includes('margherita') ||
+          titleLower.includes('vegetarian') ||
+          titleLower.includes('quinoa') ||
+          titleLower.includes('fatouche') ||
+          titleLower.includes('tabbouleh')
+        ) {
+          score += 36;
+        }
+      }
+      continue;
+    }
+    if (w === 'kilo' || w === '1kg') {
+      if (catLower.includes('mashewe') && titleLower.includes('kg')) {
+        score += 58;
+      }
+      continue;
+    }
+    if (w === 'sharing') {
+      if (catLower.includes('mashewe') && titleLower.includes('kg')) {
+        score += 54;
+      } else if (
+        titleLower === 'farrouj dine in' ||
+        titleLower === 'farrouj delivery' ||
+        titleLower.includes('mixed grill')
+      ) {
+        score += 46;
+      } else if (titleLower.includes('dozen') || titleLower.includes('mouajanet')) {
+        score += 40;
+      } else if (catLower.includes('pizza') || titleLower.includes('xl')) {
+        score += 34;
+      }
+      continue;
+    }
     if (w === 'burger' || w === 'burgers' || w === 'برغر') {
       if (catLower.includes('burger') || titleLower.includes('burger')) score += 20;
       continue;
@@ -1227,10 +1405,25 @@ function getStrictPositiveMatchedItems(
 
   const carrierWords = words.filter((w) => CARRIER_WORD_SET.has(w));
   const ingredientWords = words.filter((w) => !CARRIER_WORD_SET.has(w));
+  const wantsHalfKilo = /\b(1\/2|half|nos|noss|نص|نصف)\b/i.test(qCombined);
+  const wantsFullKilo = /\b(1\s*kg|1\s*kilo|kilo\s+mashewe|mashewe\s+bil\s+kilo|بالكيلو)\b/i.test(
+    qCombined
+  );
 
   let matched = pool
     .map((item: any) => {
       let posScore = computePositiveKeywordScore(item, words);
+      const titleLower = String(item?.title || '').toLowerCase();
+      const catLower = String(item?.category || '').toLowerCase();
+
+      if (catLower.includes('mashewe') && titleLower.includes('kg')) {
+        if (wantsHalfKilo && titleLower.includes('1/2')) {
+          posScore += 28;
+        } else if (wantsFullKilo && !titleLower.includes('1/2')) {
+          posScore += 24;
+        }
+      }
+
       const hasCarrierMatch =
         carrierWords.length > 0 ? computePositiveKeywordScore(item, carrierWords) > 0 : true;
       const hasIngredientMatch =
@@ -1459,6 +1652,9 @@ function getTurnTargetItems(
   return { turnItems, strictMatches: [], previousAssistantTurns, budgetSpec: activeBudgetSpec };
 }
 
+const RESTAURANT_INFO_REGEX =
+  /\b(delivery|deliver|tawsil|tawseel|phone|number|telefon|telephone|whatsapp|contact|opening\s+hours|open\s+now|when\s+do\s+you\s+open|when\s+do\s+you\s+close|aya\s+se3a|se3a\s+btefta7o|btefta7o|btsakro|location|address|where\s+are\s+you|google\s+map|maw2a3|mawka3|3enwen|aenwen|توصيل|دليفري|ديليفري|رقم|تلفون|هاتف|واتساب|ساعات\s+العمل|بتفتحوا|بتسكروا|موقعكم|عنوانكم|وين\s+موقعكم)\b/i;
+
 function shouldUseInstantDeterministicFastPath(
   message: string,
   exclusions: { excludedTerms: string[] },
@@ -1469,8 +1665,9 @@ function shouldUseInstantDeterministicFastPath(
   if (budgetSpec.maxBudgetUsd !== null || budgetSpec.wantsCombo) return true;
   if (strictMatches.length > 0) return true;
   const q = `${message} ${normalizeLebaneseFrancoText(message)}`.toLowerCase();
+  if (RESTAURANT_INFO_REGEX.test(q)) return true;
   if (
-    /\b(popular|best|top|recommend|favorite|special|atyab|ashhar|healthy|light|diet|crispy|cheesy|mashewe|mashawi|burger|sub|sandwich|sandwish|salad|pizza|pasta|أطيب|أشهر|صحي|دايت|لايت|مشاوي)\b/i.test(
+    /\b(popular|best|top|recommend|favorite|special|atyab|ashhar|healthy|light|diet|siyam|syam|vegetarian|vegan|nebate|nabati|sharing|family|group|3ayle|aayle|jem3a|jam3a|crispy|cheesy|mashewe|mashawi|burger|sub|sandwich|sandwish|salad|pizza|pasta|أطيب|أشهر|صحي|دايت|لايت|صيامي|نباتي|عيلة|عائلة|جمعة|مشاوي)\b/i.test(
       q
     )
   ) {
@@ -1517,10 +1714,24 @@ function runDeterministicMenuMatcher(
   const q = `${message} ${normalizeLebaneseFrancoText(message)}`.toLowerCase();
   const isMasheweQuery =
     /\b(mashewe|mashawi|mashawe|meshwe|mechwe|grill|grilled|مشاوي|مشوي)\b/i.test(q);
+  const isInfoQuery = RESTAURANT_INFO_REGEX.test(q);
   const variantIdx = previousAssistantTurns % 3;
 
   let reply = '';
-  if (exclusions.excludedTerms.length > 0) {
+  if (
+    isInfoQuery &&
+    exclusions.excludedTerms.length === 0 &&
+    !budgetSpec.wantsCombo &&
+    budgetSpec.maxBudgetUsd === null
+  ) {
+    if (lang === 'Arabic') {
+      reply = `أهلاً وسهلاً بك في مطعم كورانو! نفتح يومياً طوال أيام الأسبوع من الساعة 11:00 صباحاً حتى 12:00 منتصف الليل. للطلب أو الاستفسار عن التوصيل (Delivery)، يسعدنا اتصالك بنا مباشرة على الرقم 03 220 810 (+961 3 220 810)، كما يمكنك عرض موقعنا على خرائط Google في صفحة Visit Us. ونرشح لك أيضاً تجربة: ${pickNames}!`;
+    } else if (lang === 'Lebanese') {
+      reply = `Ahla w sahla fik bi Corano! Nehna maftou7in kel youm (Monday – Sunday) men el 11:00 AM lal 12:00 AM (nos lel). Lal talab aw el delivery, fik te7kina moubashara 3ala 03 220 810 (+961 3 220 810), w maw2a3na mawjoud bi saf7et Visit Us 3al Google Maps. W hayde kamen men atyab el asnaf 3anna: ${pickNames}!`;
+    } else {
+      reply = `Welcome to Corano Restaurant! We are open daily (Monday – Sunday) from 11:00 AM until 12:00 AM (Midnight). To place an order or inquire about delivery, please call us directly at +961 3 220 810 (03 220 810), and you can view our exact Google Maps location anytime in the Visit Us tab. Here are also some of our top dishes to try: ${pickNames}!`;
+    }
+  } else if (exclusions.excludedTerms.length > 0) {
     if (lang === 'Arabic') {
       const arTemplates = [
         `أهلاً وسهلاً بك في كورانو! بالتأكيد، هذه الأطباق الشهية لدينا محضرة بدون ${exclusions.labelsAr.join(' أو ')}: ${pickNames}. كما يمكنك دائماً إبلاغ النادل عند الطلب لتحضير وجبتك كما تفضل!`,
