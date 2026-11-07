@@ -21,6 +21,10 @@ function normalizePayload(raw: any): StoreDataPayload {
           ? raw.settings.exchangeRate
           : 89000,
       aiEnabled: raw.settings?.aiEnabled !== false,
+      aiBubbleLabel:
+        typeof raw.settings?.aiBubbleLabel === 'string' && raw.settings.aiBubbleLabel.trim()
+          ? raw.settings.aiBubbleLabel.trim().slice(0, 28)
+          : 'Corano AI',
     },
     categories: Array.isArray(raw.categories) ? raw.categories : seed.categories || [],
     items: Array.isArray(raw.items) ? raw.items : seed.items || [],

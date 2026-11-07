@@ -172,6 +172,10 @@ function normalizeStoreData(raw: any): any {
           ? raw.settings.exchangeRate
           : 89000,
       aiEnabled: raw.settings?.aiEnabled !== false,
+      aiBubbleLabel:
+        typeof raw.settings?.aiBubbleLabel === 'string' && raw.settings.aiBubbleLabel.trim()
+          ? stripHtmlTags(raw.settings.aiBubbleLabel).slice(0, 28)
+          : 'Corano AI',
     },
     categories: Array.isArray(raw.categories) ? raw.categories : fallback.categories || [],
     items: Array.isArray(raw.items) ? raw.items : fallback.items || [],
@@ -678,7 +682,11 @@ export const onRequestPost = async (context: any) => {
         typeof body.aiEnabled === 'boolean'
           ? body.aiEnabled
           : storeData.settings?.aiEnabled !== false;
-      storeData.settings = { currency, exchangeRate, aiEnabled };
+      const aiBubbleLabel =
+        typeof body.aiBubbleLabel === 'string' && stripHtmlTags(body.aiBubbleLabel)
+          ? stripHtmlTags(body.aiBubbleLabel).slice(0, 28)
+          : storeData.settings?.aiBubbleLabel || 'Corano AI';
+      storeData.settings = { currency, exchangeRate, aiEnabled, aiBubbleLabel };
       const saved = await writeStoreDataToEnv(env, storeData);
       return new Response(
         JSON.stringify({ ok: true, settings: storeData.settings, storeData: saved }),

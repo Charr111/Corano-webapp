@@ -133,6 +133,9 @@ const CoranoAiWidget: React.FC = () => {
   const [aiEnabled, setAiEnabled] = useState<boolean>(
     initialStore.settings?.aiEnabled !== false
   );
+  const [aiBubbleLabel, setAiBubbleLabel] = useState<string>(
+    initialStore.settings?.aiBubbleLabel || 'Corano AI'
+  );
   const [storeCurrency, setStoreCurrency] = useState<StoreCurrency>(
     initialStore.settings?.currency === 'LBP' ? 'LBP' : 'USD'
   );
@@ -149,6 +152,7 @@ const CoranoAiWidget: React.FC = () => {
     fetchLiveStoreData()
       .then((live) => {
         setAiEnabled(live.settings?.aiEnabled !== false);
+        setAiBubbleLabel(live.settings?.aiBubbleLabel || 'Corano AI');
         setStoreCurrency(live.settings?.currency === 'LBP' ? 'LBP' : 'USD');
         setExchangeRate(live.settings?.exchangeRate || DEFAULT_LBP_RATE);
         setAllItems(live.items || []);
@@ -284,7 +288,7 @@ const CoranoAiWidget: React.FC = () => {
             onClick={() => setIsOpen(true)}
             className="relative z-10 -mb-1.5 bg-[#101010] border border-[#E4CD86]/70 text-[#E4CD86] text-[9px] leading-none font-headline font-bold tracking-wider uppercase px-2 py-[3px] rounded-full shadow-md hover:border-[#E4CD86] transition-colors cursor-pointer whitespace-nowrap"
           >
-            Corano AI
+            {aiBubbleLabel || 'Corano AI'}
           </motion.button>
         )}
 

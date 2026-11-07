@@ -39,6 +39,7 @@ export type StoreSettings = {
   currency: 'USD' | 'LBP';
   exchangeRate: number;
   aiEnabled?: boolean;
+  aiBubbleLabel?: string;
 };
 
 export type StoreDataPayload = {

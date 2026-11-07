@@ -65,12 +65,15 @@ const Admin = () => {
   const [aiConversations, setAiConversations] = useState<AiConversationSession[]>([]);
   const [loadingAiLogs, setLoadingAiLogs] = useState(false);
 
-  // Global Store Currency State ($ USD vs L.L. at 89,000) & Corano AI Bubble Visibility
+  // Global Store Currency State ($ USD vs L.L. at 89,000) & Corano AI Bubble Visibility + Label
   const [storeCurrency, setStoreCurrency] = useState<StoreCurrency>('USD');
   const [exchangeRate, setExchangeRate] = useState<number>(DEFAULT_LBP_RATE);
   const [savingCurrency, setSavingCurrency] = useState(false);
   const [aiEnabled, setAiEnabled] = useState<boolean>(true);
   const [savingAiToggle, setSavingAiToggle] = useState(false);
+  const [aiBubbleLabel, setAiBubbleLabel] = useState<string>('Corano AI');
+  const [aiBubbleLabelDraft, setAiBubbleLabelDraft] = useState<string>('Corano AI');
+  const [savingAiLabel, setSavingAiLabel] = useState<boolean>(false);
 
   // Navigation & Filters
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
@@ -132,6 +135,9 @@ const Admin = () => {
       setExchangeRate(store.settings.exchangeRate);
     }
     setAiEnabled(store.settings?.aiEnabled !== false);
+    const nextBubbleLabel = store.settings?.aiBubbleLabel?.trim() || 'Corano AI';
+    setAiBubbleLabel(nextBubbleLabel);
+    setAiBubbleLabelDraft(nextBubbleLabel);
   };
 
   const fetchAdminData = async () => {
@@ -216,6 +222,7 @@ const Admin = () => {
         currency: targetCurrency,
         exchangeRate: exchangeRate || DEFAULT_LBP_RATE,
         aiEnabled,
+        aiBubbleLabel,
       });
       applyStoreState(updatedStore);
       setStatusNotice(
@@ -241,6 +248,7 @@ const Admin = () => {
         currency: storeCurrency,
         exchangeRate: exchangeRate || DEFAULT_LBP_RATE,
         aiEnabled: nextEnabled,
+        aiBubbleLabel,
       });
       applyStoreState(updatedStore);
       setStatusNotice(
@@ -253,6 +261,30 @@ const Admin = () => {
       setStatusNotice(err?.message || 'Failed to update Corano AI visibility.');
     } finally {
       setSavingAiToggle(false);
+    }
+  };
+
+  // Rename Outside AI Bubble Label on Main Website
+  const handleSaveAiBubbleLabel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleaned = aiBubbleLabelDraft.trim().replace(/\s+/g, ' ').slice(0, 28) || 'Corano AI';
+    setSavingAiLabel(true);
+    setAiBubbleLabel(cleaned);
+    setAiBubbleLabelDraft(cleaned);
+    try {
+      const updatedStore = await mutateR2StoreData('updateSettings', {
+        currency: storeCurrency,
+        exchangeRate: exchangeRate || DEFAULT_LBP_RATE,
+        aiEnabled,
+        aiBubbleLabel: cleaned,
+      });
+      applyStoreState(updatedStore);
+      setStatusNotice(`✓ Outside AI bubble name updated to "${cleaned}".`);
+    } catch (err: any) {
+      console.error('Failed to update AI bubble label:', err);
+      setStatusNotice(err?.message || 'Failed to update AI bubble name.');
+    } finally {
+      setSavingAiLabel(false);
     }
   };
 
@@ -1852,6 +1884,47 @@ const Admin = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Outside AI Bubble Name Control (Zero-bloat, synced via store-data.json) */}
+              <form
+                onSubmit={handleSaveAiBubbleLabel}
+                className="bg-surface-container-low border border-outline-variant/30 rounded-2xl px-3.5 py-2.5 sm:px-5 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="material-symbols-outlined text-primary text-[18px] shrink-0">
+                    label
+                  </span>
+                  <div className="min-w-0">
+                    <span className="text-xs font-semibold text-on-surface block truncate">
+                      Outside Bubble Name
+                    </span>
+                    <span className="text-[11px] text-on-surface-variant block truncate">
+                      Badge text shown above the floating AI button on the website
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                  <input
+                    type="text"
+                    maxLength={28}
+                    value={aiBubbleLabelDraft}
+                    onChange={(e) => setAiBubbleLabelDraft(e.target.value)}
+                    placeholder="Corano AI"
+                    className="flex-1 sm:w-44 bg-surface-container border border-outline-variant/40 focus:border-primary rounded-xl px-3 py-1.5 text-xs text-on-surface outline-none transition-colors"
+                  />
+                  <button
+                    type="submit"
+                    disabled={
+                      savingAiLabel ||
+                      (aiBubbleLabelDraft.trim() || 'Corano AI') === aiBubbleLabel
+                    }
+                    className="px-3.5 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-semibold hover:opacity-90 disabled:opacity-40 transition-opacity cursor-pointer shrink-0"
+                  >
+                    {savingAiLabel ? 'Saving...' : 'Save Name'}
+                  </button>
+                </div>
+              </form>
 
               {/* Analytics Summary Grid (Compact 2x2 on Phones, 4 Columns on Desktop) */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
