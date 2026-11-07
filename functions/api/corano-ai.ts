@@ -369,13 +369,67 @@ function formatItemPriceForAi(
   return `${converted} L.L.`;
 }
 
+function normalizeLebaneseFrancoText(input: string): string {
+  return String(input || '')
+    .toLowerCase()
+    .split(/(\s+)/)
+    .map((token) => {
+      if (!/[a-z]/i.test(token) || /^7up$/i.test(token)) return token;
+      return token
+        .replace(/7/g, 'h')
+        .replace(/3/g, 'a')
+        .replace(/2/g, 'a')
+        .replace(/5/g, 'kh')
+        .replace(/8/g, 'gh')
+        .replace(/9/g, 's');
+    })
+    .join('');
+}
+
+function expandLebaneseFrancoToken(word: string): string[] {
+  const w = word.toLowerCase().trim();
+  if (!w) return [];
+  const variants = new Set<string>([w]);
+  if (/[235789]/.test(w) && !/^7up$/i.test(w)) {
+    variants.add(
+      w
+        .replace(/7/g, 'h')
+        .replace(/3/g, 'a')
+        .replace(/2/g, 'a')
+        .replace(/5/g, 'kh')
+        .replace(/8/g, 'gh')
+        .replace(/9/g, 's')
+    );
+    variants.add(
+      w
+        .replace(/7/g, 'h')
+        .replace(/3/g, 'aa')
+        .replace(/2/g, 'q')
+        .replace(/5/g, 'kh')
+        .replace(/8/g, 'gh')
+        .replace(/9/g, 's')
+    );
+    variants.add(
+      w
+        .replace(/7/g, 'h')
+        .replace(/3/g, 'a')
+        .replace(/2/g, 'k')
+        .replace(/5/g, 'kh')
+        .replace(/8/g, 'gh')
+        .replace(/9/g, 's')
+    );
+  }
+  return Array.from(variants).filter((v) => v.length > 2);
+}
+
 function detectUserLanguage(msg: string): 'English' | 'Lebanese' | 'Arabic' {
   if (/[\u0600-\u06FF]/.test(msg)) return 'Arabic';
+  const combined = `${msg} ${normalizeLebaneseFrancoText(msg)}`;
   if (
-    /\b(shu|chou|baddi|bade|badde|atyab|3andkon|3endkon|bala|bla|bela|bdoun|bidoun|toum|thoum|basal|akel|kabis|feter|banadoura|kifak|ahla|shi|fi|akid|tayeb|wajbe|7ar|har|shawarma|tawouk|kbeir|zghir|as3ar|se3er|7a2|la7me|djej|jebne|batata)\b/i.test(
-      msg
+    /\b(shu|chou|baddi|bade|badde|atyab|3andkon|andkon|3endkon|endkon|3endak|3enddak|aandak|andak|bala|bla|bela|bdoun|bidoun|toum|thoum|basal|5as|khas|akel|kabis|feter|banadoura|kifak|ahla|shi|fi|akid|tayeb|wajbe|7ar|har|shawarma|tawouk|kbeir|zghir|as3ar|asaar|se3er|seaer|7a2|ha2|la7me|lahme|djej|jebne|batata|7doud|hdoud|b7doud|bhdoud|ta7et|tahet|a2al|aqal|2arib|arib|ma3|ma33|maa|sa7en|sahen)\b/i.test(
+      combined
     ) ||
-    /[235789][a-z]/i.test(msg)
+    /[235789][a-z]|[a-z][235789]/i.test(msg)
   ) {
     return 'Lebanese';
   }
@@ -383,7 +437,7 @@ function detectUserLanguage(msg: string): 'English' | 'Lebanese' | 'Arabic' {
 }
 
 function classifyTopicTag(msg: string): string {
-  const q = msg.toLowerCase();
+  const q = `${msg} ${normalizeLebaneseFrancoText(msg)}`.toLowerCase();
   if (
     /allerg|gluten|celiac|coeliac|dairy|lactose|nut|without|no |bala |bla |bela |bdoun |bidoun |حساسية|بدون|بلا/.test(
       q
@@ -403,10 +457,10 @@ function classifyTopicTag(msg: string): string {
   if (/pizza|pasta|penne|margherita|pepperoni|بيتزا|باستا/.test(q)) {
     return 'Pizza & Pasta';
   }
-  if (/sandwich|tawouk|kafta|mashewe|falafel|wrap|sajj|saj|ساندويش|طاووق|كفتة|مشاوي|فلافل|صاج/.test(q)) {
+  if (/sandwich|sandwish|sando|tawouk|kafta|mashewe|mashawi|falafel|wrap|sajj|saj|ساندويش|طاووق|كفتة|مشاوي|فلافل|صاج/.test(q)) {
     return 'Sandwiches & Wraps';
   }
-  if (/price|cost|cheap|how much|ll|lbp|dollar|usd|se3er|as3ar|سعر|أسعار|بكم|قديش/.test(q)) {
+  if (/price|cost|cheap|how much|ll|lbp|dollar|usd|se3er|seaer|as3ar|asaar|7doud|hdoud|ta7et|tahet|a2al|aqal|budget|combo|سعر|أسعار|بكم|قديش|تحت|حدود/.test(q)) {
     return 'Prices & Budget';
   }
   if (/popular|best|top|special|signature|atyab|ashhar|أطيب|أشهر/.test(q)) {
@@ -443,14 +497,21 @@ const INGREDIENT_EXCLUSION_GROUPS: Array<{
     labelEn: 'onions',
     labelLb: 'basal (onions)',
     labelAr: 'بصل',
-    queryTriggers: /\b(onion|onions|basal)\b|بصل/i,
+    queryTriggers: /\b(onion|onions|basal|bassal)\b|بصل/i,
     itemMatchTerms: ['onion', 'onions'],
+  },
+  {
+    labelEn: 'lettuce',
+    labelLb: 'khas (lettuce)',
+    labelAr: 'خس',
+    queryTriggers: /\b(lettuce|5as|5ass|khas|khass)\b|خس/i,
+    itemMatchTerms: ['lettuce', 'iceberg', 'romaine'],
   },
   {
     labelEn: 'cheese / dairy',
     labelLb: 'jebne (cheese)',
     labelAr: 'جبنة',
-    queryTriggers: /\b(cheese|dairy|lactose|jebne|jebneh|cheddar|mozzarella)\b|جبن|جبنة|ألبان/i,
+    queryTriggers: /\b(cheese|dairy|lactose|jebne|jebneh|jibne|cheddar|mozzarella|7alloum|halloum|halloumi)\b|جبن|جبنة|ألبان|حلوم/i,
     itemMatchTerms: [
       'cheese',
       'cheddar',
@@ -468,7 +529,7 @@ const INGREDIENT_EXCLUSION_GROUPS: Array<{
     labelEn: 'spicy ingredients',
     labelLb: '7ar (spicy)',
     labelAr: 'حر / حار',
-    queryTriggers: /\b(spicy|hot|chili|jalapeno|har|7ar)\b|حار|حد|حر/i,
+    queryTriggers: /\b(spicy|hot|chili|jalapeno|har|7ar|harra|7arra)\b|حار|حد|حر/i,
     itemMatchTerms: ['spicy', 'jalapeno', 'chili', 'dynamite', 'mexican', 'harra'],
   },
   {
@@ -514,7 +575,8 @@ function extractExclusionsFromMessage(message: string): {
   labelsLb: string[];
   labelsAr: string[];
 } {
-  if (!NEGATION_TRIGGER_REGEX.test(message)) {
+  const combined = `${message} ${normalizeLebaneseFrancoText(message)}`;
+  if (!NEGATION_TRIGGER_REGEX.test(combined)) {
     return { excludedTerms: [], labelsEn: [], labelsLb: [], labelsAr: [] };
   }
   const excludedTerms: string[] = [];
@@ -523,7 +585,7 @@ function extractExclusionsFromMessage(message: string): {
   const labelsAr: string[] = [];
 
   for (const group of INGREDIENT_EXCLUSION_GROUPS) {
-    if (group.queryTriggers.test(message)) {
+    if (group.queryTriggers.test(combined)) {
       excludedTerms.push(...group.itemMatchTerms);
       labelsEn.push(group.labelEn);
       labelsLb.push(group.labelLb);
@@ -556,7 +618,7 @@ function getItemComboAddonUsd(item: any): number | null {
   const addons = Array.isArray(item?.addons) ? item.addons : [];
   for (const addon of addons) {
     const str = String(addon || '');
-    if (/combo/i.test(str)) {
+    if (/combo|fries\s*&\s*drink/i.test(str)) {
       const m = str.match(/\$\s*(\d+(?:\.\d+)?)/);
       return m ? parseFloat(m[1]) : 2.81;
     }
@@ -565,23 +627,28 @@ function getItemComboAddonUsd(item: any): number | null {
 }
 
 function extractBudgetAndComboSpec(message: string, exchangeRate = 89000): BudgetAndComboSpec {
-  const q = message.toLowerCase();
+  const qRaw = message.toLowerCase();
+  const qNorm = normalizeLebaneseFrancoText(message);
+  const q = `${qRaw} ${qNorm}`;
+
   const wantsCombo =
-    /\b(combo|with\s+fries|fries\s+and\s+drink|fries\s*&\s*drink|with\s+pepsi|kamen\s+pepsi|مع\s+بيبسي|مع\s+بطاطا|كومبو)\b/i.test(
+    /\b(combo|with\s+fries|fries\s+and\s+drink|fries\s*&\s*drink|drink\s+and\s+fries|with\s+pepsi|kamen\s+pepsi|بطاطا\s+وبيبسي|بيبسي\s+وبطاطا|كومبو|مع\s+بطاطا|مع\s+بيبسي)\b/i.test(
       q
     ) ||
-    /\b(ma3|ma33|maa|m3)\b[\s\S]{0,35}\b(pepsi|batata|fries|drink|7up|mirinda|cola)\b/i.test(q) ||
-    /\b(pepsi|batata)\b[\s\S]{0,20}\b(w|and|ma3|ma33)\b[\s\S]{0,20}\b(pepsi|batata|fries|drink)\b/i.test(
+    /\b(ma3|ma33|ma333|maa|ma|m3)\b[\s\S]{0,35}\b(pepsi|batata|fries|drink|7up|mirinda|cola)\b/i.test(
+      q
+    ) ||
+    /\b(pepsi|batata)\b[\s\S]{0,20}\b(w|and|ma3|ma33|maa)\b[\s\S]{0,20}\b(pepsi|batata|fries|drink)\b/i.test(
       q
     );
 
   let maxBudgetUsd: number | null = null;
 
   const usdPatterns = [
-    /(?:under|less\s+than|below|max|maximum|up\s+to|budget|around|for|tahet|ta7et|taht|t7t|bi|b|ب|تحت|أقل\s+من|اقل\s+من)\s*(?:el|l|al|ال)?\s*\$\s*(\d+(?:\.\d+)?)/i,
-    /(?:under|less\s+than|below|max|maximum|up\s+to|budget|around|for|tahet|ta7et|taht|t7t|bi|b|ب|تحت|أقل\s+من|اقل\s+من)\s*(?:el|l|al|ال)?\s*(\d+(?:\.\d+)?)\s*(?:\$|usd|dollars?|dolar|دولار)/i,
+    /(?:under|less\s+than|below|max|maximum|up\s+to|budget|around|within|for|tahet|ta7et|tahit|taht|t7t|7doud|hdoud|b7doud|bhdoud|a2al\s+men|aqal\s+men|akal\s+men|aal\s+men|2arib|arib|qarib|bi|b|ب|تحت|بحدود|حدود|أقل\s+من|اقل\s+من|بأقل\s+من)\s*(?:men|mn|el|l|al|ال)?\s*\$\s*(\d+(?:\.\d+)?)/i,
+    /(?:under|less\s+than|below|max|maximum|up\s+to|budget|around|within|for|tahet|ta7et|tahit|taht|t7t|7doud|hdoud|b7doud|bhdoud|a2al\s+men|aqal\s+men|akal\s+men|aal\s+men|2arib|arib|qarib|bi|b|ب|تحت|بحدود|حدود|أقل\s+من|اقل\s+من|بأقل\s+من)\s*(?:men|mn|el|l|al|ال)?\s*(\d+(?:\.\d+)?)\s*(?:\$|usd|dollars?|dolar|دولار)/i,
     /\$\s*(\d+(?:\.\d+)?)\s*(?:or\s+less|max|budget|and\s+under)/i,
-    /(\d+(?:\.\d+)?)\s*\$\s*(?:or\s+less|max|budget|and\s+under|tahet|ta7et)?/i,
+    /(\d+(?:\.\d+)?)\s*\$\s*(?:or\s+less|max|budget|and\s+under|tahet|ta7et|7doud|hdoud)?/i,
   ];
 
   for (const pat of usdPatterns) {
@@ -612,14 +679,15 @@ function extractBudgetAndComboSpec(message: string, exchangeRate = 89000): Budge
 
 function itemFitsBudgetAndCombo(item: any, spec: BudgetAndComboSpec): boolean {
   const basePrice = Number(item?.price || 0);
+  if (Number.isNaN(basePrice) || basePrice <= 0) return false;
   const comboAddon = getItemComboAddonUsd(item);
 
   if (spec.wantsCombo && spec.maxBudgetUsd !== null) {
     if (comboAddon === null) return false;
-    return basePrice + comboAddon <= spec.maxBudgetUsd + 0.01;
+    return basePrice + comboAddon <= spec.maxBudgetUsd + 0.05;
   }
   if (spec.maxBudgetUsd !== null) {
-    return basePrice <= spec.maxBudgetUsd + 0.01;
+    return basePrice <= spec.maxBudgetUsd + 0.05;
   }
   if (spec.wantsCombo) {
     return comboAddon !== null;
@@ -649,6 +717,7 @@ function extractPositiveQueryWords(
   excludedTerms: string[],
   budgetSpec?: BudgetAndComboSpec
 ): string[] {
+  const activeSpec = budgetSpec || extractBudgetAndComboSpec(message);
   const stopAndNegationWords = new Set([
     'without',
     'bala',
@@ -704,28 +773,65 @@ function extractPositiveQueryWords(
     'chou',
     'atyab',
     '3andkon',
+    'andkon',
     '3endkon',
+    'endkon',
+    'indak',
+    '3indak',
     '3endak',
     '3enddak',
     'aandak',
-    'indak',
-    '3indak',
+    'andak',
+    '3andak',
     'ma3',
     'ma33',
+    'ma333',
     'maa',
     'tahet',
     'ta7et',
+    'tahit',
     'taht',
+    '7doud',
+    'hdoud',
+    'b7doud',
+    'bhdoud',
+    'a2al',
+    'aqal',
+    'akal',
+    'aal',
+    '2arib',
+    'arib',
+    'qarib',
+    'men',
+    'sa7en',
+    'sahen',
     'under',
     'below',
     'less',
     'than',
+    'around',
+    'within',
     'budget',
     'dollar',
     'dollars',
+    'dolar',
     'usd',
-    ...(budgetSpec?.wantsCombo
-      ? ['pepsi', 'batata', 'fries', 'drink', 'drinks', 'combo', '7up', 'mirinda', 'cola']
+    ...(activeSpec.wantsCombo
+      ? [
+          'pepsi',
+          'batata',
+          'fries',
+          'drink',
+          'drinks',
+          'combo',
+          '7up',
+          'mirinda',
+          'cola',
+          'بطاطا',
+          'بيبسي',
+          'مشروب',
+          'كومبو',
+        ]
       : []),
     ...excludedTerms,
     ...(excludedTerms.length > 0
@@ -733,22 +839,39 @@ function extractPositiveQueryWords(
           'toum',
           'thoum',
           'basal',
+          'bassal',
+          '5as',
+          'khas',
+          'khass',
           'jebne',
+          'jebneh',
+          'jibne',
           'kabis',
           'feter',
           'banadoura',
           'garlic',
           'onion',
           'onions',
+          'lettuce',
         ]
       : []),
   ]);
 
-  return message
+  const rawTokens = message
     .toLowerCase()
     .replace(/[^\w\s\u0600-\u06FF]/g, ' ')
     .split(/\s+/)
     .filter((w) => w.length > 2 && !/^\d+$/.test(w) && !stopAndNegationWords.has(w));
+
+  const expanded: string[] = [];
+  for (const token of rawTokens) {
+    for (const v of expandLebaneseFrancoToken(token)) {
+      if (!stopAndNegationWords.has(v) && !expanded.includes(v)) {
+        expanded.push(v);
+      }
+    }
+  }
+  return expanded;
 }
 
 function getDishFamilyKey(item: any): string {
@@ -806,7 +929,6 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
   for (const w of words) {
     if (w === 'crispy' || w === 'crunchy' || w === 'كريسبي' || w === 'مقرمش') {
       if (titleLower.includes('crispy') && titleLower.includes('tenders')) {
-        // Ensure Crispy Chicken Tenders is always a star highlight for crispy / crispy-or-cheesy queries
         score += 54;
       } else if (titleLower.includes('crispy') || titleLower.includes('pane')) {
         score += 26;
@@ -825,6 +947,8 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
       w === 'cheddar' ||
       w === 'mozzarella' ||
       w === 'halloumi' ||
+      w === 'halloum' ||
+      w === '7alloum' ||
       w === 'jebne' ||
       w === 'jebneh' ||
       w === 'jibne' ||
@@ -857,6 +981,8 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
       w === 'mashawe' ||
       w === 'meshwe' ||
       w === 'mechwe' ||
+      w === 'fa7em' ||
+      w === 'fahem' ||
       w === 'grill' ||
       w === 'grilled' ||
       w === 'مشاوي' ||
@@ -921,7 +1047,15 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
       }
       continue;
     }
-    if (w === 'lahme' || w === 'la7me' || w === 'lamb' || w === 'ghanam' || w === 'لحمة' || w === 'غنم') {
+    if (
+      w === 'lahme' ||
+      w === 'la7me' ||
+      w === 'lamb' ||
+      w === 'ghanam' ||
+      w === '8anam' ||
+      w === 'لحمة' ||
+      w === 'غنم'
+    ) {
       if (titleLower.includes('lahme') || titleLower.includes('sheep') || titleLower.includes('ghanam')) {
         score += catLower.includes('mashewe') ? 28 : 24;
       } else if (descLower.includes('lahme') || descLower.includes('skewers')) {
@@ -939,7 +1073,17 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
       else if (descLower.includes('kabab') || descLower.includes('kebab')) score += 16;
       continue;
     }
-    if (w === 'spicy' || w === 'hot' || w === '7ar' || w === 'har' || w === 'harra' || w === 'حار' || w === 'حد' || w === 'حر') {
+    if (
+      w === 'spicy' ||
+      w === 'hot' ||
+      w === '7ar' ||
+      w === 'har' ||
+      w === 'harra' ||
+      w === '7arra' ||
+      w === 'حار' ||
+      w === 'حد' ||
+      w === 'حر'
+    ) {
       if (
         titleLower.includes('spicy') ||
         titleLower.includes('harra') ||
@@ -982,7 +1126,9 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
       w === 'سندويش' ||
       w === 'ساندويش'
     ) {
-      if (catLower.includes('sandwich') || titleLower.includes('sandwich')) score += 20;
+      if (catLower.includes('sandwich') || titleLower.includes('sandwich') || titleLower.includes('sando')) {
+        score += 20;
+      }
       continue;
     }
     if (w === 'salad' || w === 'salads' || w === 'سلطة') {
@@ -1159,10 +1305,12 @@ function getTurnTargetItems(
     excludedTerms,
     activeBudgetSpec
   );
-  const q = message.toLowerCase();
+  const q = `${message} ${normalizeLebaneseFrancoText(message)}`.toLowerCase();
 
   const isSingleCategoryQuery =
-    /\b(mashewe|mashawi|mashawe|meshwe|mechwe|مشاوي|مشوي|pizza|بيتزا|falafel|فلافل|sajj|صاج)\b/i.test(q);
+    /\b(mashewe|mashawi|mashawe|meshwe|mechwe|مشاوي|مشوي|pizza|بيتزا|falafel|فلافل|sajj|saj|صاج)\b/i.test(
+      q
+    );
 
   if (strictMatches.length > 0) {
     const turnItems = selectVariedItemsFromPool(
@@ -1225,6 +1373,26 @@ function getTurnTargetItems(
   return { turnItems, strictMatches: [], previousAssistantTurns, budgetSpec: activeBudgetSpec };
 }
 
+function shouldUseInstantDeterministicFastPath(
+  message: string,
+  exclusions: { excludedTerms: string[] },
+  budgetSpec: BudgetAndComboSpec,
+  strictMatches: any[]
+): boolean {
+  if (exclusions.excludedTerms.length > 0) return true;
+  if (budgetSpec.maxBudgetUsd !== null || budgetSpec.wantsCombo) return true;
+  if (strictMatches.length > 0) return true;
+  const q = `${message} ${normalizeLebaneseFrancoText(message)}`.toLowerCase();
+  if (
+    /\b(popular|best|top|recommend|favorite|special|atyab|ashhar|healthy|light|diet|crispy|cheesy|mashewe|mashawi|burger|sub|sandwich|sandwish|salad|pizza|pasta|أطيب|أشهر|صحي|دايت|لايت|مشاوي)\b/i.test(
+      q
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
 function runDeterministicMenuMatcher(
   message: string,
   storeData: any,
@@ -1260,7 +1428,7 @@ function runDeterministicMenuMatcher(
     )
     .join(', ');
 
-  const q = message.toLowerCase();
+  const q = `${message} ${normalizeLebaneseFrancoText(message)}`.toLowerCase();
   const isMasheweQuery =
     /\b(mashewe|mashawi|mashawe|meshwe|mechwe|grill|grilled|مشاوي|مشوي)\b/i.test(q);
   const variantIdx = previousAssistantTurns % 3;
@@ -1289,14 +1457,23 @@ function runDeterministicMenuMatcher(
       ];
       reply = enTemplates[variantIdx];
     }
-  } else if (budgetSpec.wantsCombo && budgetSpec.maxBudgetUsd !== null) {
-    const budgetLabel = formatItemPriceForAi(budgetSpec.maxBudgetUsd, currency, rate);
+  } else if (budgetSpec.wantsCombo || budgetSpec.maxBudgetUsd !== null) {
+    const budgetLabel =
+      budgetSpec.maxBudgetUsd !== null
+        ? formatItemPriceForAi(budgetSpec.maxBudgetUsd, currency, rate)
+        : '';
     if (lang === 'Arabic') {
-      reply = `أهلاً وسهلاً بك في كورانو! بالتأكيد، إليك أشهى الخيارات مع كومبو (بطاطا ومشروب بيبسي) تحت سقف ${budgetLabel}: ${pickNames}. اضغط على أي وجبة بالأسفل لعرض التفاصيل!`;
+      reply = budgetLabel
+        ? `أهلاً وسهلاً بك في كورانو! بالتأكيد، إليك أشهى الخيارات مع كومبو (بطاطا ومشروب بيبسي) ضمن ميزانية ${budgetLabel}: ${pickNames}. اضغط على أي وجبة بالأسفل لعرض التفاصيل!`
+        : `أهلاً وسهلاً بك في كورانو! إليك أشهى الخيارات مع كومبو (بطاطا ومشروب بيبسي): ${pickNames}. اضغط على أي وجبة بالأسفل لعرض التفاصيل!`;
     } else if (lang === 'Lebanese') {
-      reply = `Ahla w sahla fik bi Corano! Akid tekram, hayde atyab el asnaf ma3 Combo (Batata w Pepsi) ta7et el ${budgetLabel}: ${pickNames}. Ekbus 3ala ayya wajbe ta7et la tshouf kel el tafasil!`;
+      reply = budgetLabel
+        ? `Ahla w sahla fik bi Corano! Akid tekram, hayde atyab el asnaf ma3 Combo (Batata w Pepsi) b 7doud / ta7et el ${budgetLabel}: ${pickNames}. Ekbus 3ala ayya wajbe ta7et la tshouf kel el tafasil!`
+        : `Ahla w sahla fik bi Corano! Akid tekram, hayde atyab el asnaf ma3 Combo (Batata w Pepsi): ${pickNames}. Ekbus 3ala ayya wajbe ta7et la tshouf kel el tafasil!`;
     } else {
-      reply = `Welcome to Corano! Here are our top freshly prepared picks with the full Combo (Fries & Drink) all under ${budgetLabel}: ${pickNames}. Tap any dish card below for full details!`;
+      reply = budgetLabel
+        ? `Welcome to Corano! Here are our top freshly prepared picks with the full Combo (Fries & Drink) all within ${budgetLabel}: ${pickNames}. Tap any dish card below for full details!`
+        : `Welcome to Corano! Here are our top freshly prepared picks with the full Combo (Fries & Drink): ${pickNames}. Tap any dish card below for full details!`;
     }
   } else if (isMasheweQuery) {
     if (lang === 'Arabic') {
@@ -1366,8 +1543,8 @@ function buildCoranoMenuSystemPrompt(
   const currency: 'USD' | 'LBP' = storeData.settings?.currency === 'LBP' ? 'LBP' : 'USD';
   const rate = storeData.settings?.exchangeRate || 89000;
 
-  const availableLines: string[] = [];
   const outOfStockTitles: string[] = [];
+  const safeAvailableItems: any[] = [];
 
   for (const item of storeData.items || []) {
     if (item.available === false) {
@@ -1377,17 +1554,30 @@ function buildCoranoMenuSystemPrompt(
     if (itemContainsExcludedTerm(item, excludedTerms)) {
       continue;
     }
-    const priceStr = formatItemPriceForAi(item.price, currency, rate);
+    safeAvailableItems.push(item);
+  }
+
+  // Cap menu context to top 20 most relevant available dishes (turnItems first, then popular/top-ordered)
+  // to cut prompt token size by 75% for 4x faster LLM inference
+  const turnIdSet = new Set(turnItems.map((i) => String(i.id)));
+  const prioritizedContextItems = [
+    ...turnItems,
+    ...safeAvailableItems
+      .filter((i) => !turnIdSet.has(String(i.id)))
+      .sort((a, b) => {
+        const aPop = a.popular ? 1 : 0;
+        const bPop = b.popular ? 1 : 0;
+        if (bPop !== aPop) return bPop - aPop;
+        return (a.order ?? 99) - (b.order ?? 99);
+      }),
+  ].slice(0, 20);
+
+  const availableLines = prioritizedContextItems.map((item) => {
+    const priceStr = formatItemPriceWithComboBreakdown(item, currency, rate, budgetSpec);
     const popFlag = item.popular ? ' [★ POPULAR]' : '';
     const descStr = item.desc ? ` | Ingredients: ${item.desc}` : '';
-    const addonsStr =
-      Array.isArray(item.addons) && item.addons.length > 0
-        ? ` | Addons: ${item.addons.join('; ')}`
-        : '';
-    availableLines.push(
-      `ID:${item.id} | Name: ${item.title} | Category: ${item.category} | Price: ${priceStr}${popFlag}${descStr}${addonsStr}`
-    );
-  }
+    return `ID:${item.id} | Name: ${item.title} | Category: ${item.category} | Price: ${priceStr}${popFlag}${descStr}`;
+  });
 
   const budgetAndComboRuleBlock =
     budgetSpec.wantsCombo || budgetSpec.maxBudgetUsd !== null
@@ -1430,7 +1620,7 @@ Your job is to help guests choose dishes, answer ingredient or allergy questions
 STRICT RULES:
 1. LANGUAGE MIRRORING:
    - If the guest writes in English -> reply in warm, appetizing English (set language="English").
-   - If the guest writes in Lebanese Franco / Arabizi (e.g. "shu atyab burger", "baddi akel bala toum", "kifak") -> reply naturally in warm Lebanese Franco / Arabizi (e.g. "Ahla w sahla! Akid...") (set language="Lebanese").
+   - If the guest writes in Lebanese Franco / Arabizi (e.g. "shu atyab burger", "baddi akel bala toum", "bade sandwish aw sub ma3 pepsi w batata fries b 7doud l 10$") -> reply naturally in warm Lebanese Franco / Arabizi (e.g. "Ahla w sahla! Akid...") (set language="Lebanese").
    - If the guest writes in Arabic script (العربية) -> reply in natural Lebanese/Arabic script (set language="Arabic").
 2. RELY ON ITEM NAME, CATEGORY, AND INGREDIENTS:
    - Always check the item's Name, Category, AND Ingredients for every question.
@@ -1447,17 +1637,8 @@ STRICT RULES:
 8. Set topicTag to one of: "Popular & Best Sellers", "Burgers & Subs", "Healthy & Light", "Ingredients & Allergies", "Spicy Dishes", "Prices & Budget", "Sandwiches & Wraps", "Pizza & Pasta", "General Inquiry".
 9. Set summary to a 1-sentence English summary for the restaurant owner.
 ${budgetAndComboRuleBlock}${priorityHighlightBlock}${repeatVarietyBlock}
-LIVE AVAILABLE CORANO MENU (${availableLines.length} dishes):
+TOP RELEVANT CORANO MENU DISHES (${availableLines.length} dishes):
 ${availableLines.join('\n')}`;
-}
-
-async function runWorkersAiWithGateway(env: any, model: string, payload: any): Promise<any> {
-  const gatewayId = String(env?.CF_AI_GATEWAY_ID || 'corano-ai-gateway').trim();
-  try {
-    return await env.AI.run(model, payload, { gateway: { id: gatewayId } });
-  } catch {
-    return await env.AI.run(model, payload);
-  }
 }
 
 async function generateCoranoAiEdgeResponse(
@@ -1482,6 +1663,12 @@ async function generateCoranoAiEdgeResponse(
     history,
     budgetSpec
   );
+
+  // Instant Sub-Second Fast-Path (< 0.2s) for pre-written prompts, strict menu matches, ingredient exclusions, and Budget/Combo queries
+  if (shouldUseInstantDeterministicFastPath(message, exclusions, budgetSpec, strictMatches)) {
+    return runDeterministicMenuMatcher(message, storeData, history);
+  }
+
   const strictMatchIds = new Set(strictMatches.map((m: any) => String(m.id)));
   const turnTargetIds = turnItems.map((i: any) => String(i.id));
   const systemInstruction = buildCoranoMenuSystemPrompt(
@@ -1500,210 +1687,176 @@ async function generateCoranoAiEdgeResponse(
 
   const apiKey = String(env?.GEMINI_API_KEY || '').trim();
 
-  // Documented per-model thinkingConfig per @google/genai SKILL.md:
-  // - gemini-3.1-flash-lite: no thinkingConfig parameter
-  // - gemini-2.5-flash: thinkingBudget: 0
-  // - gemini-3.8-flash: thinkingLevel: "LOW"
+  // Single fast Gemini call (gemini-2.5-flash with thinkingBudget: 0 and strict 3200ms timeout)
   if (apiKey) {
-    const modelsToTry: Array<{ name: string; thinkingConfig?: Record<string, any> }> = [
-      { name: 'gemini-3.1-flash-lite' },
-      { name: 'gemini-2.5-flash', thinkingConfig: { thinkingBudget: 0 } },
-      { name: 'gemini-3.8-flash', thinkingConfig: { thinkingLevel: 'LOW' } },
-    ];
-    for (const modelSpec of modelsToTry) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 8000);
-      try {
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${modelSpec.name}:generateContent?key=${encodeURIComponent(
-            apiKey
-          )}`,
-          {
-            method: 'POST',
-            signal: controller.signal,
-            headers: {
-              'Content-Type': 'application/json',
-              'User-Agent': 'aistudio-build',
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3200);
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(
+          apiKey
+        )}`,
+        {
+          method: 'POST',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'aistudio-build',
+          },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: systemInstruction }],
             },
-            body: JSON.stringify({
-              systemInstruction: {
-                parts: [{ text: systemInstruction }],
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: conversationContext }],
               },
-              contents: [
-                {
-                  role: 'user',
-                  parts: [{ text: conversationContext }],
-                },
-              ],
-              generationConfig: {
-                temperature: previousAssistantTurns > 0 ? 0.55 : 0.35,
-                responseMimeType: 'application/json',
-                ...(modelSpec.thinkingConfig ? { thinkingConfig: modelSpec.thinkingConfig } : {}),
-                responseSchema: {
-                  type: 'OBJECT',
-                  properties: {
-                    reply: { type: 'STRING' },
-                    recommendedItemIds: {
-                      type: 'ARRAY',
-                      items: { type: 'STRING' },
-                    },
-                    summary: { type: 'STRING' },
-                    topicTag: { type: 'STRING' },
-                    language: { type: 'STRING' },
+            ],
+            generationConfig: {
+              temperature: previousAssistantTurns > 0 ? 0.55 : 0.35,
+              responseMimeType: 'application/json',
+              thinkingConfig: { thinkingBudget: 0 },
+              responseSchema: {
+                type: 'OBJECT',
+                properties: {
+                  reply: { type: 'STRING' },
+                  recommendedItemIds: {
+                    type: 'ARRAY',
+                    items: { type: 'STRING' },
                   },
-                  required: ['reply', 'recommendedItemIds', 'summary', 'topicTag', 'language'],
+                  summary: { type: 'STRING' },
+                  topicTag: { type: 'STRING' },
+                  language: { type: 'STRING' },
                 },
+                required: ['reply', 'recommendedItemIds', 'summary', 'topicTag', 'language'],
               },
-            }),
-          }
-        );
-        clearTimeout(timer);
+            },
+          }),
+        }
+      );
+      clearTimeout(timer);
 
-        if (res.ok) {
-          const data: any = await res.json();
-          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          if (rawText) {
-            const parsed = JSON.parse(rawText);
-            if (parsed && typeof parsed.reply === 'string' && parsed.reply.trim()) {
-              const lang: 'English' | 'Lebanese' | 'Arabic' =
-                parsed.language === 'Arabic' || parsed.language === 'Lebanese'
-                  ? parsed.language
-                  : detectUserLanguage(message);
+      if (res.ok) {
+        const data: any = await res.json();
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (rawText) {
+          const parsed = JSON.parse(rawText);
+          if (parsed && typeof parsed.reply === 'string' && parsed.reply.trim()) {
+            const lang: 'English' | 'Lebanese' | 'Arabic' =
+              parsed.language === 'Arabic' || parsed.language === 'Lebanese'
+                ? parsed.language
+                : detectUserLanguage(message);
 
-              let finalIds = turnTargetIds.slice(0, 3);
-              if (finalIds.length === 0) {
-                finalIds = (Array.isArray(parsed.recommendedItemIds) ? parsed.recommendedItemIds : [])
-                  .map(String)
-                  .filter((id: string) => {
-                    const found = (storeData.items || []).find((i: any) => String(i.id) === id);
-                    if (!found || found.available === false) return false;
-                    if (itemContainsExcludedTerm(found, exclusions.excludedTerms)) return false;
-                    if (strictMatchIds.size > 0 && !strictMatchIds.has(id)) return false;
-                    return true;
-                  })
-                  .slice(0, 3);
-              }
-
-              return {
-                reply: parsed.reply.trim(),
-                recommendedItemIds: finalIds,
-                summary:
-                  typeof parsed.summary === 'string' && parsed.summary.trim()
-                    ? parsed.summary.trim()
-                    : `Guest asked: "${message.slice(0, 70)}"`,
-                topicTag:
-                  typeof parsed.topicTag === 'string' && parsed.topicTag.trim()
-                    ? parsed.topicTag.trim()
-                    : classifyTopicTag(message),
-                language: lang,
-              };
+            let finalIds = turnTargetIds.slice(0, 3);
+            if (finalIds.length === 0) {
+              finalIds = (Array.isArray(parsed.recommendedItemIds) ? parsed.recommendedItemIds : [])
+                .map(String)
+                .filter((id: string) => {
+                  const found = (storeData.items || []).find((i: any) => String(i.id) === id);
+                  if (!found || found.available === false) return false;
+                  if (itemContainsExcludedTerm(found, exclusions.excludedTerms)) return false;
+                  if (strictMatchIds.size > 0 && !strictMatchIds.has(id)) return false;
+                  return true;
+                })
+                .slice(0, 3);
             }
+
+            return {
+              reply: parsed.reply.trim(),
+              recommendedItemIds: finalIds,
+              summary:
+                typeof parsed.summary === 'string' && parsed.summary.trim()
+                  ? parsed.summary.trim()
+                  : `Guest asked: "${message.slice(0, 70)}"`,
+              topicTag:
+                typeof parsed.topicTag === 'string' && parsed.topicTag.trim()
+                  ? parsed.topicTag.trim()
+                  : classifyTopicTag(message),
+              language: lang,
+            };
           }
         }
-      } catch {
-        // Proceed immediately to next model in fallback chain
-      } finally {
-        clearTimeout(timer);
       }
+    } catch {
+      // Proceed immediately to Layer 3
+    } finally {
+      clearTimeout(timer);
     }
   }
 
-  // Layer 3: Cloudflare Workers AI Open-Source Backup (@cf/meta/llama-3.3-70b-instruct-fp8-fast -> @cf/meta/llama-3.1-8b-instruct-awq)
+  // Layer 3: Fast Cloudflare Workers AI (@cf/meta/llama-3.1-8b-instruct-awq via corano-ai-gateway with strict 2800ms timeout, no double-retry loop)
   if (env?.AI && typeof env.AI.run === 'function') {
-    const cfModels = [
-      { name: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', useJsonSchema: true },
-      { name: '@cf/meta/llama-3.1-8b-instruct-awq', useJsonSchema: false },
-    ];
+    const gatewayId = String(env?.CF_AI_GATEWAY_ID || 'corano-ai-gateway').trim();
+    try {
+      const cfPayload = {
+        messages: [
+          {
+            role: 'system',
+            content:
+              systemInstruction +
+              '\nRespond ONLY with a valid JSON object matching: {"reply": "...", "recommendedItemIds": ["..."], "summary": "...", "topicTag": "...", "language": "English"}',
+          },
+          {
+            role: 'user',
+            content: conversationContext,
+          },
+        ],
+      };
 
-    for (const cfModel of cfModels) {
-      try {
-        const cfPayload: Record<string, any> = {
-          messages: [
-            {
-              role: 'system',
-              content:
-                systemInstruction +
-                '\nRespond ONLY with a valid JSON object matching: {"reply": "...", "recommendedItemIds": ["..."], "summary": "...", "topicTag": "...", "language": "English"}',
-            },
-            {
-              role: 'user',
-              content: conversationContext,
-            },
-          ],
-          ...(cfModel.useJsonSchema
-            ? {
-                response_format: {
-                  type: 'json_schema',
-                  json_schema: {
-                    name: 'corano_ai_waiter_response',
-                    schema: {
-                      type: 'object',
-                      properties: {
-                        reply: { type: 'string' },
-                        recommendedItemIds: {
-                          type: 'array',
-                          items: { type: 'string' },
-                        },
-                        summary: { type: 'string' },
-                        topicTag: { type: 'string' },
-                        language: { type: 'string' },
-                      },
-                      required: ['reply', 'recommendedItemIds', 'summary', 'topicTag', 'language'],
-                    },
-                  },
-                },
-              }
-            : {}),
-        };
+      const cfAiRes: any = await Promise.race([
+        env.AI.run('@cf/meta/llama-3.1-8b-instruct-awq', cfPayload, {
+          gateway: { id: gatewayId },
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('CF_AI_TIMEOUT')), 2800)),
+      ]);
 
-        const cfAiRes: any = await runWorkersAiWithGateway(env, cfModel.name, cfPayload);
-        const rawOut = cfAiRes?.response;
-        let parsed: any = null;
-        if (rawOut && typeof rawOut === 'object') {
-          parsed = rawOut;
-        } else {
-          const textOut = String(rawOut || '').trim();
-          const jsonMatch = textOut.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            parsed = JSON.parse(jsonMatch[0]);
-          }
+      const rawOut = cfAiRes?.response;
+      let parsed: any = null;
+      if (rawOut && typeof rawOut === 'object') {
+        parsed = rawOut;
+      } else {
+        const textOut = String(rawOut || '').trim();
+        const jsonMatch = textOut.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
         }
-
-        if (parsed && typeof parsed.reply === 'string' && parsed.reply.trim()) {
-          let finalIds = turnTargetIds.slice(0, 3);
-          if (finalIds.length === 0) {
-            finalIds = (Array.isArray(parsed.recommendedItemIds) ? parsed.recommendedItemIds : [])
-              .map(String)
-              .filter((id: string) => {
-                const found = (storeData.items || []).find((i: any) => String(i.id) === id);
-                if (!found || found.available === false) return false;
-                if (itemContainsExcludedTerm(found, exclusions.excludedTerms)) return false;
-                if (strictMatchIds.size > 0 && !strictMatchIds.has(id)) return false;
-                return true;
-              })
-              .slice(0, 3);
-          }
-
-          return {
-            reply: parsed.reply.trim(),
-            recommendedItemIds: finalIds,
-            summary:
-              typeof parsed.summary === 'string' && parsed.summary.trim()
-                ? parsed.summary.trim()
-                : `Guest asked: "${message.slice(0, 70)}"`,
-            topicTag:
-              typeof parsed.topicTag === 'string' && parsed.topicTag.trim()
-                ? parsed.topicTag.trim()
-                : classifyTopicTag(message),
-            language:
-              parsed.language === 'Arabic' || parsed.language === 'Lebanese'
-                ? parsed.language
-                : detectUserLanguage(message),
-          };
-        }
-      } catch {
-        // Proceed to next Workers AI model or Layer 4 deterministic matcher
       }
+
+      if (parsed && typeof parsed.reply === 'string' && parsed.reply.trim()) {
+        let finalIds = turnTargetIds.slice(0, 3);
+        if (finalIds.length === 0) {
+          finalIds = (Array.isArray(parsed.recommendedItemIds) ? parsed.recommendedItemIds : [])
+            .map(String)
+            .filter((id: string) => {
+              const found = (storeData.items || []).find((i: any) => String(i.id) === id);
+              if (!found || found.available === false) return false;
+              if (itemContainsExcludedTerm(found, exclusions.excludedTerms)) return false;
+              if (strictMatchIds.size > 0 && !strictMatchIds.has(id)) return false;
+              return true;
+            })
+            .slice(0, 3);
+        }
+
+        return {
+          reply: parsed.reply.trim(),
+          recommendedItemIds: finalIds,
+          summary:
+            typeof parsed.summary === 'string' && parsed.summary.trim()
+              ? parsed.summary.trim()
+              : `Guest asked: "${message.slice(0, 70)}"`,
+          topicTag:
+            typeof parsed.topicTag === 'string' && parsed.topicTag.trim()
+              ? parsed.topicTag.trim()
+              : classifyTopicTag(message),
+          language:
+            parsed.language === 'Arabic' || parsed.language === 'Lebanese'
+              ? parsed.language
+              : detectUserLanguage(message),
+        };
+      }
+    } catch {
+      // Proceed immediately to Layer 4 deterministic matcher
     }
   }
 

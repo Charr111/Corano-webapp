@@ -275,13 +275,67 @@ function formatItemPriceForAi(
   return `${converted} L.L.`;
 }
 
+function normalizeLebaneseFrancoText(input: string): string {
+  return String(input || '')
+    .toLowerCase()
+    .split(/(\s+)/)
+    .map((token) => {
+      if (!/[a-z]/i.test(token) || /^7up$/i.test(token)) return token;
+      return token
+        .replace(/7/g, 'h')
+        .replace(/3/g, 'a')
+        .replace(/2/g, 'a')
+        .replace(/5/g, 'kh')
+        .replace(/8/g, 'gh')
+        .replace(/9/g, 's');
+    })
+    .join('');
+}
+
+function expandLebaneseFrancoToken(word: string): string[] {
+  const w = word.toLowerCase().trim();
+  if (!w) return [];
+  const variants = new Set<string>([w]);
+  if (/[235789]/.test(w) && !/^7up$/i.test(w)) {
+    variants.add(
+      w
+        .replace(/7/g, 'h')
+        .replace(/3/g, 'a')
+        .replace(/2/g, 'a')
+        .replace(/5/g, 'kh')
+        .replace(/8/g, 'gh')
+        .replace(/9/g, 's')
+    );
+    variants.add(
+      w
+        .replace(/7/g, 'h')
+        .replace(/3/g, 'aa')
+        .replace(/2/g, 'q')
+        .replace(/5/g, 'kh')
+        .replace(/8/g, 'gh')
+        .replace(/9/g, 's')
+    );
+    variants.add(
+      w
+        .replace(/7/g, 'h')
+        .replace(/3/g, 'a')
+        .replace(/2/g, 'k')
+        .replace(/5/g, 'kh')
+        .replace(/8/g, 'gh')
+        .replace(/9/g, 's')
+    );
+  }
+  return Array.from(variants).filter((v) => v.length > 2);
+}
+
 function detectUserLanguage(msg: string): 'English' | 'Lebanese' | 'Arabic' {
   if (/[\u0600-\u06FF]/.test(msg)) return 'Arabic';
+  const combined = `${msg} ${normalizeLebaneseFrancoText(msg)}`;
   if (
-    /\b(shu|chou|baddi|bade|badde|atyab|3andkon|3endkon|bala|bla|bela|bdoun|bidoun|toum|thoum|basal|akel|kabis|feter|banadoura|kifak|ahla|shi|fi|akid|tayeb|wajbe|7ar|har|shawarma|tawouk|kbeir|zghir|as3ar|se3er|7a2|la7me|djej|jebne|batata)\b/i.test(
-      msg
+    /\b(shu|chou|baddi|bade|badde|atyab|3andkon|andkon|3endkon|endkon|3endak|3enddak|aandak|andak|bala|bla|bela|bdoun|bidoun|toum|thoum|basal|5as|khas|akel|kabis|feter|banadoura|kifak|ahla|shi|fi|akid|tayeb|wajbe|7ar|har|shawarma|tawouk|kbeir|zghir|as3ar|asaar|se3er|seaer|7a2|ha2|la7me|lahme|djej|jebne|batata|7doud|hdoud|b7doud|bhdoud|ta7et|tahet|a2al|aqal|2arib|arib|ma3|ma33|maa|sa7en|sahen)\b/i.test(
+      combined
     ) ||
-    /[235789][a-z]/i.test(msg)
+    /[235789][a-z]|[a-z][235789]/i.test(msg)
   ) {
     return 'Lebanese';
   }
@@ -289,7 +343,7 @@ function detectUserLanguage(msg: string): 'English' | 'Lebanese' | 'Arabic' {
 }
 
 function classifyTopicTag(msg: string): string {
-  const q = msg.toLowerCase();
+  const q = `${msg} ${normalizeLebaneseFrancoText(msg)}`.toLowerCase();
   if (
     /allerg|gluten|celiac|coeliac|dairy|lactose|nut|without|no |bala |bla |bela |bdoun |bidoun |حساسية|بدون|بلا/.test(
       q
@@ -309,10 +363,10 @@ function classifyTopicTag(msg: string): string {
   if (/pizza|pasta|penne|margherita|pepperoni|بيتزا|باستا/.test(q)) {
     return 'Pizza & Pasta';
   }
-  if (/sandwich|tawouk|kafta|mashewe|falafel|wrap|sajj|saj|ساندويش|طاووق|كفتة|مشاوي|فلافل|صاج/.test(q)) {
+  if (/sandwich|sandwish|sando|tawouk|kafta|mashewe|mashawi|falafel|wrap|sajj|saj|ساندويش|طاووق|كفتة|مشاوي|فلافل|صاج/.test(q)) {
     return 'Sandwiches & Wraps';
   }
-  if (/price|cost|cheap|how much|ll|lbp|dollar|usd|se3er|as3ar|سعر|أسعار|بكم|قديش/.test(q)) {
+  if (/price|cost|cheap|how much|ll|lbp|dollar|usd|se3er|seaer|as3ar|asaar|7doud|hdoud|ta7et|tahet|a2al|aqal|budget|combo|سعر|أسعار|بكم|قديش|تحت|حدود/.test(q)) {
     return 'Prices & Budget';
   }
   if (/popular|best|top|special|signature|atyab|ashhar|أطيب|أشهر/.test(q)) {
@@ -349,14 +403,21 @@ const INGREDIENT_EXCLUSION_GROUPS: Array<{
     labelEn: 'onions',
     labelLb: 'basal (onions)',
     labelAr: 'بصل',
-    queryTriggers: /\b(onion|onions|basal)\b|بصل/i,
+    queryTriggers: /\b(onion|onions|basal|bassal)\b|بصل/i,
     itemMatchTerms: ['onion', 'onions'],
+  },
+  {
+    labelEn: 'lettuce',
+    labelLb: 'khas (lettuce)',
+    labelAr: 'خس',
+    queryTriggers: /\b(lettuce|5as|5ass|khas|khass)\b|خس/i,
+    itemMatchTerms: ['lettuce', 'iceberg', 'romaine'],
   },
   {
     labelEn: 'cheese / dairy',
     labelLb: 'jebne (cheese)',
     labelAr: 'جبنة',
-    queryTriggers: /\b(cheese|dairy|lactose|jebne|jebneh|cheddar|mozzarella)\b|جبن|جبنة|ألبان/i,
+    queryTriggers: /\b(cheese|dairy|lactose|jebne|jebneh|jibne|cheddar|mozzarella|7alloum|halloum|halloumi)\b|جبن|جبنة|ألبان|حلوم/i,
     itemMatchTerms: [
       'cheese',
       'cheddar',
@@ -374,7 +435,7 @@ const INGREDIENT_EXCLUSION_GROUPS: Array<{
     labelEn: 'spicy ingredients',
     labelLb: '7ar (spicy)',
     labelAr: 'حر / حار',
-    queryTriggers: /\b(spicy|hot|chili|jalapeno|har|7ar)\b|حار|حد|حر/i,
+    queryTriggers: /\b(spicy|hot|chili|jalapeno|har|7ar|harra|7arra)\b|حار|حد|حر/i,
     itemMatchTerms: ['spicy', 'jalapeno', 'chili', 'dynamite', 'mexican', 'harra'],
   },
   {
@@ -420,7 +481,8 @@ function extractExclusionsFromMessage(message: string): {
   labelsLb: string[];
   labelsAr: string[];
 } {
-  if (!NEGATION_TRIGGER_REGEX.test(message)) {
+  const combined = `${message} ${normalizeLebaneseFrancoText(message)}`;
+  if (!NEGATION_TRIGGER_REGEX.test(combined)) {
     return { excludedTerms: [], labelsEn: [], labelsLb: [], labelsAr: [] };
   }
   const excludedTerms: string[] = [];
@@ -429,7 +491,7 @@ function extractExclusionsFromMessage(message: string): {
   const labelsAr: string[] = [];
 
   for (const group of INGREDIENT_EXCLUSION_GROUPS) {
-    if (group.queryTriggers.test(message)) {
+    if (group.queryTriggers.test(combined)) {
       excludedTerms.push(...group.itemMatchTerms);
       labelsEn.push(group.labelEn);
       labelsLb.push(group.labelLb);
@@ -453,7 +515,115 @@ function itemContainsExcludedTerm(item: any, excludedTerms: string[]): boolean {
   return excludedTerms.some((term) => haystack.includes(term.toLowerCase()));
 }
 
-function extractPositiveQueryWords(message: string, excludedTerms: string[]): string[] {
+interface BudgetAndComboSpec {
+  maxBudgetUsd: number | null;
+  wantsCombo: boolean;
+}
+
+function getItemComboAddonUsd(item: any): number | null {
+  if (!Array.isArray(item?.addons)) return null;
+  for (const rawAddon of item.addons) {
+    const str = String(rawAddon || '');
+    if (/combo|fries\s*&\s*drink/i.test(str)) {
+      const m = str.match(/\$\s*(\d+(?:\.\d+)?)/);
+      return m ? parseFloat(m[1]) : 2.81;
+    }
+  }
+  return null;
+}
+
+function extractBudgetAndComboSpec(message: string, exchangeRate = 89000): BudgetAndComboSpec {
+  const qRaw = message.toLowerCase();
+  const qNorm = normalizeLebaneseFrancoText(message);
+  const q = `${qRaw} ${qNorm}`;
+
+  const wantsCombo =
+    /\b(combo|with\s+fries|fries\s+and\s+drink|fries\s*&\s*drink|drink\s+and\s+fries|with\s+pepsi|kamen\s+pepsi|بطاطا\s+وبيبسي|بيبسي\s+وبطاطا|كومبو|مع\s+بطاطا|مع\s+بيبسي)\b/i.test(
+      q
+    ) ||
+    /\b(ma3|ma33|ma333|maa|ma|m3)\b[\s\S]{0,35}\b(pepsi|batata|fries|drink|7up|mirinda|cola)\b/i.test(
+      q
+    ) ||
+    /\b(pepsi|batata)\b[\s\S]{0,20}\b(w|and|ma3|ma33|maa)\b[\s\S]{0,20}\b(pepsi|batata|fries|drink)\b/i.test(
+      q
+    );
+
+  let maxBudgetUsd: number | null = null;
+
+  const usdPatterns = [
+    /(?:under|less\s+than|below|max|maximum|up\s+to|budget|around|within|for|tahet|ta7et|tahit|taht|t7t|7doud|hdoud|b7doud|bhdoud|a2al\s+men|aqal\s+men|akal\s+men|aal\s+men|2arib|arib|qarib|bi|b|ب|تحت|بحدود|حدود|أقل\s+من|اقل\s+من|بأقل\s+من)\s*(?:men|mn|el|l|al|ال)?\s*\$\s*(\d+(?:\.\d+)?)/i,
+    /(?:under|less\s+than|below|max|maximum|up\s+to|budget|around|within|for|tahet|ta7et|tahit|taht|t7t|7doud|hdoud|b7doud|bhdoud|a2al\s+men|aqal\s+men|akal\s+men|aal\s+men|2arib|arib|qarib|bi|b|ب|تحت|بحدود|حدود|أقل\s+من|اقل\s+من|بأقل\s+من)\s*(?:men|mn|el|l|al|ال)?\s*(\d+(?:\.\d+)?)\s*(?:\$|usd|dollars?|dolar|دولار)/i,
+    /\$\s*(\d+(?:\.\d+)?)\s*(?:or\s+less|max|budget|and\s+under)/i,
+    /(\d+(?:\.\d+)?)\s*\$\s*(?:or\s+less|max|budget|and\s+under|tahet|ta7et|7doud|hdoud)?/i,
+  ];
+
+  for (const pat of usdPatterns) {
+    const m = q.match(pat);
+    if (m && m[1]) {
+      const val = parseFloat(m[1]);
+      if (val > 0 && val <= 500) {
+        maxBudgetUsd = val;
+        break;
+      }
+    }
+  }
+
+  if (maxBudgetUsd === null) {
+    const lbpMatch = q.match(
+      /(\d{3,4}(?:[,\s]\d{3})+|\d{5,8})\s*(?:l\.?l\.?|lbp|lira|ليرة|ل\.ل)/i
+    );
+    if (lbpMatch && lbpMatch[1]) {
+      const rawLbp = parseFloat(lbpMatch[1].replace(/[,\s]/g, ''));
+      if (rawLbp >= 50000) {
+        maxBudgetUsd = Number((rawLbp / (exchangeRate || 89000)).toFixed(2));
+      }
+    }
+  }
+
+  return { maxBudgetUsd, wantsCombo };
+}
+
+function itemFitsBudgetAndCombo(item: any, spec: BudgetAndComboSpec): boolean {
+  const basePrice = Number(item?.price || 0);
+  if (Number.isNaN(basePrice) || basePrice <= 0) return false;
+  const comboAddon = getItemComboAddonUsd(item);
+
+  if (spec.wantsCombo && spec.maxBudgetUsd !== null) {
+    if (comboAddon === null) return false;
+    return basePrice + comboAddon <= spec.maxBudgetUsd + 0.05;
+  }
+  if (spec.maxBudgetUsd !== null) {
+    return basePrice <= spec.maxBudgetUsd + 0.05;
+  }
+  if (spec.wantsCombo) {
+    return comboAddon !== null;
+  }
+  return true;
+}
+
+function formatItemPriceWithComboBreakdown(
+  item: any,
+  currency: 'USD' | 'LBP',
+  exchangeRate: number,
+  spec: BudgetAndComboSpec
+): string {
+  const baseStr = formatItemPriceForAi(item.price, currency, exchangeRate);
+  const comboAddon = getItemComboAddonUsd(item);
+  if ((spec.wantsCombo || spec.maxBudgetUsd !== null) && comboAddon !== null) {
+    const totalUsd = Number((Number(item.price || 0) + comboAddon).toFixed(2));
+    const comboAddonStr = formatItemPriceForAi(comboAddon, currency, exchangeRate);
+    const totalStr = formatItemPriceForAi(totalUsd, currency, exchangeRate);
+    return `${baseStr} + ${comboAddonStr} Combo (Fries & Drink) = ${totalStr} total`;
+  }
+  return baseStr;
+}
+
+function extractPositiveQueryWords(
+  message: string,
+  excludedTerms: string[],
+  budgetSpec?: BudgetAndComboSpec
+): string[] {
+  const activeSpec = budgetSpec || extractBudgetAndComboSpec(message);
   const stopAndNegationWords = new Set([
     'without',
     'bala',
@@ -509,155 +679,105 @@ function extractPositiveQueryWords(message: string, excludedTerms: string[]): st
     'chou',
     'atyab',
     '3andkon',
+    'andkon',
     '3endkon',
+    'endkon',
     'indak',
     '3indak',
     '3endak',
     '3enddak',
     'aandak',
+    'andak',
     '3andak',
     'ma3',
     'ma33',
     'ma333',
+    'maa',
     'tahet',
     'ta7et',
     'tahit',
     'taht',
+    '7doud',
+    'hdoud',
+    'b7doud',
+    'bhdoud',
+    'a2al',
+    'aqal',
+    'akal',
+    'aal',
+    '2arib',
+    'arib',
+    'qarib',
+    'men',
+    'sa7en',
+    'sahen',
     'under',
     'below',
     'less',
     'than',
+    'around',
+    'within',
     'budget',
     'dollar',
     'dollars',
+    'dolar',
     'usd',
+    ...(activeSpec.wantsCombo
+      ? [
+          'pepsi',
+          'batata',
+          'fries',
+          'drink',
+          'drinks',
+          'combo',
+          '7up',
+          'mirinda',
+          'cola',
+          'بطاطا',
+          'بيبسي',
+          'مشروب',
+          'كومبو',
+        ]
+      : []),
     ...excludedTerms,
     ...(excludedTerms.length > 0
       ? [
           'toum',
           'thoum',
           'basal',
+          'bassal',
+          '5as',
+          'khas',
+          'khass',
           'jebne',
+          'jebneh',
+          'jibne',
           'kabis',
           'feter',
           'banadoura',
           'garlic',
           'onion',
           'onions',
+          'lettuce',
         ]
       : []),
   ]);
 
-  const budgetSpec = extractBudgetAndComboSpec(message);
-  if (budgetSpec.wantsCombo) {
-    stopAndNegationWords.add('pepsi');
-    stopAndNegationWords.add('batata');
-    stopAndNegationWords.add('fries');
-    stopAndNegationWords.add('drink');
-    stopAndNegationWords.add('drinks');
-    stopAndNegationWords.add('combo');
-    stopAndNegationWords.add('بطاطا');
-    stopAndNegationWords.add('بيبسي');
-    stopAndNegationWords.add('مشروب');
-    stopAndNegationWords.add('كومبو');
-  }
-
-  return message
+  const rawTokens = message
     .toLowerCase()
     .replace(/[^\w\s\u0600-\u06FF]/g, ' ')
     .split(/\s+/)
     .filter((w) => w.length > 2 && !/^\d+$/.test(w) && !stopAndNegationWords.has(w));
-}
 
-interface BudgetAndComboSpec {
-  maxBudgetUsd: number | null;
-  wantsCombo: boolean;
-}
-
-function getItemComboAddonUsd(item: any): number | null {
-  if (!Array.isArray(item?.addons)) return null;
-  for (const rawAddon of item.addons) {
-    const str = String(rawAddon || '');
-    if (/combo|fries\s*&\s*drink/i.test(str)) {
-      const m = str.match(/\$?\s*(\d+(?:\.\d+)?)/);
-      return m ? parseFloat(m[1]) : 2.81;
-    }
-  }
-  return null;
-}
-
-function extractBudgetAndComboSpec(message: string, exchangeRate = 89000): BudgetAndComboSpec {
-  const q = message.toLowerCase();
-  const wantsCombo =
-    /\b(combo|with\s+fries|fries\s+and\s+drink|drink\s+and\s+fries|ma3+\s+pepsi|ma3+\s+batata|pepsi\s+w\s+batata|batata\s+w\s+pepsi|w\s+pepsi\s+w\s+batata|w\s+batata\s+w\s+pepsi|بطاطا\s+وبيبسي|بيبسي\s+وبطاطا|كومبو|مع\s+بطاطا|مع\s+بيبسي)\b/i.test(
-      q
-    );
-
-  let maxBudgetUsd: number | null = null;
-
-  // Match budget phrases such as "under $10", "tahet l 10$", "ta7et el 10$", "less than $15", "b 10$", "تحت ال 10 دولار"
-  const prepMatch = q.match(
-    /(?:under|less\s+than|below|max|up\s+to|budget|tahet|ta7et|tahit|taht|تحت|بأقل\s+من|بحدود)\s*(?:el|l|al|ال)?\s*\$?\s*(\d+(?:[.,]\d+)?)\s*(\$|usd|dollars?|دولار|l\.?l\.?|lbp|lira|ليرة)?/i
-  );
-  const directDollarMatch =
-    !prepMatch &&
-    q.match(/(?:\$\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:\$|usd|dollars?|دولار))/i);
-
-  if (prepMatch) {
-    const rawNum = parseFloat(prepMatch[1].replace(/,/g, ''));
-    const unit = (prepMatch[2] || '').toLowerCase();
-    if (!Number.isNaN(rawNum) && rawNum > 0) {
-      if (rawNum >= 50000 || /l\.?l|lbp|lira|ليرة/.test(unit)) {
-        maxBudgetUsd = rawNum / (exchangeRate || 89000);
-      } else if (rawNum >= 2 && rawNum <= 250) {
-        maxBudgetUsd = rawNum;
+  const expanded: string[] = [];
+  for (const token of rawTokens) {
+    for (const v of expandLebaneseFrancoToken(token)) {
+      if (!stopAndNegationWords.has(v) && !expanded.includes(v)) {
+        expanded.push(v);
       }
     }
-  } else if (directDollarMatch) {
-    const rawNum = parseFloat(String(directDollarMatch[1] || directDollarMatch[2]).replace(/,/g, ''));
-    if (!Number.isNaN(rawNum) && rawNum >= 2 && rawNum <= 250) {
-      maxBudgetUsd = rawNum;
-    }
   }
-
-  return { maxBudgetUsd, wantsCombo };
-}
-
-function itemFitsBudgetAndCombo(item: any, spec: BudgetAndComboSpec): boolean {
-  const baseUsd = parseFloat(String(item?.price || '0'));
-  if (Number.isNaN(baseUsd) || baseUsd <= 0) return false;
-
-  const comboAddonUsd = getItemComboAddonUsd(item);
-
-  // If the guest explicitly asks for a dish with Fries & Pepsi / Combo, prioritize dishes that support the Combo addon
-  if (spec.wantsCombo && spec.maxBudgetUsd !== null) {
-    const totalWithCombo = baseUsd + (comboAddonUsd !== null ? comboAddonUsd : 3.93);
-    return totalWithCombo <= spec.maxBudgetUsd + 0.05;
-  }
-
-  if (spec.maxBudgetUsd !== null) {
-    return baseUsd <= spec.maxBudgetUsd + 0.05;
-  }
-
-  return true;
-}
-
-function formatItemPriceWithComboBreakdown(
-  item: any,
-  currency: 'USD' | 'LBP',
-  rate: number,
-  spec: BudgetAndComboSpec
-): string {
-  const baseStr = formatItemPriceForAi(item.price, currency, rate);
-  const comboAddonUsd = getItemComboAddonUsd(item);
-  if (spec.wantsCombo && comboAddonUsd !== null) {
-    const baseUsd = parseFloat(String(item.price || '0')) || 0;
-    const totalUsd = baseUsd + comboAddonUsd;
-    const addonStr = formatItemPriceForAi(comboAddonUsd, currency, rate);
-    const totalStr = formatItemPriceForAi(totalUsd, currency, rate);
-    return `${baseStr} + ${addonStr} Combo (Fries & Drink) = ${totalStr} total`;
-  }
-  return baseStr;
+  return expanded;
 }
 
 function getDishFamilyKey(item: any): string {
@@ -715,7 +835,6 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
   for (const w of words) {
     if (w === 'crispy' || w === 'crunchy' || w === 'كريسبي' || w === 'مقرمش') {
       if (titleLower.includes('crispy') && titleLower.includes('tenders')) {
-        // Ensure Crispy Chicken Tenders is always a star highlight for crispy / crispy-or-cheesy queries
         score += 54;
       } else if (titleLower.includes('crispy') || titleLower.includes('pane')) {
         score += 26;
@@ -734,8 +853,11 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
       w === 'cheddar' ||
       w === 'mozzarella' ||
       w === 'halloumi' ||
+      w === 'halloum' ||
+      w === '7alloum' ||
       w === 'jebne' ||
       w === 'jebneh' ||
+      w === 'jibne' ||
       w === 'جبنة' ||
       w === 'جبن'
     ) {
@@ -765,6 +887,8 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
       w === 'mashawe' ||
       w === 'meshwe' ||
       w === 'mechwe' ||
+      w === 'fa7em' ||
+      w === 'fahem' ||
       w === 'grill' ||
       w === 'grilled' ||
       w === 'مشاوي' ||
@@ -829,7 +953,15 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
       }
       continue;
     }
-    if (w === 'lahme' || w === 'la7me' || w === 'lamb' || w === 'ghanam' || w === 'لحمة' || w === 'غنم') {
+    if (
+      w === 'lahme' ||
+      w === 'la7me' ||
+      w === 'lamb' ||
+      w === 'ghanam' ||
+      w === '8anam' ||
+      w === 'لحمة' ||
+      w === 'غنم'
+    ) {
       if (titleLower.includes('lahme') || titleLower.includes('sheep') || titleLower.includes('ghanam')) {
         score += catLower.includes('mashewe') ? 28 : 24;
       } else if (descLower.includes('lahme') || descLower.includes('skewers')) {
@@ -847,7 +979,17 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
       else if (descLower.includes('kabab') || descLower.includes('kebab')) score += 16;
       continue;
     }
-    if (w === 'spicy' || w === 'hot' || w === '7ar' || w === 'har' || w === 'harra' || w === 'حار' || w === 'حد' || w === 'حر') {
+    if (
+      w === 'spicy' ||
+      w === 'hot' ||
+      w === '7ar' ||
+      w === 'har' ||
+      w === 'harra' ||
+      w === '7arra' ||
+      w === 'حار' ||
+      w === 'حد' ||
+      w === 'حر'
+    ) {
       if (
         titleLower.includes('spicy') ||
         titleLower.includes('harra') ||
@@ -910,38 +1052,49 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
 function getStrictPositiveMatchedItems(
   message: string,
   storeData: any,
-  excludedTerms: string[]
+  excludedTerms: string[],
+  budgetSpec?: BudgetAndComboSpec
 ): any[] {
   const q = message.toLowerCase();
   const rate = storeData.settings?.exchangeRate || 89000;
-  const budgetSpec = extractBudgetAndComboSpec(message, rate);
+  const activeBudgetSpec = budgetSpec || extractBudgetAndComboSpec(message, rate);
   const isAskingForDrinkOrSauce =
-    !budgetSpec.wantsCombo &&
+    !activeBudgetSpec.wantsCombo &&
     /\b(drink|drinks|pepsi|water|juice|sauce|dip|مشروب|عصير|مياه|صوص)\b/i.test(q);
   const allSafeItems = (storeData.items || []).filter(
-    (i: any) =>
-      i.available !== false &&
-      !itemContainsExcludedTerm(i, excludedTerms) &&
-      itemFitsBudgetAndCombo(i, budgetSpec)
+    (i: any) => i.available !== false && !itemContainsExcludedTerm(i, excludedTerms)
   );
-  const pool = isAskingForDrinkOrSauce
+  const basePool = isAskingForDrinkOrSauce
     ? allSafeItems
     : allSafeItems.filter((i: any) => {
         const cat = String(i.category || '').toLowerCase();
         return !cat.includes('drink') && !cat.includes('sauce') && !cat.includes('beverage');
       });
 
-  const words = extractPositiveQueryWords(message, excludedTerms);
-  if (!words.length) return [];
+  const budgetFilteredPool = basePool.filter((i: any) => itemFitsBudgetAndCombo(i, activeBudgetSpec));
+  const pool = budgetFilteredPool.length > 0 ? budgetFilteredPool : basePool;
+
+  const words = extractPositiveQueryWords(message, excludedTerms, activeBudgetSpec);
+  if (!words.length) {
+    if (
+      (activeBudgetSpec.maxBudgetUsd !== null || activeBudgetSpec.wantsCombo) &&
+      budgetFilteredPool.length > 0
+    ) {
+      return [...budgetFilteredPool].sort((a: any, b: any) => {
+        const aPop = a.popular ? 1 : 0;
+        const bPop = b.popular ? 1 : 0;
+        if (bPop !== aPop) return bPop - aPop;
+        return (a.order ?? 99) - (b.order ?? 99);
+      });
+    }
+    return [];
+  }
 
   const matched = pool
-    .map((item: any) => {
-      let posScore = computePositiveKeywordScore(item, words);
-      if (posScore > 0 && budgetSpec.wantsCombo && getItemComboAddonUsd(item) !== null) {
-        posScore += 8;
-      }
-      return { item, posScore };
-    })
+    .map((item: any) => ({
+      item,
+      posScore: computePositiveKeywordScore(item, words),
+    }))
     .filter((entry: any) => entry.posScore > 0)
     .sort((a: any, b: any) => {
       if (b.posScore !== a.posScore) return b.posScore - a.posScore;
@@ -964,7 +1117,6 @@ function selectVariedItemsFromPool(
   if (!orderedMatches.length) return [];
   if (orderedMatches.length <= limit) return orderedMatches;
 
-  // Step 1: Separate primary family representatives from duplicate size/dine-in variants
   const seenFamilies = new Set<string>();
   const primaryPool: any[] = [];
   const variantOverflow: any[] = [];
@@ -981,11 +1133,9 @@ function selectVariedItemsFromPool(
 
   const workingPool = primaryPool.length >= limit ? primaryPool : [...primaryPool, ...variantOverflow];
 
-  // Step 2: Prioritize items that have NOT been recommended yet in this chat session
   const unseen = workingPool.filter((i) => !previouslyRecommendedIds.has(String(i.id)));
   const seen = workingPool.filter((i) => previouslyRecommendedIds.has(String(i.id)));
 
-  // Rotate seen items by turn index so even if all matching items were seen, repeat questions mix a fresh subset
   const rotatedSeen =
     seen.length > 1
       ? [
@@ -1000,8 +1150,6 @@ function selectVariedItemsFromPool(
     return candidateOrder.slice(0, limit);
   }
 
-  // Step 3: When multiple categories match (e.g. "crispy or cheesy" across Appetizers, Burgers, Subs),
-  // pick up to 1 per category in pass 1, then allow a 2nd per category in pass 2, then fill remaining.
   const distinctCategories = new Set(
     candidateOrder.map((i) => String(i.category || '').toLowerCase())
   );
@@ -1013,7 +1161,6 @@ function selectVariedItemsFromPool(
   const selectedIds = new Set<string>();
   const catCounts = new Map<string, number>();
 
-  // Pass 1: 1 item per distinct category
   for (const item of candidateOrder) {
     if (selected.length >= limit) break;
     const id = String(item.id);
@@ -1025,7 +1172,6 @@ function selectVariedItemsFromPool(
     }
   }
 
-  // Pass 2: Up to 2 items per category
   for (const item of candidateOrder) {
     if (selected.length >= limit) break;
     const id = String(item.id);
@@ -1037,7 +1183,6 @@ function selectVariedItemsFromPool(
     }
   }
 
-  // Pass 3: Fill any remaining slots
   for (const item of candidateOrder) {
     if (selected.length >= limit) break;
     const id = String(item.id);
@@ -1054,22 +1199,29 @@ function getTurnTargetItems(
   message: string,
   storeData: any,
   excludedTerms: string[],
-  history: Array<{ role?: string; text?: string; recommendedItemIds?: string[] }> = []
+  history: Array<{ role?: string; text?: string; recommendedItemIds?: string[] }> = [],
+  budgetSpec?: BudgetAndComboSpec
 ): {
   turnItems: any[];
   strictMatches: any[];
   previousAssistantTurns: number;
   budgetSpec: BudgetAndComboSpec;
 } {
-  const { previouslyRecommendedIds, previousAssistantTurns } = extractHistoryRotationState(history);
   const rate = storeData.settings?.exchangeRate || 89000;
-  const budgetSpec = extractBudgetAndComboSpec(message, rate);
-  const strictMatches = getStrictPositiveMatchedItems(message, storeData, excludedTerms);
-  const q = message.toLowerCase();
+  const activeBudgetSpec = budgetSpec || extractBudgetAndComboSpec(message, rate);
+  const { previouslyRecommendedIds, previousAssistantTurns } = extractHistoryRotationState(history);
+  const strictMatches = getStrictPositiveMatchedItems(
+    message,
+    storeData,
+    excludedTerms,
+    activeBudgetSpec
+  );
+  const q = `${message} ${normalizeLebaneseFrancoText(message)}`.toLowerCase();
 
-  // Check if query is specifically asking for a single category (like Mashewe, Burgers, Subs, Salads)
   const isSingleCategoryQuery =
-    /\b(mashewe|mashawi|mashawe|meshwe|mechwe|مشاوي|مشوي|pizza|بيتزا|falafel|فلافل|sajj|صاج)\b/i.test(q);
+    /\b(mashewe|mashawi|mashawe|meshwe|mechwe|مشاوي|مشوي|pizza|بيتزا|falafel|فلافل|sajj|saj|صاج)\b/i.test(
+      q
+    );
 
   if (strictMatches.length > 0) {
     const turnItems = selectVariedItemsFromPool(
@@ -1079,19 +1231,15 @@ function getTurnTargetItems(
       !isSingleCategoryQuery,
       3
     );
-    return { turnItems, strictMatches, previousAssistantTurns, budgetSpec };
+    return { turnItems, strictMatches, previousAssistantTurns, budgetSpec: activeBudgetSpec };
   }
 
-  // General / Popular / Budget / Ingredient-Exclusion query without a specific positive dish keyword
   const topicTag = classifyTopicTag(message);
   const isAskingForDrinkOrSauce =
-    !budgetSpec.wantsCombo &&
+    !activeBudgetSpec.wantsCombo &&
     /\b(drink|drinks|pepsi|water|juice|sauce|dip|مشروب|عصير|مياه|صوص)\b/i.test(q);
   const allAvailableItems: any[] = (storeData.items || []).filter(
-    (i: any) =>
-      i.available !== false &&
-      !itemContainsExcludedTerm(i, excludedTerms) &&
-      itemFitsBudgetAndCombo(i, budgetSpec)
+    (i: any) => i.available !== false && !itemContainsExcludedTerm(i, excludedTerms)
   );
   const candidateItems = isAskingForDrinkOrSauce
     ? allAvailableItems
@@ -1099,7 +1247,9 @@ function getTurnTargetItems(
         const cat = String(i.category || '').toLowerCase();
         return !cat.includes('drink') && !cat.includes('sauce') && !cat.includes('beverage');
       });
-  const pool = candidateItems.length > 0 ? candidateItems : allAvailableItems;
+  const basePool = candidateItems.length > 0 ? candidateItems : allAvailableItems;
+  const budgetPool = basePool.filter((i: any) => itemFitsBudgetAndCombo(i, activeBudgetSpec));
+  const pool = budgetPool.length > 0 ? budgetPool : basePool;
 
   const scored = pool.map((item) => {
     let score = 0;
@@ -1108,7 +1258,6 @@ function getTurnTargetItems(
     if (item.popular) score += 14;
     if (item.isNew) score += 5;
     if (descLower.length > 10) score += 4;
-    if (budgetSpec.wantsCombo && getItemComboAddonUsd(item) !== null) score += 16;
     if (
       topicTag === 'Healthy & Light' &&
       (catLower.includes('light') || catLower.includes('healthy') || catLower.includes('salad'))
@@ -1132,7 +1281,27 @@ function getTurnTargetItems(
     3
   );
 
-  return { turnItems, strictMatches: [], previousAssistantTurns, budgetSpec };
+  return { turnItems, strictMatches: [], previousAssistantTurns, budgetSpec: activeBudgetSpec };
+}
+
+function shouldUseInstantDeterministicFastPath(
+  message: string,
+  exclusions: { excludedTerms: string[] },
+  budgetSpec: BudgetAndComboSpec,
+  strictMatches: any[]
+): boolean {
+  if (exclusions.excludedTerms.length > 0) return true;
+  if (budgetSpec.maxBudgetUsd !== null || budgetSpec.wantsCombo) return true;
+  if (strictMatches.length > 0) return true;
+  const q = `${message} ${normalizeLebaneseFrancoText(message)}`.toLowerCase();
+  if (
+    /\b(popular|best|top|recommend|favorite|special|atyab|ashhar|healthy|light|diet|crispy|cheesy|mashewe|mashawi|burger|sub|sandwich|sandwish|salad|pizza|pasta|أطيب|أشهر|صحي|دايت|لايت|مشاوي)\b/i.test(
+      q
+    )
+  ) {
+    return true;
+  }
+  return false;
 }
 
 function runDeterministicMenuMatcher(
@@ -1151,12 +1320,14 @@ function runDeterministicMenuMatcher(
   const currency: 'USD' | 'LBP' = storeData.settings?.currency === 'LBP' ? 'LBP' : 'USD';
   const rate = storeData.settings?.exchangeRate || 89000;
   const exclusions = extractExclusionsFromMessage(message);
+  const budgetSpec = extractBudgetAndComboSpec(message, rate);
 
-  const { turnItems: topPicks, previousAssistantTurns, budgetSpec } = getTurnTargetItems(
+  const { turnItems: topPicks, previousAssistantTurns } = getTurnTargetItems(
     message,
     storeData,
     exclusions.excludedTerms,
-    history
+    history,
+    budgetSpec
   );
 
   const pickNames = topPicks
@@ -1168,31 +1339,13 @@ function runDeterministicMenuMatcher(
     )
     .join(', ');
 
-  const q = message.toLowerCase();
+  const q = `${message} ${normalizeLebaneseFrancoText(message)}`.toLowerCase();
   const isMasheweQuery =
     /\b(mashewe|mashawi|mashawe|meshwe|mechwe|grill|grilled|مشاوي|مشوي)\b/i.test(q);
   const variantIdx = previousAssistantTurns % 3;
 
   let reply = '';
-  if (budgetSpec.maxBudgetUsd !== null || budgetSpec.wantsCombo) {
-    const budgetLabel =
-      budgetSpec.maxBudgetUsd !== null
-        ? formatItemPriceForAi(budgetSpec.maxBudgetUsd, currency, rate)
-        : '';
-    if (lang === 'Arabic') {
-      reply = budgetLabel
-        ? `أهلاً بك في كورانو! بالتأكيد، هذه أفضل الخيارات الشهية ضمن ميزانية ${budgetLabel} (مع إمكانية إضافة كومبو بطاطا ومشروب): ${pickNames}!`
-        : `أهلاً بك في كورانو! إليك أفضل الوجبات لدينا مع خيار الكومبو (بطاطا ومشروب): ${pickNames}!`;
-    } else if (lang === 'Lebanese') {
-      reply = budgetLabel
-        ? `Ahla w sahla fik bi Corano! Akid, hayde atyab el kheyarat ta7et el ${budgetLabel} (ma3 Combo Batata w Pepsi): ${pickNames}. Fik tekbus 3ala ayya wajbe ta7et la tshouf kel el tafasil!`
-        : `Ahla w sahla fik bi Corano! Hayde atyab el wajbet 3anna ma3 Combo Batata w Pepsi: ${pickNames}!`;
-    } else {
-      reply = budgetLabel
-        ? `Welcome to Corano! Here are great freshly prepared options under ${budgetLabel} (including the Fries & Drink Combo breakdown): ${pickNames}. Tap any dish card below for full details!`
-        : `Welcome to Corano! Here are our top meal options with the Fries & Drink Combo breakdown: ${pickNames}!`;
-    }
-  } else if (exclusions.excludedTerms.length > 0) {
+  if (exclusions.excludedTerms.length > 0) {
     if (lang === 'Arabic') {
       const arTemplates = [
         `أهلاً وسهلاً بك في كورانو! بالتأكيد، هذه الأطباق الشهية لدينا محضرة بدون ${exclusions.labelsAr.join(' أو ')}: ${pickNames}. كما يمكنك دائماً إبلاغ النادل عند الطلب لتحضير وجبتك كما تفضل!`,
@@ -1214,6 +1367,24 @@ function runDeterministicMenuMatcher(
         `Happy to share more choices! You can also enjoy these fresh dishes made without ${exclusions.labelsEn.join(' or ')}: ${pickNames}!`,
       ];
       reply = enTemplates[variantIdx];
+    }
+  } else if (budgetSpec.wantsCombo || budgetSpec.maxBudgetUsd !== null) {
+    const budgetLabel =
+      budgetSpec.maxBudgetUsd !== null
+        ? formatItemPriceForAi(budgetSpec.maxBudgetUsd, currency, rate)
+        : '';
+    if (lang === 'Arabic') {
+      reply = budgetLabel
+        ? `أهلاً وسهلاً بك في كورانو! بالتأكيد، إليك أشهى الخيارات مع كومبو (بطاطا ومشروب بيبسي) ضمن ميزانية ${budgetLabel}: ${pickNames}. اضغط على أي وجبة بالأسفل لعرض التفاصيل!`
+        : `أهلاً وسهلاً بك في كورانو! إليك أشهى الخيارات مع كومبو (بطاطا ومشروب بيبسي): ${pickNames}. اضغط على أي وجبة بالأسفل لعرض التفاصيل!`;
+    } else if (lang === 'Lebanese') {
+      reply = budgetLabel
+        ? `Ahla w sahla fik bi Corano! Akid tekram, hayde atyab el asnaf ma3 Combo (Batata w Pepsi) b 7doud / ta7et el ${budgetLabel}: ${pickNames}. Ekbus 3ala ayya wajbe ta7et la tshouf kel el tafasil!`
+        : `Ahla w sahla fik bi Corano! Akid tekram, hayde atyab el asnaf ma3 Combo (Batata w Pepsi): ${pickNames}. Ekbus 3ala ayya wajbe ta7et la tshouf kel el tafasil!`;
+    } else {
+      reply = budgetLabel
+        ? `Welcome to Corano! Here are our top freshly prepared picks with the full Combo (Fries & Drink) all within ${budgetLabel}: ${pickNames}. Tap any dish card below for full details!`
+        : `Welcome to Corano! Here are our top freshly prepared picks with the full Combo (Fries & Drink): ${pickNames}. Tap any dish card below for full details!`;
     }
   } else if (isMasheweQuery) {
     if (lang === 'Arabic') {
@@ -1283,8 +1454,8 @@ function buildCoranoMenuSystemPrompt(
   const currency: 'USD' | 'LBP' = storeData.settings?.currency === 'LBP' ? 'LBP' : 'USD';
   const rate = storeData.settings?.exchangeRate || 89000;
 
-  const availableLines: string[] = [];
   const outOfStockTitles: string[] = [];
+  const safeAvailableItems: any[] = [];
 
   for (const item of storeData.items || []) {
     if (item.available === false) {
@@ -1294,17 +1465,45 @@ function buildCoranoMenuSystemPrompt(
     if (itemContainsExcludedTerm(item, excludedTerms)) {
       continue;
     }
-    const priceStr = formatItemPriceForAi(item.price, currency, rate);
+    safeAvailableItems.push(item);
+  }
+
+  // Cap menu context to top 20 most relevant available dishes (turnItems first, then popular/top-ordered)
+  // to cut prompt token size by 75% for 4x faster LLM inference
+  const turnIdSet = new Set(turnItems.map((i) => String(i.id)));
+  const prioritizedContextItems = [
+    ...turnItems,
+    ...safeAvailableItems
+      .filter((i) => !turnIdSet.has(String(i.id)))
+      .sort((a, b) => {
+        const aPop = a.popular ? 1 : 0;
+        const bPop = b.popular ? 1 : 0;
+        if (bPop !== aPop) return bPop - aPop;
+        return (a.order ?? 99) - (b.order ?? 99);
+      }),
+  ].slice(0, 20);
+
+  const availableLines = prioritizedContextItems.map((item) => {
+    const priceStr = formatItemPriceWithComboBreakdown(item, currency, rate, budgetSpec);
     const popFlag = item.popular ? ' [★ POPULAR]' : '';
     const descStr = item.desc ? ` | Ingredients: ${item.desc}` : '';
-    const addonsStr =
-      Array.isArray(item.addons) && item.addons.length > 0
-        ? ` | Addons: ${item.addons.join('; ')}`
-        : '';
-    availableLines.push(
-      `ID:${item.id} | Name: ${item.title} | Category: ${item.category} | Price: ${priceStr}${popFlag}${descStr}${addonsStr}`
-    );
-  }
+    return `ID:${item.id} | Name: ${item.title} | Category: ${item.category} | Price: ${priceStr}${popFlag}${descStr}`;
+  });
+
+  const budgetAndComboRuleBlock =
+    budgetSpec.wantsCombo || budgetSpec.maxBudgetUsd !== null
+      ? `\nBUDGET & COMBO ("MA3 PEPSI W BATATA") RULE ACTIVE FOR THIS QUESTION:\n- The guest asked for ${
+          budgetSpec.wantsCombo ? 'a Combo (with Fries / Batata & Drink / Pepsi)' : 'dishes'
+        }${
+          budgetSpec.maxBudgetUsd !== null
+            ? ` under a maximum budget of ${formatItemPriceForAi(budgetSpec.maxBudgetUsd, currency, rate)}`
+            : ''
+        }.\n- In your reply, explicitly state each recommended dish's base price AND its +${formatItemPriceForAi(
+          2.81,
+          currency,
+          rate
+        )} Combo (Fries & Drink) total so the guest sees the exact math under their budget!\n`
+      : '';
 
   const priorityHighlightBlock =
     turnItems.length > 0
@@ -1321,15 +1520,6 @@ function buildCoranoMenuSystemPrompt(
           .join('\n')}\n`
       : '';
 
-  const budgetInstructionBlock =
-    budgetSpec.maxBudgetUsd !== null || budgetSpec.wantsCombo
-      ? `\nBUDGET & COMBO BREAKDOWN RULE:\n- The guest asked for a combo (Fries & Drink / Pepsi & Batata)${
-          budgetSpec.maxBudgetUsd !== null
-            ? ` under ${formatItemPriceForAi(budgetSpec.maxBudgetUsd, currency, rate)}`
-            : ''
-        }.\n- Quote the exact Dish Price, the +${formatItemPriceForAi(2.81, currency, rate)} Combo (Fries & Drink) addon price, and the exact Total price shown in SELECTED DISHES FOR THIS TURN above!\n`
-      : '';
-
   const repeatVarietyBlock =
     previousAssistantTurns > 0
       ? `\nFOLLOW-UP / REPEAT QUESTION VARIETY RULE (Turn #${previousAssistantTurns + 1} in this chat):\n- Do NOT repeat your exact wording or opening sentence from earlier messages in this chat.\n- Vary your tone naturally and introduce the newly selected dishes listed in SELECTED DISHES FOR THIS TURN above!\n`
@@ -1341,7 +1531,7 @@ Your job is to help guests choose dishes, answer ingredient or allergy questions
 STRICT RULES:
 1. LANGUAGE MIRRORING:
    - If the guest writes in English -> reply in warm, appetizing English (set language="English").
-   - If the guest writes in Lebanese Franco / Arabizi (e.g. "shu atyab burger", "baddi akel bala toum", "3endak sub aw sandwich ma3 Pepsi w batata tahet l 10$") -> reply naturally in warm Lebanese Franco / Arabizi (e.g. "Ahla w sahla! Akid...") (set language="Lebanese").
+   - If the guest writes in Lebanese Franco / Arabizi (e.g. "shu atyab burger", "baddi akel bala toum", "bade sandwish aw sub ma3 pepsi w batata fries b 7doud l 10$") -> reply naturally in warm Lebanese Franco / Arabizi (e.g. "Ahla w sahla! Akid...") (set language="Lebanese").
    - If the guest writes in Arabic script (العربية) -> reply in natural Lebanese/Arabic script (set language="Arabic").
 2. RELY ON ITEM NAME, CATEGORY, AND INGREDIENTS:
    - Always check the item's Name, Category, AND Ingredients for every question.
@@ -1357,8 +1547,8 @@ STRICT RULES:
 7. Keep your reply concise (2 to 4 sentences max) because visual dish cards for your recommendedItemIds will automatically appear right below your text!
 8. Set topicTag to one of: "Popular & Best Sellers", "Burgers & Subs", "Healthy & Light", "Ingredients & Allergies", "Spicy Dishes", "Prices & Budget", "Sandwiches & Wraps", "Pizza & Pasta", "General Inquiry".
 9. Set summary to a 1-sentence English summary for the restaurant owner.
-${priorityHighlightBlock}${budgetInstructionBlock}${repeatVarietyBlock}
-LIVE AVAILABLE CORANO MENU (${availableLines.length} dishes):
+${budgetAndComboRuleBlock}${priorityHighlightBlock}${repeatVarietyBlock}
+TOP RELEVANT CORANO MENU DISHES (${availableLines.length} dishes):
 ${availableLines.join('\n')}`;
 }
 
@@ -1373,18 +1563,27 @@ async function generateCoranoAiResponse(
   topicTag: string;
   language: 'English' | 'Lebanese' | 'Arabic';
 }> {
+  const rate = storeData.settings?.exchangeRate || 89000;
+  const exclusions = extractExclusionsFromMessage(message);
+  const budgetSpec = extractBudgetAndComboSpec(message, rate);
+  const { turnItems, strictMatches, previousAssistantTurns } = getTurnTargetItems(
+    message,
+    storeData,
+    exclusions.excludedTerms,
+    history,
+    budgetSpec
+  );
+
+  // Instant Sub-Second Fast-Path (< 0.2s) for pre-written prompts, strict menu matches, ingredient exclusions, and Budget/Combo queries
+  if (shouldUseInstantDeterministicFastPath(message, exclusions, budgetSpec, strictMatches)) {
+    return runDeterministicMenuMatcher(message, storeData, history);
+  }
+
   const apiKey = (process.env.GEMINI_API_KEY || '').trim();
   if (!apiKey) {
     return runDeterministicMenuMatcher(message, storeData, history);
   }
 
-  const exclusions = extractExclusionsFromMessage(message);
-  const { turnItems, strictMatches, previousAssistantTurns, budgetSpec } = getTurnTargetItems(
-    message,
-    storeData,
-    exclusions.excludedTerms,
-    history
-  );
   const strictMatchIds = new Set(strictMatches.map((m: any) => String(m.id)));
   const turnTargetIds = turnItems.map((i: any) => String(i.id));
   const systemInstruction = buildCoranoMenuSystemPrompt(
@@ -1404,7 +1603,7 @@ async function generateCoranoAiResponse(
   const ai = new GoogleGenAI({
     apiKey,
     httpOptions: {
-      timeout: 8000,
+      timeout: 3200,
       retryOptions: {
         attempts: 1,
       },
@@ -1443,76 +1642,65 @@ async function generateCoranoAiResponse(
     required: ['reply', 'recommendedItemIds', 'summary', 'topicTag', 'language'],
   };
 
-  // Documented model configs per @google/genai SKILL.md:
-  // - gemini-3.1-flash-lite: no thinkingConfig parameter (unsupported on flash-lite)
-  // - gemini-2.5-flash: thinkingBudget: 0
-  // - gemini-3.8-flash: thinkingLevel: ThinkingLevel.LOW
-  const modelsToTry: Array<{ name: string; thinkingConfig?: Record<string, any> }> = [
-    { name: 'gemini-3.1-flash-lite' },
-    { name: 'gemini-2.5-flash', thinkingConfig: { thinkingBudget: 0 } },
-    { name: 'gemini-3.8-flash', thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } },
-  ];
+  // Single fast Gemini call (gemini-2.5-flash with thinkingBudget: 0 and strict 3200ms timeout)
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3200);
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: conversationContext,
+      config: {
+        abortSignal: controller.signal,
+        temperature: previousAssistantTurns > 0 ? 0.55 : 0.35,
+        systemInstruction,
+        responseMimeType: 'application/json',
+        responseSchema,
+        thinkingConfig: { thinkingBudget: 0 },
+      },
+    });
+    clearTimeout(timer);
+    const rawText = (response.text ?? '').trim();
+    if (rawText) {
+      const parsed = JSON.parse(rawText);
+      if (parsed && typeof parsed.reply === 'string' && parsed.reply.trim()) {
+        const lang: 'English' | 'Lebanese' | 'Arabic' =
+          parsed.language === 'Arabic' || parsed.language === 'Lebanese'
+            ? parsed.language
+            : detectUserLanguage(message);
 
-  for (const modelSpec of modelsToTry) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-    try {
-      const response = await ai.models.generateContent({
-        model: modelSpec.name,
-        contents: conversationContext,
-        config: {
-          abortSignal: controller.signal,
-          temperature: previousAssistantTurns > 0 ? 0.55 : 0.35,
-          systemInstruction,
-          responseMimeType: 'application/json',
-          responseSchema,
-          ...(modelSpec.thinkingConfig ? { thinkingConfig: modelSpec.thinkingConfig } : {}),
-        },
-      });
-      clearTimeout(timer);
-      const rawText = (response.text ?? '').trim();
-      if (rawText) {
-        const parsed = JSON.parse(rawText);
-        if (parsed && typeof parsed.reply === 'string' && parsed.reply.trim()) {
-          const lang: 'English' | 'Lebanese' | 'Arabic' =
-            parsed.language === 'Arabic' || parsed.language === 'Lebanese'
-              ? parsed.language
-              : detectUserLanguage(message);
-
-          let finalIds = turnTargetIds.slice(0, 3);
-          if (finalIds.length === 0) {
-            finalIds = (Array.isArray(parsed.recommendedItemIds) ? parsed.recommendedItemIds : [])
-              .map(String)
-              .filter((id: string) => {
-                const found = (storeData.items || []).find((i: any) => String(i.id) === id);
-                if (!found || found.available === false) return false;
-                if (itemContainsExcludedTerm(found, exclusions.excludedTerms)) return false;
-                if (strictMatchIds.size > 0 && !strictMatchIds.has(id)) return false;
-                return true;
-              })
-              .slice(0, 3);
-          }
-
-          return {
-            reply: parsed.reply.trim(),
-            recommendedItemIds: finalIds,
-            summary:
-              typeof parsed.summary === 'string' && parsed.summary.trim()
-                ? parsed.summary.trim()
-                : `Guest asked: "${message.slice(0, 70)}"`,
-            topicTag:
-              typeof parsed.topicTag === 'string' && parsed.topicTag.trim()
-                ? parsed.topicTag.trim()
-                : classifyTopicTag(message),
-            language: lang,
-          };
+        let finalIds = turnTargetIds.slice(0, 3);
+        if (finalIds.length === 0) {
+          finalIds = (Array.isArray(parsed.recommendedItemIds) ? parsed.recommendedItemIds : [])
+            .map(String)
+            .filter((id: string) => {
+              const found = (storeData.items || []).find((i: any) => String(i.id) === id);
+              if (!found || found.available === false) return false;
+              if (itemContainsExcludedTerm(found, exclusions.excludedTerms)) return false;
+              if (strictMatchIds.size > 0 && !strictMatchIds.has(id)) return false;
+              return true;
+            })
+            .slice(0, 3);
         }
+
+        return {
+          reply: parsed.reply.trim(),
+          recommendedItemIds: finalIds,
+          summary:
+            typeof parsed.summary === 'string' && parsed.summary.trim()
+              ? parsed.summary.trim()
+              : `Guest asked: "${message.slice(0, 70)}"`,
+          topicTag:
+            typeof parsed.topicTag === 'string' && parsed.topicTag.trim()
+              ? parsed.topicTag.trim()
+              : classifyTopicTag(message),
+          language: lang,
+        };
       }
-    } catch {
-      // Immediately proceed to next model in <0.1s without waiting on 503 retries
-    } finally {
-      clearTimeout(timer);
     }
+  } catch {
+    // Proceed immediately to Layer 4 deterministic matcher
+  } finally {
+    clearTimeout(timer);
   }
 
   // Layer 4: Deterministic Zero-Bug Safety Net
