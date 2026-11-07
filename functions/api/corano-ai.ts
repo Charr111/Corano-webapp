@@ -583,7 +583,7 @@ const INGREDIENT_EXCLUSION_GROUPS: Array<{
     labelLb: 'toum (garlic)',
     labelAr: 'ثوم',
     queryTriggers: /\b(garlic|toum|thoum|tom|aioli)\b|ثوم|توم/i,
-    itemMatchTerms: ['garlic', 'toum', 'aioli', 'tawouk', 'charcoal djeij'],
+    itemMatchTerms: ['garlic', 'toum', 'aioli'],
   },
   {
     labelEn: 'mayo',
@@ -643,7 +643,7 @@ const INGREDIENT_EXCLUSION_GROUPS: Array<{
     labelLb: 'kabis (pickles)',
     labelAr: 'كبيس',
     queryTriggers: /\b(pickle|pickles|pickels|kabis|kabbis)\b|كبيس|مخلل/i,
-    itemMatchTerms: ['pickle', 'pickles', 'pickels', 'kabis'],
+    itemMatchTerms: ['pickle', 'pickles', 'kabis'],
   },
   {
     labelEn: 'tomatoes',
