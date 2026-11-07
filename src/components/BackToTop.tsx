@@ -37,8 +37,8 @@ const BackToTop = () => {
           exit={{ opacity: 0, scale: 0.8 }}
           transition={{ duration: 0.2 }}
           onClick={scrollToTop}
-          // Placed well above the bottom nav (h-16), a bit below the middle of the screen
-          className="fixed bottom-[20vh] md:bottom-12 right-6 z-[60] p-4 bg-[#E4CD86] text-black rounded-full shadow-2xl hover:bg-[#E4CD86]/90 transition-colors active:scale-95 flex items-center justify-center"
+          // Placed cleanly above the Corano AI floating bubble on both mobile and desktop
+          className="fixed bottom-40 md:bottom-40 right-4 md:right-6 z-[45] p-3.5 bg-[#E4CD86] text-black rounded-full shadow-2xl hover:bg-[#E4CD86]/90 transition-colors active:scale-95 flex items-center justify-center"
           aria-label="Back to top"
         >
           <span className="material-symbols-outlined text-3xl leading-none">arrow_upward</span>

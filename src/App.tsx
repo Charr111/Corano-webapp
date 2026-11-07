@@ -6,6 +6,7 @@ import About from './pages/About';
 import Reviews from './pages/Reviews';
 import Admin from './pages/Admin';
 import PageMeta from './components/PageMeta';
+import CoranoAiWidget from './components/CoranoAiWidget';
 
 
 const Header = () => {
@@ -70,6 +71,7 @@ const MainLayout = () => {
           <Route path="/admin" element={<Admin />} />
         </Routes>
       </main>
+      <CoranoAiWidget />
       <BottomNav />
     </>
   );

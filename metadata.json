@@ -1,5 +1,6 @@
 {
   "name": "Corano Menu Website",
-  "description": "",
-  "requestFramePermissions": []
+  "description": "Corano Restaurant menu, location, and guest reviews.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

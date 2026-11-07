@@ -1,4 +1,4 @@
-import { StoreDataPayload } from '../types';
+import { AiConversationSession, MenuItem, StoreDataPayload } from '../types';
 import initialSeedData from '../data/initialStoreData.json';
 import { auth } from '../firebase';
 
@@ -20,6 +20,7 @@ function normalizePayload(raw: any): StoreDataPayload {
         typeof raw.settings?.exchangeRate === 'number' && raw.settings.exchangeRate > 0
           ? raw.settings.exchangeRate
           : 89000,
+      aiEnabled: raw.settings?.aiEnabled !== false,
     },
     categories: Array.isArray(raw.categories) ? raw.categories : seed.categories || [],
     items: Array.isArray(raw.items) ? raw.items : seed.items || [],
@@ -149,3 +150,70 @@ export async function mutateR2StoreData(
   saveCachedStoreData(updatedStore);
   return updatedStore;
 }
+
+export async function askCoranoAiWaiter(params: {
+  sessionId: string;
+  guestName?: string;
+  message: string;
+  history: Array<{ role: 'user' | 'assistant'; text: string; recommendedItemIds?: string[] }>;
+}): Promise<{
+  sessionId: string;
+  reply: string;
+  recommendedItemIds: string[];
+  recommendedItems: MenuItem[];
+  summary: string;
+  topicTag: string;
+  language: 'English' | 'Lebanese' | 'Arabic';
+}> {
+  const res = await fetch('/api/corano-ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.error || 'Corano AI is temporarily busy.');
+  }
+  return data;
+}
+
+export async function fetchAiConversations(): Promise<AiConversationSession[]> {
+  const currentUser = auth.currentUser;
+  if (!currentUser) return [];
+  const idToken = await currentUser.getIdToken();
+  const res = await fetch(`/api/corano-ai?t=${Date.now()}`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${idToken}`,
+    },
+  });
+  if (!res.ok) return [];
+  const data = await res.json().catch(() => ({}));
+  return Array.isArray(data?.conversations) ? data.conversations : [];
+}
+
+export async function deleteAiConversations(params: {
+  id?: string;
+  clearAll?: boolean;
+}): Promise<AiConversationSession[]> {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error('Please sign in with your Google Admin account first.');
+  }
+  const idToken = await currentUser.getIdToken();
+  const res = await fetch('/api/corano-ai', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify(params),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.error || 'Failed to delete AI conversation.');
+  }
+  return Array.isArray(data?.conversations) ? data.conversations : [];
+}
+

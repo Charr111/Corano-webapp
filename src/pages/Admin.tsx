@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { auth, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { MenuItem, MenuCategory, Review, AdminUser, StoreDataPayload } from '../types';
+import { MenuItem, MenuCategory, Review, AdminUser, StoreDataPayload, AiConversationSession } from '../types';
 import {
   buildCollisionProofFileName,
   compressImageToBudget,
@@ -17,6 +17,8 @@ import {
   StoreCurrency,
 } from '../utils/currency';
 import {
+  deleteAiConversations,
+  fetchAiConversations,
   fetchLiveStoreData,
   getCachedStoreData,
   mutateR2StoreData,
@@ -24,10 +26,10 @@ import {
 
 export const ROOT_ADMIN_EMAILS = ['apolokor@gmail.com', 'rony.daou83@gmail.com'];
 
-type AdminSection = 'dashboard' | 'products' | 'categories' | 'reviews' | 'settings';
+type AdminSection = 'dashboard' | 'products' | 'categories' | 'reviews' | 'ai' | 'settings';
 
 interface DeleteConfirmationState {
-  type: 'item' | 'category' | 'review';
+  type: 'item' | 'category' | 'review' | 'ai_session' | 'ai_clear_all';
   id: string;
   label: string;
 }
@@ -60,11 +62,15 @@ const Admin = () => {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [dynamicAdmins, setDynamicAdmins] = useState<AdminUser[]>([]);
+  const [aiConversations, setAiConversations] = useState<AiConversationSession[]>([]);
+  const [loadingAiLogs, setLoadingAiLogs] = useState(false);
 
-  // Global Store Currency State ($ USD vs L.L. at 89,000)
+  // Global Store Currency State ($ USD vs L.L. at 89,000) & Corano AI Bubble Visibility
   const [storeCurrency, setStoreCurrency] = useState<StoreCurrency>('USD');
   const [exchangeRate, setExchangeRate] = useState<number>(DEFAULT_LBP_RATE);
   const [savingCurrency, setSavingCurrency] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState<boolean>(true);
+  const [savingAiToggle, setSavingAiToggle] = useState(false);
 
   // Navigation & Filters
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
@@ -125,6 +131,7 @@ const Admin = () => {
     if (typeof store.settings?.exchangeRate === 'number' && store.settings.exchangeRate > 0) {
       setExchangeRate(store.settings.exchangeRate);
     }
+    setAiEnabled(store.settings?.aiEnabled !== false);
   };
 
   const fetchAdminData = async () => {
@@ -134,6 +141,18 @@ const Admin = () => {
     } catch (e) {
       console.error('Error loading admin data from R2:', e);
       setStatusNotice('Error loading data from Cloudflare R2.');
+    }
+  };
+
+  const loadAiConversations = async () => {
+    setLoadingAiLogs(true);
+    try {
+      const sessions = await fetchAiConversations();
+      setAiConversations(sessions);
+    } catch (err) {
+      console.error('Error loading AI conversations from R2:', err);
+    } finally {
+      setLoadingAiLogs(false);
     }
   };
 
@@ -170,6 +189,9 @@ const Admin = () => {
 
       setIsAuthorizedAdmin(authorized);
       setLoading(false);
+      if (authorized) {
+        loadAiConversations();
+      }
     });
     return () => unsub();
   }, []);
@@ -193,6 +215,7 @@ const Admin = () => {
       const updatedStore = await mutateR2StoreData('updateSettings', {
         currency: targetCurrency,
         exchangeRate: exchangeRate || DEFAULT_LBP_RATE,
+        aiEnabled,
       });
       applyStoreState(updatedStore);
       setStatusNotice(
@@ -206,6 +229,87 @@ const Admin = () => {
     } finally {
       setSavingCurrency(false);
     }
+  };
+
+  // Toggle Corano AI Bubble ON / OFF on Main Website
+  const handleToggleAiBubble = async (nextEnabled: boolean) => {
+    if (nextEnabled === aiEnabled && !savingAiToggle) return;
+    setSavingAiToggle(true);
+    setAiEnabled(nextEnabled);
+    try {
+      const updatedStore = await mutateR2StoreData('updateSettings', {
+        currency: storeCurrency,
+        exchangeRate: exchangeRate || DEFAULT_LBP_RATE,
+        aiEnabled: nextEnabled,
+      });
+      applyStoreState(updatedStore);
+      setStatusNotice(
+        nextEnabled
+          ? '✓ Corano AI Bubble is now visible on the main website.'
+          : '✓ Corano AI Bubble is now hidden on the main website.'
+      );
+    } catch (err: any) {
+      console.error('Failed to toggle Corano AI bubble:', err);
+      setStatusNotice(err?.message || 'Failed to update Corano AI visibility.');
+    } finally {
+      setSavingAiToggle(false);
+    }
+  };
+
+  // Export All AI Chats to Admin Device (.txt transcript & log report)
+  const handleExportAiChats = () => {
+    if (aiConversations.length === 0) {
+      setStatusNotice('No AI chats available to export yet.');
+      return;
+    }
+
+    const lines: string[] = [
+      '==================================================',
+      'CORANO RESTAURANT - AI INSIGHTS & GUEST LOGS',
+      `Exported: ${new Date().toLocaleString('en-US')}`,
+      `Total Conversations: ${aiConversations.length}`,
+      '==================================================',
+      '',
+    ];
+
+    aiConversations.forEach((session, idx) => {
+      const dateStr = new Date(session.updatedAt || session.createdAt).toLocaleString('en-US');
+      lines.push(
+        `#${idx + 1} | Guest: ${session.guestName?.trim() || 'Guest'} | Date: ${dateStr}`
+      );
+      lines.push(
+        `Topic: ${session.topicTag || 'General Menu'} | Language: ${session.language || 'English'}`
+      );
+      if (session.summary) {
+        lines.push(`Summary: ${session.summary}`);
+      }
+      lines.push('--------------------------------------------------');
+      for (const msg of session.messages || []) {
+        const speaker =
+          msg.role === 'user' ? `${session.guestName?.trim() || 'Guest'}` : 'Corano AI';
+        lines.push(`[${speaker}]: ${msg.text}`);
+        if (msg.role === 'assistant' && Array.isArray(msg.recommendedItemIds) && msg.recommendedItemIds.length > 0) {
+          const recTitles = msg.recommendedItemIds
+            .map((id) => items.find((i) => i.id === id)?.title || id)
+            .join(', ');
+          lines.push(`   -> Recommended Dishes: ${recTitles}`);
+        }
+      }
+      lines.push('==================================================');
+      lines.push('');
+    });
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStamp = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.download = `corano-ai-chats-${dateStamp}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setStatusNotice(`✓ Exported ${aiConversations.length} AI conversations to your device.`);
   };
 
   // Toggle Item In Stock / Out of Stock directly from Products List
@@ -540,6 +644,14 @@ const Admin = () => {
         const updatedStore = await mutateR2StoreData('deleteReview', { id: deleteConfirm.id });
         applyStoreState(updatedStore);
         setStatusNotice(`✓ Deleted review by "${deleteConfirm.label}".`);
+      } else if (deleteConfirm.type === 'ai_session') {
+        const remaining = await deleteAiConversations({ id: deleteConfirm.id });
+        setAiConversations(remaining);
+        setStatusNotice('✓ Conversation deleted from Cloudflare R2.');
+      } else if (deleteConfirm.type === 'ai_clear_all') {
+        const remaining = await deleteAiConversations({ clearAll: true });
+        setAiConversations(remaining);
+        setStatusNotice('✓ All AI conversations cleared from Cloudflare R2.');
       }
       setDeleteConfirm(null);
     } catch (err: any) {
@@ -667,11 +779,42 @@ const Admin = () => {
       return (a.order ?? 99) - (b.order ?? 99);
     });
 
+  // Computed Corano AI Analytics
+  const totalAiQuestions = aiConversations.reduce(
+    (sum, s) => sum + (s.messages || []).filter((m) => m.role === 'user').length,
+    0
+  );
+  const topicCounts: Record<string, number> = {};
+  const recommendedItemCounts: Record<string, number> = {};
+  for (const session of aiConversations) {
+    const tag = session.topicTag || 'General Menu';
+    topicCounts[tag] = (topicCounts[tag] || 0) + 1;
+    for (const msg of session.messages || []) {
+      if (msg.role === 'assistant' && Array.isArray(msg.recommendedItemIds)) {
+        for (const itemId of msg.recommendedItemIds) {
+          recommendedItemCounts[itemId] = (recommendedItemCounts[itemId] || 0) + 1;
+        }
+      }
+    }
+  }
+  const topTopics = Object.entries(topicCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6);
+  const topRecommendedDishes = Object.entries(recommendedItemCounts)
+    .map(([itemId, count]) => ({
+      item: items.find((i) => i.id === itemId),
+      count,
+    }))
+    .filter((entry): entry is { item: MenuItem; count: number } => Boolean(entry.item))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
   const sectionLabelMap: Record<AdminSection, string> = {
     dashboard: 'Overview',
     products: 'Products & Menu',
     categories: 'Categories',
     reviews: 'Customer Reviews',
+    ai: 'Corano AI Waiter & Logs',
     settings: 'Settings & Admin Access',
   };
 
@@ -747,6 +890,12 @@ const Admin = () => {
                   icon: 'chat',
                   badgeCount: reviews.length,
                 },
+                {
+                  id: 'ai',
+                  label: 'Corano AI',
+                  icon: 'auto_awesome',
+                  badgeCount: aiConversations.length,
+                },
                 { id: 'settings', label: 'Settings', icon: 'settings' },
               ] as const
             ).map((navItem) => {
@@ -758,6 +907,9 @@ const Admin = () => {
                   onClick={() => {
                     setActiveSection(navItem.id);
                     setMobileSidebarOpen(false);
+                    if (navItem.id === 'ai') {
+                      loadAiConversations();
+                    }
                   }}
                   className={`w-full flex items-center justify-between px-7 py-3.5 text-sm font-medium transition-colors relative ${
                     isActive
@@ -967,24 +1119,28 @@ const Admin = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 sm:flex items-center gap-2.5 sm:gap-3">
-              <button
-                type="button"
-                onClick={openNewProductSheet}
-                className="bg-primary hover:bg-primary/90 active:scale-[0.98] text-on-primary font-bold px-4 py-3 sm:py-2.5 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all whitespace-nowrap shadow-md"
-              >
-                <span className="material-symbols-outlined text-[18px]">add</span>
-                <span>Add Product</span>
-              </button>
-              <button
-                type="button"
-                onClick={openNewCategorySheet}
-                className="bg-surface-container-low hover:bg-surface-container active:scale-[0.98] text-primary border border-primary/60 font-semibold px-4 py-3 sm:py-2.5 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all whitespace-nowrap"
-              >
-                <span className="material-symbols-outlined text-[18px]">add</span>
-                <span>Add Category</span>
-              </button>
-            </div>
+            {(activeSection === 'dashboard' ||
+              activeSection === 'products' ||
+              activeSection === 'categories') && (
+              <div className="grid grid-cols-2 sm:flex items-center gap-2.5 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={openNewProductSheet}
+                  className="bg-primary hover:bg-primary/90 active:scale-[0.98] text-on-primary font-bold px-4 py-3 sm:py-2.5 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all whitespace-nowrap shadow-md"
+                >
+                  <span className="material-symbols-outlined text-[18px]">add</span>
+                  <span>Add Product</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={openNewCategorySheet}
+                  className="bg-surface-container-low hover:bg-surface-container active:scale-[0.98] text-primary border border-primary/60 font-semibold px-4 py-3 sm:py-2.5 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all whitespace-nowrap"
+                >
+                  <span className="material-symbols-outlined text-[18px]">add</span>
+                  <span>Add Category</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Mobile Search Bar (Shown on Dashboard & Products views on mobile/tablet) */}
@@ -1569,51 +1725,365 @@ const Admin = () => {
             </div>
           )}
 
-          {/* SETTINGS & ADMIN ACCESS MANAGER SECTION */}
-          {activeSection === 'settings' && (
-            <div className="space-y-6">
-              {/* Store Currency Configuration Card */}
-              <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-5 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-base sm:text-lg font-semibold text-on-surface">
-                      Website Menu Currency ($ USD vs. L.L.)
-                    </h2>
-                    <p className="text-xs text-on-surface-variant mt-1">
-                      Switch the live public menu between US Dollars ($) and Lebanese Lira (L.L. converted at{' '}
-                      <span className="font-mono text-primary">89,000 L.L. = $1</span>).
+          {/* CORANO AI WAITER & CONVERSATION ANALYTICS SECTION */}
+          {activeSection === 'ai' && (
+            <div className="space-y-4 sm:space-y-6 min-w-0">
+              {/* Top Analytics Bar & Actions (Optimized for All Phones, Tablets & Desktop) */}
+              <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-4 sm:p-5 space-y-3.5 lg:space-y-0 lg:flex lg:items-center lg:justify-between lg:gap-4">
+                {/* Title Row + Minimal Corano AI ON/OFF Switch on Mobile */}
+                <div className="flex items-center justify-between gap-2.5 min-w-0">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <span className="material-symbols-outlined text-primary text-[20px] sm:text-[22px] shrink-0">
+                        auto_awesome
+                      </span>
+                      <h2 className="text-sm sm:text-lg font-semibold text-on-surface truncate">
+                        AI Insights & Guest Logs
+                      </h2>
+                    </div>
+                    <p className="text-[11px] sm:text-xs text-on-surface-variant mt-0.5 truncate">
+                      See what your guests are asking in real time.
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 sm:flex items-center gap-2 bg-surface-container p-1.5 rounded-xl border border-outline-variant/40">
-                    <button
-                      type="button"
-                      disabled={savingCurrency}
-                      onClick={() => handleToggleStoreCurrency('USD')}
-                      className={`px-4 py-2.5 sm:py-2 rounded-lg text-xs font-bold transition-colors ${
-                        storeCurrency === 'USD'
-                          ? 'bg-primary text-on-primary'
-                          : 'text-on-surface-variant hover:text-on-surface'
+
+                  {/* Minimal Corano AI ON/OFF Toggle (Mobile Top-Right) */}
+                  <button
+                    type="button"
+                    disabled={savingAiToggle}
+                    onClick={() => handleToggleAiBubble(!aiEnabled)}
+                    className="lg:hidden shrink-0 flex items-center gap-2 bg-surface-container border border-outline-variant/40 rounded-full pl-2.5 pr-1.5 py-1 transition-colors cursor-pointer"
+                  >
+                    <span className="text-[11px] font-semibold text-on-surface whitespace-nowrap">
+                      Corano AI
+                    </span>
+                    <span
+                      className={`w-9 h-5 rounded-full p-0.5 flex items-center transition-colors ${
+                        aiEnabled
+                          ? 'bg-primary justify-end'
+                          : 'bg-surface-container-high justify-start'
                       }`}
                     >
-                      Display in $ (USD)
+                      <span
+                        className={`w-4 h-4 rounded-full transition-transform ${
+                          aiEnabled ? 'bg-on-primary' : 'bg-on-surface-variant/70'
+                        }`}
+                      />
+                    </span>
+                  </button>
+                </div>
+
+                {/* Desktop Toggle + Mobile 3-Column Action Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 shrink-0">
+                  {/* Minimal Corano AI ON/OFF Toggle (Desktop) */}
+                  <button
+                    type="button"
+                    disabled={savingAiToggle}
+                    onClick={() => handleToggleAiBubble(!aiEnabled)}
+                    className="hidden lg:flex items-center gap-2.5 bg-surface-container border border-outline-variant/40 hover:border-outline rounded-full pl-3.5 pr-2 py-1.5 transition-colors cursor-pointer"
+                  >
+                    <span className="text-xs font-semibold text-on-surface whitespace-nowrap">
+                      Corano AI
+                    </span>
+                    <span className="text-[11px] font-mono font-bold text-primary">
+                      {aiEnabled ? 'ON' : 'OFF'}
+                    </span>
+                    <span
+                      className={`w-9 h-5 rounded-full p-0.5 flex items-center transition-colors ${
+                        aiEnabled
+                          ? 'bg-primary justify-end'
+                          : 'bg-surface-container-high justify-start'
+                      }`}
+                    >
+                      <span
+                        className={`w-4 h-4 rounded-full ${
+                          aiEnabled ? 'bg-on-primary' : 'bg-on-surface-variant/70'
+                        }`}
+                      />
+                    </span>
+                  </button>
+
+                  {/* Perfectly Fitted 3-Button Bar on All Phone Screens */}
+                  <div className="grid grid-cols-3 sm:flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      disabled={loadingAiLogs}
+                      onClick={loadAiConversations}
+                      className="min-w-0 px-2 sm:px-3.5 py-2 rounded-xl bg-surface-container border border-outline-variant/40 text-xs font-semibold text-on-surface hover:border-primary flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <span
+                        className={`material-symbols-outlined text-[15px] text-primary shrink-0 ${
+                          loadingAiLogs ? 'animate-spin' : ''
+                        }`}
+                      >
+                        refresh
+                      </span>
+                      <span className="truncate">Refresh</span>
                     </button>
+
                     <button
                       type="button"
-                      disabled={savingCurrency}
-                      onClick={() => handleToggleStoreCurrency('LBP')}
-                      className={`px-4 py-2.5 sm:py-2 rounded-lg text-xs font-bold transition-colors ${
-                        storeCurrency === 'LBP'
-                          ? 'bg-primary text-on-primary'
-                          : 'text-on-surface-variant hover:text-on-surface'
-                      }`}
+                      disabled={aiConversations.length === 0}
+                      onClick={handleExportAiChats}
+                      className="min-w-0 px-2 sm:px-3.5 py-2 rounded-xl bg-surface-container border border-primary/40 text-xs font-semibold text-primary hover:bg-primary/10 disabled:opacity-40 flex items-center justify-center gap-1 transition-colors cursor-pointer"
                     >
-                      Display in L.L. (89,000)
+                      <span className="material-symbols-outlined text-[15px] shrink-0">
+                        download
+                      </span>
+                      <span className="truncate">Export</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={aiConversations.length === 0}
+                      onClick={() =>
+                        setDeleteConfirm({
+                          type: 'ai_clear_all',
+                          id: 'all',
+                          label: `all ${aiConversations.length} AI chats`,
+                        })
+                      }
+                      className="min-w-0 px-2 sm:px-3.5 py-2 rounded-xl bg-surface-container border border-error/40 text-xs font-semibold text-error hover:bg-error/10 disabled:opacity-40 flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[15px] shrink-0">
+                        delete_sweep
+                      </span>
+                      <span className="truncate">Delete All</span>
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Admin Access Manager Card */}
+              {/* Analytics Summary Grid (Compact 2x2 on Phones, 4 Columns on Desktop) */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+                <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-3.5 sm:p-5 min-w-0">
+                  <div className="text-[11px] sm:text-xs text-on-surface-variant truncate">
+                    Guest Sessions
+                  </div>
+                  <div className="text-xl sm:text-3xl font-bold text-primary font-mono tabular-nums mt-1">
+                    {aiConversations.length}
+                  </div>
+                  <div className="text-[10px] sm:text-[11px] text-on-surface-variant/70 mt-0.5 truncate">
+                    Saved in R2
+                  </div>
+                </div>
+
+                <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-3.5 sm:p-5 min-w-0">
+                  <div className="text-[11px] sm:text-xs text-on-surface-variant truncate">
+                    Questions Asked
+                  </div>
+                  <div className="text-xl sm:text-3xl font-bold text-on-surface font-mono tabular-nums mt-1">
+                    {totalAiQuestions}
+                  </div>
+                  <div className="text-[10px] sm:text-[11px] text-on-surface-variant/70 mt-0.5 truncate">
+                    Live menu Q&A
+                  </div>
+                </div>
+
+                <div className="col-span-2 sm:col-span-1 bg-surface-container-low border border-outline-variant/30 rounded-2xl p-3.5 sm:p-5 min-w-0">
+                  <div className="text-[11px] sm:text-xs text-on-surface-variant mb-2">
+                    Most Spoken Topics
+                  </div>
+                  {topTopics.length === 0 ? (
+                    <div className="text-xs text-on-surface-variant/60">No topics recorded yet</div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {topTopics.map(([topic, count]) => (
+                        <span
+                          key={topic}
+                          className="text-[11px] bg-surface-container border border-outline-variant/40 text-on-surface px-2 py-0.5 rounded-lg font-medium flex items-center gap-1"
+                        >
+                          <span className="text-primary">✦</span>
+                          <span className="truncate max-w-[140px]">{topic}</span>
+                          <span className="font-mono text-primary font-bold">({count})</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="col-span-2 sm:col-span-1 bg-surface-container-low border border-outline-variant/30 rounded-2xl p-3.5 sm:p-5 min-w-0">
+                  <div className="text-[11px] sm:text-xs text-on-surface-variant mb-2">
+                    Most Recommended Dishes
+                  </div>
+                  {topRecommendedDishes.length === 0 ? (
+                    <div className="text-xs text-on-surface-variant/60">
+                      No dishes recommended yet
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {topRecommendedDishes.slice(0, 3).map(({ item, count }) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between text-xs gap-2"
+                        >
+                          <span className="text-on-surface truncate font-medium">{item.title}</span>
+                          <span className="font-mono text-primary font-bold shrink-0">
+                            {count}×
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Tamr-Style Guest Conversation Feed */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm sm:text-base font-semibold text-on-surface">
+                    Recent Guest Conversations ({aiConversations.length})
+                  </h3>
+                </div>
+
+                {loadingAiLogs && aiConversations.length === 0 ? (
+                  <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-10 text-center text-sm text-on-surface-variant">
+                    Loading AI conversations from Cloudflare R2...
+                  </div>
+                ) : aiConversations.length === 0 ? (
+                  <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-10 text-center space-y-2">
+                    <span className="material-symbols-outlined text-4xl text-primary/70">
+                      forum
+                    </span>
+                    <div className="text-sm font-semibold text-on-surface">
+                      No AI waiter conversations yet
+                    </div>
+                    <p className="text-xs text-on-surface-variant max-w-md mx-auto">
+                      When guests click the floating Corano AI bubble on the website and ask about dishes, ingredients, or recommendations, their conversations and insights will appear here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {aiConversations.map((session) => {
+                      const formattedTime = new Date(
+                        session.updatedAt || session.createdAt
+                      ).toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      });
+
+                      return (
+                        <div
+                          key={session.id}
+                          className="bg-surface-container-low border border-outline-variant/35 rounded-2xl overflow-hidden shadow-md"
+                        >
+                          {/* Guest Name Header Bar Over Each Chat */}
+                          <div className="px-4 sm:px-6 py-2.5 bg-[#141413] border-b border-outline-variant/25 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="material-symbols-outlined text-[17px] text-primary">
+                                person
+                              </span>
+                              <span className="text-xs sm:text-sm font-bold text-primary tracking-wide">
+                                {session.guestName?.trim() || 'Guest'}
+                              </span>
+                            </div>
+                            <span className="text-[11px] text-on-surface-variant font-mono">
+                              {formattedTime}
+                            </span>
+                          </div>
+
+                          {/* Top Tamr-Style Insight Banner */}
+                          <div className="px-4 sm:px-6 py-3.5 bg-surface-container border-b border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                            <div className="flex items-start sm:items-center gap-2 min-w-0">
+                              <span className="text-primary text-sm shrink-0 mt-0.5 sm:mt-0">
+                                ✦
+                              </span>
+                              <p className="text-xs sm:text-sm font-semibold text-on-surface leading-snug">
+                                {session.summary || 'Guest asked about the Corano menu'}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center flex-wrap gap-2 shrink-0">
+                              <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-md bg-primary/15 text-primary border border-primary/30">
+                                {session.topicTag || 'General Menu'}
+                              </span>
+                              <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface-variant">
+                                {session.language || 'English'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setDeleteConfirm({
+                                    type: 'ai_session',
+                                    id: session.id,
+                                    label: `${session.guestName ? `${session.guestName}: ` : ''}${session.summary || 'AI Conversation'}`,
+                                  })
+                                }
+                                title="Delete conversation from Cloudflare R2"
+                                className="min-w-[32px] min-h-[32px] rounded-lg flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-surface-container-high transition-colors cursor-pointer"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">
+                                  delete
+                                </span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Conversation Messages Thread */}
+                          <div className="p-4 sm:p-6 space-y-3 bg-[#101010]/60">
+                            {(session.messages || []).map((msg, mIdx) => {
+                              const isUser = msg.role === 'user';
+                              const recommendedDishes = (msg.recommendedItemIds || [])
+                                .map((id) => items.find((i) => i.id === id))
+                                .filter((item): item is MenuItem => Boolean(item));
+
+                              return (
+                                <div
+                                  key={`${session.id}-${mIdx}`}
+                                  className={`flex flex-col ${
+                                    isUser ? 'items-end' : 'items-start'
+                                  }`}
+                                >
+                                  <div
+                                    className={`max-w-[90%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm leading-relaxed ${
+                                      isUser
+                                        ? 'bg-[#E4CD86] text-[#101010] font-semibold rounded-br-xs'
+                                        : 'bg-surface-container border border-outline-variant/30 text-on-surface rounded-bl-xs'
+                                    }`}
+                                  >
+                                    {msg.text}
+                                  </div>
+
+                                  {!isUser && recommendedDishes.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                      {recommendedDishes.map((dish) => (
+                                        <span
+                                          key={dish.id}
+                                          className="inline-flex items-center gap-1.5 text-[11px] bg-surface-container-low border border-outline-variant/40 text-on-surface px-2.5 py-1 rounded-lg"
+                                        >
+                                          <span className="material-symbols-outlined text-[13px] text-primary">
+                                            restaurant
+                                          </span>
+                                          <span className="font-medium">{dish.title}</span>
+                                          <span className="font-mono text-primary">
+                                            {formatStorePrice(
+                                              dish.price,
+                                              storeCurrency,
+                                              exchangeRate
+                                            )}
+                                          </span>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* SETTINGS & ADMIN ACCESS MANAGER SECTION */}
+          {activeSection === 'settings' && (
+            <div className="space-y-6">
+              {/* 1. Admin Access Manager Card */}
               <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-5 sm:p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div>
@@ -1687,6 +2157,45 @@ const Admin = () => {
                 </div>
               </div>
 
+              {/* 2. Store Currency Card (Placed After Authorized Gmails with Brief Copy) */}
+              <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-5 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-semibold text-on-surface">
+                      Menu Currency ($ / L.L.)
+                    </h2>
+                    <p className="text-xs text-on-surface-variant mt-1">
+                      Switch live menu prices between $ and L.L. (<span className="font-mono text-primary">89,000 L.L. = $1</span>).
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 sm:flex items-center gap-2 bg-surface-container p-1.5 rounded-xl border border-outline-variant/40 shrink-0">
+                    <button
+                      type="button"
+                      disabled={savingCurrency}
+                      onClick={() => handleToggleStoreCurrency('USD')}
+                      className={`px-4 py-2.5 sm:py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
+                        storeCurrency === 'USD'
+                          ? 'bg-primary text-on-primary'
+                          : 'text-on-surface-variant hover:text-on-surface'
+                      }`}
+                    >
+                      $ (USD)
+                    </button>
+                    <button
+                      type="button"
+                      disabled={savingCurrency}
+                      onClick={() => handleToggleStoreCurrency('LBP')}
+                      className={`px-4 py-2.5 sm:py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
+                        storeCurrency === 'LBP'
+                          ? 'bg-primary text-on-primary'
+                          : 'text-on-surface-variant hover:text-on-surface'
+                      }`}
+                    >
+                      L.L. (89,000)
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -1694,13 +2203,14 @@ const Admin = () => {
 
       {/* MOBILE BOTTOM APP TAB BAR (iPhone & Android Thumb-Zone Optimized) */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-container-low/95 backdrop-blur-md border-t border-outline-variant/40 pb-[env(safe-area-inset-bottom)]">
-        <div className="grid grid-cols-5 items-center h-16">
+        <div className="grid grid-cols-6 items-center h-16">
           {(
             [
               { id: 'dashboard', label: 'Overview', icon: 'home' },
               { id: 'products', label: 'Products', icon: 'restaurant_menu' },
               { id: 'categories', label: 'Categories', icon: 'folder' },
               { id: 'reviews', label: 'Reviews', icon: 'star', badge: pendingReviews.length },
+              { id: 'ai', label: 'Corano AI', icon: 'auto_awesome', badge: aiConversations.length },
               { id: 'settings', label: 'Settings', icon: 'settings' },
             ] as const
           ).map((tab) => {
@@ -1709,18 +2219,23 @@ const Admin = () => {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveSection(tab.id)}
+                onClick={() => {
+                  setActiveSection(tab.id);
+                  if (tab.id === 'ai') {
+                    loadAiConversations();
+                  }
+                }}
                 className={`relative flex flex-col items-center justify-center h-full transition-colors ${
                   isActive ? 'text-primary' : 'text-on-surface-variant'
                 }`}
               >
                 <span
-                  className="material-symbols-outlined text-[22px]"
+                  className="material-symbols-outlined text-[20px]"
                   style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
                 >
                   {tab.icon}
                 </span>
-                <span className="text-[10px] font-medium mt-1 tracking-tight">{tab.label}</span>
+                <span className="text-[9px] font-medium mt-1 tracking-tight">{tab.label}</span>
                 {'badge' in tab && typeof tab.badge === 'number' && tab.badge > 0 && (
                   <span className="absolute top-2 right-1/4 w-2 h-2 rounded-full bg-primary" />
                 )}

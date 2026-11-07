@@ -38,6 +38,7 @@ export type AdminUser = {
 export type StoreSettings = {
   currency: 'USD' | 'LBP';
   exchangeRate: number;
+  aiEnabled?: boolean;
 };
 
 export type StoreDataPayload = {
@@ -49,3 +50,22 @@ export type StoreDataPayload = {
   reviews: Review[];
   admins: AdminUser[];
 };
+
+export type AiChatMessage = {
+  role: 'user' | 'assistant';
+  text: string;
+  recommendedItemIds?: string[];
+  timestamp: string;
+};
+
+export type AiConversationSession = {
+  id: string;
+  guestName?: string;
+  createdAt: string;
+  updatedAt: string;
+  language: 'English' | 'Lebanese' | 'Arabic';
+  topicTag: string;
+  summary: string;
+  messages: AiChatMessage[];
+};
+

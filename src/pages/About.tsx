@@ -98,7 +98,7 @@ const About = () => {
           <div className="w-full text-center mt-16 md:mt-20 pb-12">
             <h2 className="font-headline text-4xl md:text-5xl text-primary mb-4">Our Story</h2>
             <div className="w-24 h-1 bg-primary mx-auto mb-8 rounded-full"></div>
-            <div className="space-y-6 text-xl text-on-surface-variant leading-relaxed">
+            <div className="bg-[#141413]/95 backdrop-blur-md border border-outline-variant/30 rounded-3xl p-6 md:p-10 space-y-6 text-xl text-on-surface-variant leading-relaxed">
               <p className="font-headline font-bold italic no-underline">
                 At Corano Restaurant, our roots run deep. Founded by our father in a small shop, our family business has grown into a vibrant dining destination through hard work, unity, and a shared passion for great food. But no matter how much we expand, our core philosophy remains exactly the same: love always comes before business.
               </p>

@@ -171,6 +171,7 @@ function normalizeStoreData(raw: any): any {
         typeof raw.settings?.exchangeRate === 'number' && raw.settings.exchangeRate > 0
           ? raw.settings.exchangeRate
           : 89000,
+      aiEnabled: raw.settings?.aiEnabled !== false,
     },
     categories: Array.isArray(raw.categories) ? raw.categories : fallback.categories || [],
     items: Array.isArray(raw.items) ? raw.items : fallback.items || [],
@@ -663,12 +664,21 @@ export const onRequestPost = async (context: any) => {
     }
 
     if (action === 'updateSettings') {
-      const currency = body.currency === 'LBP' ? 'LBP' : 'USD';
+      const currency =
+        body.currency === 'LBP' || body.currency === 'USD'
+          ? body.currency
+          : storeData.settings?.currency === 'LBP'
+          ? 'LBP'
+          : 'USD';
       const exchangeRate =
         typeof body.exchangeRate === 'number' && body.exchangeRate > 0
           ? body.exchangeRate
           : storeData.settings?.exchangeRate || 89000;
-      storeData.settings = { currency, exchangeRate };
+      const aiEnabled =
+        typeof body.aiEnabled === 'boolean'
+          ? body.aiEnabled
+          : storeData.settings?.aiEnabled !== false;
+      storeData.settings = { currency, exchangeRate, aiEnabled };
       const saved = await writeStoreDataToEnv(env, storeData);
       return new Response(
         JSON.stringify({ ok: true, settings: storeData.settings, storeData: saved }),
