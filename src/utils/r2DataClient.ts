@@ -27,19 +27,7 @@ function normalizePayload(raw: any): StoreDataPayload {
           : 'Corano AI',
     },
     categories: Array.isArray(raw.categories) ? raw.categories : seed.categories || [],
-    items: (Array.isArray(raw.items) ? raw.items : seed.items || []).map((item: any) =>
-      typeof item?.desc === 'string' && item.desc
-        ? {
-            ...item,
-            desc: item.desc
-              .replace(/\bPickels\b/g, 'Pickles')
-              .replace(/\bpickels\b/g, 'pickles')
-              .replace(/\bcolslaw\b/gi, 'coleslaw')
-              .replace(/\bchedder\b/gi, 'cheddar')
-              .replace(/\bspeciale\b/gi, 'special'),
-          }
-        : item
-    ),
+    items: Array.isArray(raw.items) ? raw.items : seed.items || [],
     reviews: Array.isArray(raw.reviews) ? raw.reviews : seed.reviews || [],
     admins: Array.isArray(raw.admins) ? raw.admins : [],
   };
