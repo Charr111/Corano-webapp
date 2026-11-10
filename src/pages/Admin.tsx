@@ -2,11 +2,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { auth, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { MenuItem, MenuCategory, Review, AdminUser, StoreDataPayload, AiConversationSession } from '../types';
+import {
+  MenuItem,
+  MenuCategory,
+  Review,
+  AdminUser,
+  StoreDataPayload,
+  AiConversationSession,
+  SavedPromoBanner,
+} from '../types';
 import {
   buildCollisionProofFileName,
   compressImageToBudget,
+  deleteImageFromR2,
+  readOriginalImageForBanner,
   sanitizeFirestorePayload,
+  sanitizeSlug,
   uploadCompressedToR2,
 } from '../utils/imageCompressor';
 import {
@@ -29,7 +40,15 @@ export const ROOT_ADMIN_EMAILS = ['apolokor@gmail.com'];
 type AdminSection = 'dashboard' | 'products' | 'categories' | 'reviews' | 'ai' | 'settings';
 
 interface DeleteConfirmationState {
-  type: 'item' | 'category' | 'review' | 'ai_session' | 'ai_clear_all' | 'admin_email';
+  type:
+    | 'item'
+    | 'category'
+    | 'review'
+    | 'ai_session'
+    | 'ai_clear_all'
+    | 'admin_email'
+    | 'promo_banner'
+    | 'saved_promo_banner';
   id: string;
   label: string;
 }
@@ -84,6 +103,25 @@ const Admin = () => {
   const [aiBubbleLabelDraft, setAiBubbleLabelDraft] = useState<string>('Corano AI');
   const [savingAiLabel, setSavingAiLabel] = useState<boolean>(false);
 
+  // Homepage Promotional Banner Pop-Up States & Save Banners Library (Up to 15)
+  const [promoBannerEnabled, setPromoBannerEnabled] = useState<boolean>(false);
+  const [promoBannerUrl, setPromoBannerUrl] = useState<string>('');
+  const [promoBannerDelaySeconds, setPromoBannerDelaySeconds] = useState<number>(2);
+  const [promoBannerDelayInput, setPromoBannerDelayInput] = useState<string>('2');
+  const [promoBannerMaxPerDay, setPromoBannerMaxPerDay] = useState<number>(2);
+  const [promoBannerMaxInput, setPromoBannerMaxInput] = useState<string>('2');
+  const [promoBannerClickToMenu, setPromoBannerClickToMenu] = useState<boolean>(true);
+  const [promoBannerTargetUrl, setPromoBannerTargetUrl] = useState<string>('/menu');
+  const [activePromoBannerId, setActivePromoBannerId] = useState<string>('');
+  const [editingBannerId, setEditingBannerId] = useState<string | null>(null);
+  const [hasUnsavedBannerDraft, setHasUnsavedBannerDraft] = useState<boolean>(false);
+  const [savedPromoBanners, setSavedPromoBanners] = useState<SavedPromoBanner[]>([]);
+  const [bannerUploadMode, setBannerUploadMode] = useState<'new' | 'replace'>('new');
+  const [bannerDestSearch, setBannerDestSearch] = useState<string>('');
+  const [uploadingBannerPhoto, setUploadingBannerPhoto] = useState<boolean>(false);
+  const [bannerPhotoBadge, setBannerPhotoBadge] = useState<string | null>(null);
+  const [savingBannerSettings, setSavingBannerSettings] = useState<boolean>(false);
+
   // Navigation & Filters
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -131,13 +169,34 @@ const Admin = () => {
 
   const addFileInputRef = useRef<HTMLInputElement | null>(null);
   const editFileInputRef = useRef<HTMLInputElement | null>(null);
+  const bannerFileInputRef = useRef<HTMLInputElement | null>(null);
+  const promoBannerEditorRef = useRef<HTMLDivElement | null>(null);
+  const lastStoreVersionRef = useRef<number>(0);
+  const hasUnsavedBannerDraftRef = useRef<boolean>(false);
+  const editingBannerIdRef = useRef<string | null>(null);
 
-  const applyStoreState = (store: StoreDataPayload) => {
+  useEffect(() => {
+    hasUnsavedBannerDraftRef.current = hasUnsavedBannerDraft;
+  }, [hasUnsavedBannerDraft]);
+
+  useEffect(() => {
+    editingBannerIdRef.current = editingBannerId;
+  }, [editingBannerId]);
+
+  const applyStoreState = (
+    store: StoreDataPayload,
+    options?: { syncEditorBannerId?: string | null; clearDraft?: boolean }
+  ) => {
+    if (typeof store.version === 'number') {
+      lastStoreVersionRef.current = store.version;
+    }
     const loadedCats = [...(store.categories || [])].sort(
       (a, b) => (a.order ?? 99) - (b.order ?? 99)
     );
     setCategories(loadedCats);
-    setNewCatOrderInput((prev) => (prev === '1' && loadedCats.length > 0 ? String(loadedCats.length + 1) : prev));
+    setNewCatOrderInput((prev) =>
+      prev === '1' && loadedCats.length > 0 ? String(loadedCats.length + 1) : prev
+    );
     setItems(store.items || []);
     setReviews(store.reviews || []);
     setDynamicAdmins(store.admins || []);
@@ -150,7 +209,95 @@ const Admin = () => {
     setAiEnabled(store.settings?.aiEnabled !== false);
     const nextBubbleLabel = store.settings?.aiBubbleLabel?.trim() || 'Corano AI';
     setAiBubbleLabel(nextBubbleLabel);
-    setAiBubbleLabelDraft(nextBubbleLabel);
+    setAiBubbleLabelDraft((prev) => (prev === aiBubbleLabel ? nextBubbleLabel : prev));
+    setPromoBannerEnabled(store.settings?.promoBannerEnabled === true);
+
+    const currentUrl = store.settings?.promoBannerUrl || '';
+    const loadedDelay =
+      typeof store.settings?.promoBannerDelaySeconds === 'number'
+        ? store.settings.promoBannerDelaySeconds
+        : 2;
+    const loadedMax =
+      typeof store.settings?.promoBannerMaxPerDay === 'number'
+        ? store.settings.promoBannerMaxPerDay
+        : 2;
+    const loadedClickToMenu = store.settings?.promoBannerClickToMenu !== false;
+    const loadedTargetUrl = store.settings?.promoBannerTargetUrl || '/menu';
+
+    const rawSavedList = Array.isArray(store.settings?.savedPromoBanners)
+      ? [...store.settings.savedPromoBanners]
+      : [];
+    if (
+      currentUrl &&
+      !rawSavedList.some((b) => b.imgUrl === currentUrl) &&
+      rawSavedList.length === 0
+    ) {
+      rawSavedList.unshift({
+        id: store.settings?.activePromoBannerId || `banner-initial-${Date.now()}`,
+        label: loadedTargetUrl,
+        imgUrl: currentUrl,
+        delaySeconds: loadedDelay,
+        maxPerDay: loadedMax,
+        clickToMenu: loadedClickToMenu,
+        targetUrl: loadedTargetUrl,
+        createdAt: store.updatedAt || new Date().toISOString(),
+      });
+    }
+    const cappedSavedList = rawSavedList.slice(0, 15);
+    setSavedPromoBanners(cappedSavedList);
+
+    const explicitActiveId =
+      typeof store.settings?.activePromoBannerId === 'string'
+        ? store.settings.activePromoBannerId.trim()
+        : '';
+    const matchedActiveId =
+      explicitActiveId && cappedSavedList.some((b) => b.id === explicitActiveId)
+        ? explicitActiveId
+        : currentUrl
+        ? cappedSavedList.find((b) => b.imgUrl === currentUrl)?.id || ''
+        : '';
+    setActivePromoBannerId(matchedActiveId);
+
+    if (options?.clearDraft) {
+      hasUnsavedBannerDraftRef.current = false;
+      setHasUnsavedBannerDraft(false);
+    }
+
+    // Only overwrite the top Banner Editor fields if the admin does NOT have an unsaved photo/draft in the editor
+    if (!hasUnsavedBannerDraftRef.current || options?.clearDraft) {
+      const targetEditId =
+        options?.syncEditorBannerId !== undefined
+          ? options.syncEditorBannerId
+          : editingBannerIdRef.current;
+
+      const editorBanner =
+        (targetEditId ? cappedSavedList.find((b) => b.id === targetEditId) : null) ||
+        (matchedActiveId ? cappedSavedList.find((b) => b.id === matchedActiveId) : null) ||
+        cappedSavedList[0] ||
+        null;
+
+      if (editorBanner) {
+        setEditingBannerId(editorBanner.id);
+        setPromoBannerUrl(editorBanner.imgUrl);
+        setPromoBannerDelaySeconds(editorBanner.delaySeconds);
+        setPromoBannerDelayInput(String(editorBanner.delaySeconds));
+        setPromoBannerMaxPerDay(editorBanner.maxPerDay);
+        setPromoBannerMaxInput(String(editorBanner.maxPerDay));
+        setPromoBannerClickToMenu(editorBanner.clickToMenu);
+        setPromoBannerTargetUrl(editorBanner.targetUrl || '/menu');
+        setBannerPhotoBadge(editorBanner.sizeBadge || null);
+      } else {
+        setEditingBannerId(null);
+        setPromoBannerUrl('');
+        setPromoBannerDelaySeconds(loadedDelay);
+        setPromoBannerDelayInput(String(loadedDelay));
+        setPromoBannerMaxPerDay(loadedMax);
+        setPromoBannerMaxInput(String(loadedMax));
+        setPromoBannerClickToMenu(loadedClickToMenu);
+        setPromoBannerTargetUrl(loadedTargetUrl);
+        setBannerPhotoBadge(null);
+      }
+    }
   };
 
   const fetchAdminData = async () => {
@@ -214,6 +361,42 @@ const Admin = () => {
     });
     return () => unsub();
   }, []);
+
+  // Multi-Admin Real-Time Sync: Automatically keeps all open Admin Dashboards in sync when any admin toggles $, L.L., Active/Hidden, Banner ON/OFF, or Corano AI
+  useEffect(() => {
+    if (!isAuthorizedAdmin) return;
+
+    const syncLatestStoreIfChanged = async () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      try {
+        const liveStore = await fetchLiveStoreData(true);
+        if (
+          typeof liveStore.version === 'number' &&
+          liveStore.version !== lastStoreVersionRef.current
+        ) {
+          applyStoreState(liveStore);
+        }
+      } catch {
+        // silent background sync
+      }
+    };
+
+    const handleVisibilityOrFocus = () => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+        void syncLatestStoreIfChanged();
+      }
+    };
+
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    const intervalId = window.setInterval(syncLatestStoreIfChanged, 15000);
+
+    return () => {
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.clearInterval(intervalId);
+    };
+  }, [isAuthorizedAdmin]);
 
   const login = async () => {
     try {
@@ -740,6 +923,123 @@ const Admin = () => {
         applyStoreState(updatedStore);
         setAdminStatusMsg(`✓ Removed ${deleteConfirm.label} from authorized admins.`);
         setStatusNotice(`✓ Removed admin "${deleteConfirm.label}".`);
+      } else if (
+        deleteConfirm.type === 'promo_banner' ||
+        deleteConfirm.type === 'saved_promo_banner'
+      ) {
+        // Check if deleting an unsaved draft photo from the top editor
+        if (
+          deleteConfirm.type === 'promo_banner' &&
+          hasUnsavedBannerDraft &&
+          !editingBannerId
+        ) {
+          const draftUrl = promoBannerUrl;
+          const usedInSaved = savedPromoBanners.some((b) => b.imgUrl === draftUrl);
+          if (draftUrl && !usedInSaved) {
+            try {
+              await deleteImageFromR2(draftUrl);
+            } catch (r2DelErr) {
+              console.warn('Non-fatal warning deleting draft banner file:', r2DelErr);
+            }
+          }
+          hasUnsavedBannerDraftRef.current = false;
+          setHasUnsavedBannerDraft(false);
+          setBannerPhotoBadge(null);
+          const fallback =
+            savedPromoBanners.find((b) => b.id === activePromoBannerId) ||
+            savedPromoBanners[0] ||
+            null;
+          if (fallback) {
+            editingBannerIdRef.current = fallback.id;
+            setEditingBannerId(fallback.id);
+            setPromoBannerUrl(fallback.imgUrl);
+            setPromoBannerDelaySeconds(fallback.delaySeconds);
+            setPromoBannerDelayInput(String(fallback.delaySeconds));
+            setPromoBannerMaxPerDay(fallback.maxPerDay);
+            setPromoBannerMaxInput(String(fallback.maxPerDay));
+            setPromoBannerClickToMenu(fallback.clickToMenu);
+            setPromoBannerTargetUrl(fallback.targetUrl || '/menu');
+            setBannerPhotoBadge(fallback.sizeBadge || null);
+          } else {
+            editingBannerIdRef.current = null;
+            setEditingBannerId(null);
+            setPromoBannerUrl('');
+          }
+          setStatusNotice('✓ Unsaved banner draft removed from editor.');
+          setDeleteConfirm(null);
+          setIsDeleting(false);
+          return;
+        }
+
+        const targetBanner =
+          deleteConfirm.type === 'saved_promo_banner'
+            ? savedPromoBanners.find((b) => b.id === deleteConfirm.id)
+            : savedPromoBanners.find(
+                (b) =>
+                  (editingBannerId && b.id === editingBannerId) ||
+                  (activePromoBannerId && b.id === activePromoBannerId) ||
+                  b.imgUrl === promoBannerUrl
+              );
+        const imgUrlToDelete = targetBanner ? targetBanner.imgUrl : promoBannerUrl;
+        const nextSavedList = targetBanner
+          ? savedPromoBanners.filter((b) => b.id !== targetBanner.id)
+          : savedPromoBanners.filter((b) => b.imgUrl !== promoBannerUrl);
+
+        const stillUsedByAnotherSaved = nextSavedList.some((b) => b.imgUrl === imgUrlToDelete);
+        if (imgUrlToDelete && !stillUsedByAnotherSaved) {
+          try {
+            await deleteImageFromR2(imgUrlToDelete);
+          } catch (r2DelErr) {
+            console.warn('Non-fatal warning deleting banner file:', r2DelErr);
+          }
+        }
+
+        const wasActiveLiveBanner =
+          !targetBanner || targetBanner.id === activePromoBannerId;
+        const remainingActiveBanner = wasActiveLiveBanner
+          ? null
+          : nextSavedList.find((b) => b.id === activePromoBannerId) || null;
+
+        const nextActiveId = remainingActiveBanner ? remainingActiveBanner.id : '';
+        const nextLiveUrl = remainingActiveBanner ? remainingActiveBanner.imgUrl : '';
+        const nextDelay = remainingActiveBanner
+          ? remainingActiveBanner.delaySeconds
+          : promoBannerDelaySeconds;
+        const nextMax = remainingActiveBanner
+          ? remainingActiveBanner.maxPerDay
+          : promoBannerMaxPerDay;
+        const nextClick = remainingActiveBanner
+          ? remainingActiveBanner.clickToMenu
+          : promoBannerClickToMenu;
+        const nextTarget = remainingActiveBanner
+          ? remainingActiveBanner.targetUrl
+          : promoBannerTargetUrl || '/menu';
+
+        const nextEditorFallback =
+          editingBannerId && targetBanner && editingBannerId !== targetBanner.id
+            ? nextSavedList.find((b) => b.id === editingBannerId) || nextSavedList[0] || null
+            : nextSavedList[0] || null;
+
+        const updatedStore = await mutateR2StoreData('updateSettings', {
+          currency: storeCurrency,
+          exchangeRate: exchangeRate || DEFAULT_LBP_RATE,
+          aiEnabled,
+          aiBubbleLabel,
+          promoBannerEnabled,
+          promoBannerUrl: nextLiveUrl,
+          promoBannerDelaySeconds: nextDelay,
+          promoBannerMaxPerDay: nextMax,
+          promoBannerClickToMenu: nextClick,
+          promoBannerTargetUrl: nextTarget,
+          activePromoBannerId: nextActiveId,
+          savedPromoBanners: nextSavedList,
+        });
+        applyStoreState(updatedStore, {
+          clearDraft: true,
+          syncEditorBannerId: nextEditorFallback ? nextEditorFallback.id : null,
+        });
+        setBannerPhotoBadge(null);
+        setStatusNotice('✓ Promotional banner deleted.');
       }
       setDeleteConfirm(null);
     } catch (err: any) {
@@ -747,6 +1047,349 @@ const Admin = () => {
       setStatusNotice(err?.message || 'Failed to delete record.');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const getReadableDestinationLabel = (targetUrl: string): string => {
+    const clean = (targetUrl || '/menu').trim();
+    if (!clean || clean === '/menu') return 'Whole Menu (/menu)';
+    const parts = clean.replace(/^\/+/, '').split('/');
+    if (parts[0] === 'menu' && parts.length === 2) {
+      const cat = categories.find((c) => sanitizeSlug(c.name) === parts[1]);
+      return cat ? `Category: ${cat.name}` : clean;
+    }
+    if (parts[0] === 'menu' && parts.length >= 3) {
+      const item = items.find((it) => sanitizeSlug(it.title) === parts[2]);
+      return item ? `${item.title} · ${item.category}` : clean;
+    }
+    return clean;
+  };
+
+  // Upload or Replace Homepage Promo Banner in Editor Preview ONLY (Does NOT save to Save Banners until admin clicks "Save Banner")
+  const handleBannerPhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isAddingNew = bannerUploadMode === 'new' || !editingBannerId;
+    if (isAddingNew && savedPromoBanners.length >= 15) {
+      setStatusNotice('You have reached the maximum of 15 saved banners. Please delete one first.');
+      if (e.target) e.target.value = '';
+      return;
+    }
+
+    setUploadingBannerPhoto(true);
+    setBannerPhotoBadge('Optimizing & uploading...');
+    try {
+      const original = await readOriginalImageForBanner(file);
+      const ext =
+        original.contentType === 'image/png'
+          ? 'png'
+          : original.contentType === 'image/webp'
+          ? 'webp'
+          : original.contentType === 'image/avif'
+          ? 'avif'
+          : 'jpg';
+      const fileName = `promo-banner-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
+
+      // Keep any existing saved banner image in R2 intact until the admin clicks "Save Banner"
+      const prevDraftUrl =
+        hasUnsavedBannerDraft && !savedPromoBanners.some((b) => b.imgUrl === promoBannerUrl)
+          ? promoBannerUrl
+          : undefined;
+
+      const uploaded = await uploadCompressedToR2({
+        fileName,
+        contentType: original.contentType,
+        base64Data: original.base64Data,
+        oldImageUrl: prevDraftUrl,
+        skipDeleteOld: !prevDraftUrl,
+        isPromoBanner: true,
+      });
+
+      const sizeKb = original.sizeKB || Math.max(1, Math.round(original.sizeBytes / 1024));
+      const badgeStr = `✓ Optimized (${original.originalSizeKB} KB → ${sizeKb} KB · ${original.extension.toUpperCase()})`;
+
+      if (isAddingNew) {
+        editingBannerIdRef.current = null;
+        setEditingBannerId(null);
+      }
+      hasUnsavedBannerDraftRef.current = true;
+      setHasUnsavedBannerDraft(true);
+      setPromoBannerUrl(uploaded.url);
+      setBannerPhotoBadge(badgeStr);
+      setStatusNotice(
+        '✓ Banner photo optimized & loaded in preview. Configure settings below and click "Save Banner" to save it to Save Banners.'
+      );
+    } catch (err: any) {
+      console.error('Banner upload failed:', err);
+      setBannerPhotoBadge(null);
+      setStatusNotice(err?.message || 'Failed to upload promo banner.');
+    } finally {
+      setUploadingBannerPhoto(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleDelayInputChange = (rawVal: string) => {
+    const digitsOnly = rawVal.replace(/[^0-9]/g, '');
+    if (digitsOnly === '') {
+      setPromoBannerDelayInput('');
+      return;
+    }
+    const normalized = String(Math.min(60, parseInt(digitsOnly, 10)));
+    setPromoBannerDelayInput(normalized);
+    setPromoBannerDelaySeconds(Number(normalized));
+  };
+
+  const handleMaxPerDayInputChange = (rawVal: string) => {
+    const digitsOnly = rawVal.replace(/[^0-9]/g, '');
+    if (digitsOnly === '') {
+      setPromoBannerMaxInput('');
+      return;
+    }
+    const normalized = String(Math.min(20, parseInt(digitsOnly, 10)));
+    setPromoBannerMaxInput(normalized);
+    setPromoBannerMaxPerDay(Number(normalized));
+  };
+
+  // Master Active / Hidden Switch at Top of Promo Banner Card (Solely turns the live website pop-up banner feature ON or OFF)
+  const handleToggleMainPromoBannerMaster = async (nextEnabled: boolean) => {
+    setSavingBannerSettings(true);
+    try {
+      const currentOnBanner =
+        (activePromoBannerId
+          ? savedPromoBanners.find((b) => b.id === activePromoBannerId)
+          : null) || null;
+
+      const updatedStore = await mutateR2StoreData('updateSettings', {
+        currency: storeCurrency,
+        exchangeRate: exchangeRate || DEFAULT_LBP_RATE,
+        aiEnabled,
+        aiBubbleLabel,
+        promoBannerEnabled: nextEnabled,
+        promoBannerUrl: currentOnBanner ? currentOnBanner.imgUrl : '',
+        promoBannerDelaySeconds: currentOnBanner
+          ? currentOnBanner.delaySeconds
+          : promoBannerDelaySeconds,
+        promoBannerMaxPerDay: currentOnBanner
+          ? currentOnBanner.maxPerDay
+          : promoBannerMaxPerDay,
+        promoBannerClickToMenu: currentOnBanner
+          ? currentOnBanner.clickToMenu
+          : promoBannerClickToMenu,
+        promoBannerTargetUrl: currentOnBanner
+          ? currentOnBanner.targetUrl || '/menu'
+          : promoBannerTargetUrl || '/menu',
+        activePromoBannerId: currentOnBanner ? currentOnBanner.id : '',
+        savedPromoBanners,
+      });
+      applyStoreState(updatedStore);
+      setStatusNotice(
+        nextEnabled
+          ? currentOnBanner
+            ? '✓ Promo Banner master switch set to Active (the ON banner in Save Banners is now live on the website).'
+            : '✓ Promo Banner master switch set to Active. Toggle a banner ON in Save Banners (or Save Banner below) to display it on the website.'
+          : '✓ Promo Banner master switch set to Hidden (no banner will appear on the live website).'
+      );
+    } catch (err: any) {
+      console.error('Failed to toggle master promo banner status:', err);
+      setStatusNotice(err?.message || 'Failed to update promo banner status.');
+    } finally {
+      setSavingBannerSettings(false);
+    }
+  };
+
+  // Save Banner Button: Saves the current editor banner + settings into "Save Banners" history
+  const handleSavePromoBannerSettings = async () => {
+    const cleanUrl = promoBannerUrl.trim();
+    if (!cleanUrl) {
+      setStatusNotice('Please upload a promo banner photo first before clicking Save Banner.');
+      return;
+    }
+    setSavingBannerSettings(true);
+    try {
+      const parsedDelay =
+        promoBannerDelayInput.trim() === '' ? 2 : parseInt(promoBannerDelayInput, 10);
+      const parsedMax =
+        promoBannerMaxInput.trim() === '' ? 2 : parseInt(promoBannerMaxInput, 10);
+      const clampedDelay = Math.max(
+        0,
+        Math.min(60, Number.isFinite(parsedDelay) ? parsedDelay : promoBannerDelaySeconds)
+      );
+      const clampedMax = Math.max(
+        0,
+        Math.min(20, Number.isFinite(parsedMax) ? parsedMax : promoBannerMaxPerDay)
+      );
+      const cleanTarget = promoBannerTargetUrl.trim() || '/menu';
+
+      let nextSavedList = [...savedPromoBanners];
+      let savedBannerId = editingBannerId || '';
+      let nextActiveId = activePromoBannerId;
+
+      const existingIdx = savedBannerId
+        ? nextSavedList.findIndex((b) => b.id === savedBannerId)
+        : -1;
+
+      if (existingIdx >= 0) {
+        const previousImgUrl = nextSavedList[existingIdx].imgUrl;
+        nextSavedList[existingIdx] = {
+          ...nextSavedList[existingIdx],
+          imgUrl: cleanUrl,
+          delaySeconds: clampedDelay,
+          maxPerDay: clampedMax,
+          clickToMenu: promoBannerClickToMenu,
+          targetUrl: cleanTarget,
+          label: getReadableDestinationLabel(cleanTarget),
+          sizeBadge: bannerPhotoBadge || nextSavedList[existingIdx].sizeBadge,
+        };
+        if (
+          previousImgUrl &&
+          previousImgUrl !== cleanUrl &&
+          !nextSavedList.some((b) => b.imgUrl === previousImgUrl)
+        ) {
+          try {
+            await deleteImageFromR2(previousImgUrl);
+          } catch {
+            // ignore non-fatal cleanup error
+          }
+        }
+      } else {
+        if (nextSavedList.length >= 15) {
+          setStatusNotice(
+            'You have reached the maximum of 15 saved banners in Save Banners. Please delete one first.'
+          );
+          setSavingBannerSettings(false);
+          return;
+        }
+        savedBannerId = `banner-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        const newEntry: SavedPromoBanner = {
+          id: savedBannerId,
+          label: getReadableDestinationLabel(cleanTarget),
+          imgUrl: cleanUrl,
+          delaySeconds: clampedDelay,
+          maxPerDay: clampedMax,
+          clickToMenu: promoBannerClickToMenu,
+          targetUrl: cleanTarget,
+          sizeBadge: bannerPhotoBadge || undefined,
+          createdAt: new Date().toISOString(),
+        };
+        nextSavedList = [newEntry, ...nextSavedList].slice(0, 15);
+        // When saving a brand new banner, set it as the ON banner in Save Banners (turning any previous ON banner OFF)
+        nextActiveId = savedBannerId;
+      }
+
+      // If no banner was ON yet, turn this saved banner ON in Save Banners
+      if (!nextActiveId && nextSavedList.length === 1) {
+        nextActiveId = savedBannerId;
+      }
+
+      const activeBannerInList =
+        (nextActiveId ? nextSavedList.find((b) => b.id === nextActiveId) : null) || null;
+
+      const updatedStore = await mutateR2StoreData('updateSettings', {
+        currency: storeCurrency,
+        exchangeRate: exchangeRate || DEFAULT_LBP_RATE,
+        aiEnabled,
+        aiBubbleLabel,
+        promoBannerEnabled,
+        promoBannerUrl: activeBannerInList ? activeBannerInList.imgUrl : '',
+        promoBannerDelaySeconds: activeBannerInList
+          ? activeBannerInList.delaySeconds
+          : clampedDelay,
+        promoBannerMaxPerDay: activeBannerInList
+          ? activeBannerInList.maxPerDay
+          : clampedMax,
+        promoBannerClickToMenu: activeBannerInList
+          ? activeBannerInList.clickToMenu
+          : promoBannerClickToMenu,
+        promoBannerTargetUrl: activeBannerInList
+          ? activeBannerInList.targetUrl || '/menu'
+          : cleanTarget,
+        activePromoBannerId: activeBannerInList ? activeBannerInList.id : '',
+        savedPromoBanners: nextSavedList,
+      });
+
+      applyStoreState(updatedStore, {
+        clearDraft: true,
+        syncEditorBannerId: savedBannerId,
+      });
+      setStatusNotice(
+        existingIdx >= 0
+          ? `✓ Banner updated in Save Banners (${clampedDelay}s delay · ${
+              clampedMax === 0 ? 'every visit' : `${clampedMax}x/day`
+            } · ${getReadableDestinationLabel(cleanTarget)}).`
+          : `✓ Banner saved to Save Banners (${clampedDelay}s delay · ${
+              clampedMax === 0 ? 'every visit' : `${clampedMax}x/day`
+            } · ${getReadableDestinationLabel(cleanTarget)}).`
+      );
+    } catch (err: any) {
+      console.error('Failed to save promo banner:', err);
+      setStatusNotice(err?.message || 'Failed to save promo banner.');
+    } finally {
+      setSavingBannerSettings(false);
+    }
+  };
+
+  // Solely Toggle a Single Banner ON or OFF in "Save Banners" (Does NOT alter the main Active/Hidden master switch)
+  const handleToggleSavedBanner = async (banner: SavedPromoBanner, turnOn: boolean) => {
+    setSavingBannerSettings(true);
+    try {
+      const nextActiveId = turnOn ? banner.id : '';
+      const updatedStore = await mutateR2StoreData('updateSettings', {
+        currency: storeCurrency,
+        exchangeRate: exchangeRate || DEFAULT_LBP_RATE,
+        aiEnabled,
+        aiBubbleLabel,
+        promoBannerEnabled,
+        promoBannerUrl: turnOn ? banner.imgUrl : '',
+        promoBannerDelaySeconds: banner.delaySeconds,
+        promoBannerMaxPerDay: banner.maxPerDay,
+        promoBannerClickToMenu: banner.clickToMenu,
+        promoBannerTargetUrl: banner.targetUrl || '/menu',
+        activePromoBannerId: nextActiveId,
+        savedPromoBanners,
+      });
+      applyStoreState(updatedStore, {
+        syncEditorBannerId: turnOn ? banner.id : editingBannerId || banner.id,
+      });
+      setStatusNotice(
+        turnOn
+          ? promoBannerEnabled
+            ? `✓ Banner turned ON and is now live on the website (${banner.delaySeconds}s delay · ${
+                banner.maxPerDay === 0 ? 'every visit' : `${banner.maxPerDay}x/day`
+              } · ${getReadableDestinationLabel(banner.targetUrl)}). All other saved banners are now OFF.`
+            : `✓ Banner turned ON in Save Banners (all other saved banners are now OFF). Note: Main banner switch is currently Hidden.`
+          : '✓ Banner turned OFF in Save Banners.'
+      );
+    } catch (err: any) {
+      console.error('Failed to toggle saved banner:', err);
+      setStatusNotice(err?.message || 'Failed to update saved banner state.');
+    } finally {
+      setSavingBannerSettings(false);
+    }
+  };
+
+  // Load a Saved Banner into the Editor Form above and scroll smoothly to the editor
+  const handleSelectSavedBannerForEdit = (banner: SavedPromoBanner) => {
+    hasUnsavedBannerDraftRef.current = false;
+    setHasUnsavedBannerDraft(false);
+    editingBannerIdRef.current = banner.id;
+    setEditingBannerId(banner.id);
+    setPromoBannerUrl(banner.imgUrl);
+    setPromoBannerDelaySeconds(banner.delaySeconds);
+    setPromoBannerDelayInput(String(banner.delaySeconds));
+    setPromoBannerMaxPerDay(banner.maxPerDay);
+    setPromoBannerMaxInput(String(banner.maxPerDay));
+    setPromoBannerClickToMenu(banner.clickToMenu);
+    setPromoBannerTargetUrl(banner.targetUrl || '/menu');
+    setBannerPhotoBadge(banner.sizeBadge || null);
+    setStatusNotice(
+      `✓ Loaded banner (${getReadableDestinationLabel(banner.targetUrl)}) into editor above. Adjust settings and click Save Banner.`
+    );
+    if (promoBannerEditorRef.current) {
+      promoBannerEditorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -1439,6 +2082,30 @@ const Admin = () => {
                                       <span className="text-error font-semibold">Out of Stock</span>
                                     </>
                                   )}
+                                  {(() => {
+                                    const itemCat = categories.find(
+                                      (c) =>
+                                        c.name.toLowerCase() === (item.category || '').toLowerCase() ||
+                                        c.id.toLowerCase() === (item.category || '').toLowerCase()
+                                    );
+                                    const catSlug = itemCat ? sanitizeSlug(itemCat.name) : 'all';
+                                    const itSlug = sanitizeSlug(item.title);
+                                    const liveUrl = `/menu/${catSlug}/${itSlug}`;
+                                    return (
+                                      <>
+                                        <span aria-hidden="true">·</span>
+                                        <Link
+                                          to={liveUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          title={`View dish: restocorano.com${liveUrl}`}
+                                          className="text-[11px] font-mono text-primary/80 hover:text-primary hover:underline lowercase"
+                                        >
+                                          {liveUrl}
+                                        </Link>
+                                      </>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             </div>
@@ -1549,22 +2216,24 @@ const Admin = () => {
 
                 {/* Right Column: Pending Reviews (shown on Dashboard Overview) */}
                 {activeSection === 'dashboard' && (
-                  <div className="lg:col-span-1">
-                    <div className="flex items-center justify-between mb-3">
-                      <h2 className="text-base sm:text-lg font-semibold text-on-surface">
-                        Pending Reviews{' '}
-                        <span className="text-on-surface-variant font-normal font-mono tabular-nums">
-                          ({pendingReviews.length})
-                        </span>
-                      </h2>
-                      <button
-                        type="button"
-                        onClick={() => setActiveSection('reviews')}
-                        className="text-xs text-primary font-semibold hover:underline"
-                      >
-                        View All
-                      </button>
-                    </div>
+                  <div className="lg:col-span-1 space-y-6">
+                    {/* Pending Reviews */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-base sm:text-lg font-semibold text-on-surface">
+                          Pending Reviews{' '}
+                          <span className="text-on-surface-variant font-normal font-mono tabular-nums">
+                            ({pendingReviews.length})
+                          </span>
+                        </h2>
+                        <button
+                          type="button"
+                          onClick={() => setActiveSection('reviews')}
+                          className="text-xs text-primary font-semibold hover:underline"
+                        >
+                          View All
+                        </button>
+                      </div>
 
                     <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl divide-y divide-outline-variant/25 overflow-hidden">
                       {displaySidebarReviews.length === 0 ? (
@@ -1628,6 +2297,7 @@ const Admin = () => {
                           </div>
                         ))
                       )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1694,9 +2364,21 @@ const Admin = () => {
                         </button>
                         <div>
                           <h4 className="font-semibold text-on-surface">{cat.name}</h4>
-                          <span className="text-xs text-on-surface-variant font-mono tabular-nums">
-                            {count} products
-                          </span>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs text-on-surface-variant font-mono tabular-nums">
+                              {count} products
+                            </span>
+                            <span aria-hidden="true" className="text-on-surface-variant text-xs">·</span>
+                            <Link
+                              to={`/menu/${sanitizeSlug(cat.name)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`View /menu/${sanitizeSlug(cat.name)}`}
+                              className="text-[11px] font-mono text-primary/80 hover:text-primary hover:underline lowercase"
+                            >
+                              /menu/{sanitizeSlug(cat.name)}
+                            </Link>
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
@@ -2230,7 +2912,683 @@ const Admin = () => {
           {/* SETTINGS & ADMIN ACCESS MANAGER SECTION */}
           {activeSection === 'settings' && (
             <div className="space-y-6">
-              {/* 1. Admin Access Manager Card */}
+              {/* 1. Homepage Promotional Banner Pop-Up Manager Card (First) */}
+              <div
+                ref={promoBannerEditorRef}
+                className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-5 sm:p-6 space-y-5 scroll-mt-24"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="material-symbols-outlined text-primary text-[22px]">
+                        campaign
+                      </span>
+                      <h2 className="text-base sm:text-lg font-semibold text-on-surface">
+                        Homepage Promotional Banner Pop-Up
+                      </h2>
+                      {(() => {
+                        const hasOnBanner =
+                          Boolean(activePromoBannerId) &&
+                          savedPromoBanners.some((b) => b.id === activePromoBannerId);
+                        const isLiveNow = promoBannerEnabled && hasOnBanner;
+                        return (
+                          <span
+                            className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                              isLiveNow
+                                ? 'bg-primary/20 text-primary border border-primary/40'
+                                : 'bg-surface-container text-on-surface-variant border border-outline-variant/40'
+                            }`}
+                          >
+                            {isLiveNow ? 'LIVE ON WEBSITE' : 'HIDDEN'}
+                          </span>
+                        );
+                      })()}
+                      {hasUnsavedBannerDraft && (
+                        <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                          Unsaved Draft · Click Save Banner
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:flex items-center gap-1.5 bg-surface-container p-1 rounded-xl border border-outline-variant/50 shrink-0 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      disabled={savingBannerSettings || uploadingBannerPhoto}
+                      onClick={() => {
+                        setPromoBannerEnabled(true);
+                        void handleToggleMainPromoBannerMaster(true);
+                      }}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap active:scale-95 cursor-pointer disabled:opacity-50 ${
+                        promoBannerEnabled
+                          ? 'bg-primary text-on-primary shadow-sm'
+                          : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60'
+                      }`}
+                    >
+                      Active
+                    </button>
+                    <button
+                      type="button"
+                      disabled={savingBannerSettings || uploadingBannerPhoto}
+                      onClick={() => {
+                        setPromoBannerEnabled(false);
+                        void handleToggleMainPromoBannerMaster(false);
+                      }}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap active:scale-95 cursor-pointer disabled:opacity-50 ${
+                        !promoBannerEnabled
+                          ? 'bg-surface-container-highest text-on-surface shadow-sm'
+                          : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60'
+                      }`}
+                    >
+                      Hidden
+                    </button>
+                  </div>
+                </div>
+
+                {/* Banner Preview & Upload / Replace / Delete Controls */}
+                <div className="grid md:grid-cols-12 gap-5 items-start pt-2 border-t border-outline-variant/30">
+                  <div className="md:col-span-5 flex flex-col items-center justify-center bg-surface-container border border-outline-variant/40 rounded-2xl p-4 min-h-[220px]">
+                    {promoBannerUrl ? (
+                      <div className="w-full flex flex-col items-center gap-3">
+                        <img
+                          src={promoBannerUrl}
+                          alt="Promotional Banner Preview"
+                          className="max-h-[260px] w-auto object-contain rounded-xl border border-primary/30 shadow-lg"
+                        />
+                        <div className="flex flex-wrap items-center justify-center gap-2 w-full">
+                          <button
+                            type="button"
+                            disabled={uploadingBannerPhoto || savedPromoBanners.length >= 15}
+                            onClick={() => {
+                              setBannerUploadMode('new');
+                              bannerFileInputRef.current?.click();
+                            }}
+                            className="flex-1 bg-primary text-on-primary px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 whitespace-nowrap"
+                          >
+                            {uploadingBannerPhoto ? 'Uploading...' : '+ Upload New Banner'}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={uploadingBannerPhoto}
+                            onClick={() => {
+                              setBannerUploadMode('replace');
+                              bannerFileInputRef.current?.click();
+                            }}
+                            className="bg-surface-container-high hover:bg-surface-container-highest text-on-surface border border-outline-variant/40 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors disabled:opacity-50 whitespace-nowrap"
+                          >
+                            Replace Photo
+                          </button>
+                          <button
+                            type="button"
+                            disabled={uploadingBannerPhoto || isDeleting}
+                            onClick={() =>
+                              setDeleteConfirm({
+                                type: 'promo_banner',
+                                id: editingBannerId || activePromoBannerId || 'promo-banner',
+                                label: 'Promotional Banner',
+                              })
+                            }
+                            className="bg-error/15 hover:bg-error/25 text-error border border-error/30 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors disabled:opacity-50 whitespace-nowrap"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 px-3">
+                        <span className="material-symbols-outlined text-4xl text-primary/70 mb-2">
+                          add_photo_alternate
+                        </span>
+                        <p className="text-xs text-on-surface font-medium mb-3">
+                          No Promotional Banner Uploaded
+                        </p>
+                        <button
+                          type="button"
+                          disabled={uploadingBannerPhoto}
+                          onClick={() => {
+                            setBannerUploadMode('new');
+                            bannerFileInputRef.current?.click();
+                          }}
+                          className="bg-primary text-on-primary px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors disabled:opacity-50"
+                        >
+                          {uploadingBannerPhoto ? 'Uploading...' : 'Upload Banner Photo'}
+                        </button>
+                      </div>
+                    )}
+                    <input
+                      ref={bannerFileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/avif"
+                      onChange={handleBannerPhotoSelect}
+                      className="hidden"
+                    />
+                    {bannerPhotoBadge && (
+                      <div className="mt-2.5 text-[11px] font-mono text-primary text-center">
+                        {bannerPhotoBadge}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Timing & Frequency Controls */}
+                  <div className="md:col-span-7 space-y-4">
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30">
+                        <label className="block text-xs font-semibold text-on-surface mb-1">
+                          Pop-Up Delay After Entering (Seconds)
+                        </label>
+                        <p className="text-[11px] text-on-surface-variant mb-2.5">
+                          How many seconds after a visitor lands on the website before the banner pops up (0–60s).
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="2"
+                            value={promoBannerDelayInput}
+                            onChange={(e) => handleDelayInputChange(e.target.value)}
+                            onBlur={() => {
+                              if (promoBannerDelayInput.trim() === '') {
+                                setPromoBannerDelayInput(String(promoBannerDelaySeconds));
+                              }
+                            }}
+                            className="w-24 bg-surface-container-low border border-outline/40 rounded-xl px-3 py-2 text-base sm:text-sm text-on-surface font-mono tabular-nums focus:outline-none focus:border-primary"
+                          />
+                          <span className="text-xs text-on-surface-variant font-mono">seconds</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30">
+                        <label className="block text-xs font-semibold text-on-surface mb-1">
+                          Max Pop-Ups Per IP / Visitor Per Day
+                        </label>
+                        <p className="text-[11px] text-on-surface-variant mb-2.5">
+                          How many times per day the same visitor IP sees the pop-up (set 0 for every visit).
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="2"
+                            value={promoBannerMaxInput}
+                            onChange={(e) => handleMaxPerDayInputChange(e.target.value)}
+                            onBlur={() => {
+                              if (promoBannerMaxInput.trim() === '') {
+                                setPromoBannerMaxInput(String(promoBannerMaxPerDay));
+                              }
+                            }}
+                            className="w-24 bg-surface-container-low border border-outline/40 rounded-xl px-3 py-2 text-base sm:text-sm text-on-surface font-mono tabular-nums focus:outline-none focus:border-primary"
+                          />
+                          <span className="text-xs text-on-surface-variant font-mono">
+                            {promoBannerMaxPerDay === 0 ? 'unlimited / every visit' : 'times / day'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30 space-y-3">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <div className="text-xs font-semibold text-on-surface">
+                            Tap Banner Image to Open Menu or Specific Dish
+                          </div>
+                          <div className="text-[11px] text-on-surface-variant mt-0.5">
+                            When enabled, tapping directly on the promotional banner takes the customer to the selected menu destination.
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setPromoBannerClickToMenu((prev) => !prev)}
+                          className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-colors shrink-0 ${
+                            promoBannerClickToMenu
+                              ? 'bg-primary/20 border-primary text-primary'
+                              : 'bg-surface-container-low border-outline-variant/40 text-on-surface-variant'
+                          }`}
+                        >
+                          {promoBannerClickToMenu ? 'Enabled' : 'Disabled'}
+                        </button>
+                      </div>
+
+                      {promoBannerClickToMenu && (
+                        <div className="pt-3 border-t border-outline-variant/20 space-y-2.5">
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <label className="text-xs font-semibold text-on-surface">
+                                Destination Link (Auto-Generated for All Categories & Dishes)
+                              </label>
+                              {bannerDestSearch && (
+                                <button
+                                  type="button"
+                                  onClick={() => setBannerDestSearch('')}
+                                  className="text-[11px] text-primary hover:underline font-medium"
+                                >
+                                  Clear filter
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Small search bar to quickly find any dish or category */}
+                            <div className="relative flex items-center mb-2">
+                              <svg
+                                className="w-3.5 h-3.5 fill-current text-on-surface-variant absolute left-3 pointer-events-none shrink-0"
+                                viewBox="0 -960 960 960"
+                                aria-hidden="true"
+                              >
+                                <path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z" />
+                              </svg>
+                              <input
+                                type="text"
+                                value={bannerDestSearch}
+                                onChange={(e) => setBannerDestSearch(e.target.value)}
+                                placeholder="Search category or dish (e.g. tawouk, burger, sub)..."
+                                className="w-full bg-surface-container-low border border-outline/40 rounded-xl pl-8 pr-8 py-1.5 text-xs text-on-surface placeholder-on-surface-variant/60 focus:outline-none focus:border-primary"
+                              />
+                              {bannerDestSearch && (
+                                <button
+                                  type="button"
+                                  onClick={() => setBannerDestSearch('')}
+                                  aria-label="Clear destination search"
+                                  className="absolute right-2 text-on-surface-variant hover:text-primary p-0.5"
+                                >
+                                  <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                                    <path d="m256-214-42-42 224-224-224-224 42-42 224 224 224-224 42 42-224 224 224 224-42 42-224-224-224 224Z" />
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+
+                            {/* If searching, display quick-select matches directly */}
+                            {bannerDestSearch.trim() && (
+                              <div className="max-h-40 overflow-y-auto bg-surface-container-low border border-primary/30 rounded-xl p-1.5 mb-2 space-y-1 w-full max-w-full">
+                                {(() => {
+                                  const q = bannerDestSearch.toLowerCase().trim();
+                                  const matchedCats = categories.filter((c) =>
+                                    (c.name || '').toLowerCase().includes(q)
+                                  );
+                                  const matchedItems = items.filter(
+                                    (it) =>
+                                      (it.title || '').toLowerCase().includes(q) ||
+                                      (it.category || '').toLowerCase().includes(q)
+                                  );
+
+                                  if (matchedCats.length === 0 && matchedItems.length === 0) {
+                                    return (
+                                      <div className="text-[11px] text-on-surface-variant text-center py-2">
+                                        No category or dish matching "{bannerDestSearch.trim()}".
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
+                                    <>
+                                      {matchedCats.map((cat) => {
+                                        const url = `/menu/${sanitizeSlug(cat.name)}`;
+                                        const isChosen = promoBannerTargetUrl === url;
+                                        return (
+                                          <button
+                                            key={`match-cat-${cat.id}`}
+                                            type="button"
+                                            onClick={() => {
+                                              setPromoBannerTargetUrl(url);
+                                              setBannerDestSearch('');
+                                            }}
+                                            className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center gap-2 transition-colors min-w-0 ${
+                                              isChosen
+                                                ? 'bg-primary/20 text-primary font-bold'
+                                                : 'hover:bg-surface-container text-on-surface'
+                                            }`}
+                                          >
+                                            <span className="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-semibold text-primary uppercase shrink-0">
+                                              Category
+                                            </span>
+                                            <span className="truncate font-medium">{cat.name}</span>
+                                          </button>
+                                        );
+                                      })}
+                                      {matchedItems.map((it) => {
+                                        const cat = categories.find(
+                                          (c) =>
+                                            c.name.toLowerCase() === (it.category || '').toLowerCase() ||
+                                            c.id.toLowerCase() === (it.category || '').toLowerCase()
+                                        );
+                                        const catSlug = cat ? sanitizeSlug(cat.name) : 'all';
+                                        const itSlug = sanitizeSlug(it.title);
+                                        const url = `/menu/${catSlug}/${itSlug}`;
+                                        const isChosen = promoBannerTargetUrl === url;
+                                        return (
+                                          <button
+                                            key={`match-it-${it.id}`}
+                                            type="button"
+                                            onClick={() => {
+                                              setPromoBannerTargetUrl(url);
+                                              setBannerDestSearch('');
+                                            }}
+                                            className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center gap-2 transition-colors min-w-0 ${
+                                              isChosen
+                                                ? 'bg-primary/20 text-primary font-bold'
+                                                : 'hover:bg-surface-container text-on-surface'
+                                            }`}
+                                          >
+                                            <span className="truncate font-medium min-w-0">
+                                              {it.title}{' '}
+                                              <span className="text-[11px] text-on-surface-variant font-normal">
+                                                · {it.category}
+                                              </span>
+                                            </span>
+                                          </button>
+                                        );
+                                      })}
+                                    </>
+                                  );
+                                })()}
+                              </div>
+                            )}
+
+                            <select
+                              value={promoBannerTargetUrl}
+                              onChange={(e) => setPromoBannerTargetUrl(e.target.value)}
+                              className="w-full bg-surface-container-low border border-outline/40 rounded-xl px-3 py-2 text-xs text-on-surface focus:outline-none focus:border-primary truncate"
+                            >
+                              <option value="/menu">Whole Menu (/menu)</option>
+                              {categories.length > 0 && (
+                                <optgroup label="Categories">
+                                  {categories
+                                    .filter((cat) =>
+                                      !bannerDestSearch.trim() ||
+                                      (cat.name || '')
+                                        .toLowerCase()
+                                        .includes(bannerDestSearch.toLowerCase().trim())
+                                    )
+                                    .map((cat) => {
+                                      const catSlug = sanitizeSlug(cat.name);
+                                      const url = `/menu/${catSlug}`;
+                                      return (
+                                        <option key={cat.id} value={url}>
+                                          Category: {cat.name}
+                                        </option>
+                                      );
+                                    })}
+                                </optgroup>
+                              )}
+                              {items.length > 0 && (
+                                <optgroup label="Dishes & Products">
+                                  {items
+                                    .filter((it) => {
+                                      if (!bannerDestSearch.trim()) return true;
+                                      const q = bannerDestSearch.toLowerCase().trim();
+                                      return (
+                                        (it.title || '').toLowerCase().includes(q) ||
+                                        (it.category || '').toLowerCase().includes(q)
+                                      );
+                                    })
+                                    .map((it) => {
+                                      const cat = categories.find(
+                                        (c) =>
+                                          c.name.toLowerCase() === (it.category || '').toLowerCase() ||
+                                          c.id.toLowerCase() === (it.category || '').toLowerCase()
+                                      );
+                                      const catSlug = cat ? sanitizeSlug(cat.name) : 'all';
+                                      const itSlug = sanitizeSlug(it.title);
+                                      const url = `/menu/${catSlug}/${itSlug}`;
+                                      return (
+                                        <option key={it.id} value={url}>
+                                          {it.title} ({it.category})
+                                        </option>
+                                      );
+                                    })}
+                                </optgroup>
+                              )}
+                            </select>
+                          </div>
+
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[11px] text-on-surface-variant font-mono shrink-0">
+                              Direct Path:
+                            </span>
+                            <input
+                              type="text"
+                              value={promoBannerTargetUrl}
+                              onChange={(e) => setPromoBannerTargetUrl(e.target.value)}
+                              placeholder="/menu/sandwiches/tawouk"
+                              className="min-w-0 flex-1 bg-surface-container-low border border-outline/40 rounded-lg px-2.5 py-1.5 text-xs text-on-surface font-mono focus:outline-none focus:border-primary truncate"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px] text-on-surface-variant bg-surface-container-lowest/70 px-3 py-2 rounded-lg border border-outline-variant/20 min-w-0">
+                            <span className="truncate min-w-0 mr-2">
+                              Preview: <strong className="text-primary font-mono font-medium">restocorano.com{promoBannerTargetUrl || '/menu'}</strong>
+                            </span>
+                            <Link
+                              to={promoBannerTargetUrl || '/menu'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline font-semibold ml-2 shrink-0"
+                            >
+                              Test ↗
+                            </Link>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        disabled={savingBannerSettings || uploadingBannerPhoto}
+                        onClick={() => handleSavePromoBannerSettings()}
+                        className="w-full sm:w-auto bg-primary text-on-primary px-6 py-3 sm:py-2.5 rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors disabled:opacity-50"
+                      >
+                        {savingBannerSettings ? 'Saving...' : 'Save Banner'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save Banners History Library (Up to 15 Saved Banners) */}
+                <div className="pt-5 border-t border-outline-variant/30 space-y-3.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-on-surface">
+                          Save Banners
+                        </h3>
+                        <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant/40 text-primary">
+                          {savedPromoBanners.length} / 15
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-on-surface-variant mt-0.5">
+                        Banners saved when you click Save Banner above. Toggle any banner ON to make it the selected banner (automatically turning any other banner OFF).
+                      </p>
+                    </div>
+                  </div>
+
+                  {savedPromoBanners.length === 0 ? (
+                    <div className="bg-surface-container/60 border border-outline-variant/30 rounded-xl p-4 text-center text-xs text-on-surface-variant">
+                      No saved banners yet. Upload a banner above and click Save Banner to store up to 15 reusable banners here.
+                    </div>
+                  ) : (
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {savedPromoBanners.map((banner, idx) => {
+                        const isBannerOn = activePromoBannerId === banner.id;
+                        const isCurrentlyLive = promoBannerEnabled && isBannerOn;
+                        const isSelectedInEditor =
+                          !hasUnsavedBannerDraft && editingBannerId === banner.id;
+                        const destLabel = getReadableDestinationLabel(banner.targetUrl);
+
+                        return (
+                          <div
+                            key={banner.id}
+                            className={`rounded-xl p-3 border transition-all flex flex-col justify-between gap-3 ${
+                              isBannerOn
+                                ? 'bg-primary/10 border-primary/60 shadow-md'
+                                : isSelectedInEditor
+                                ? 'bg-surface-container border-primary/40'
+                                : 'bg-surface-container border-outline-variant/30'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3 min-w-0">
+                              <img
+                                src={banner.imgUrl}
+                                alt={`Saved Banner ${idx + 1}`}
+                                onClick={() => handleSelectSavedBannerForEdit(banner)}
+                                className="w-16 h-16 rounded-lg object-cover border border-outline-variant/40 bg-surface-container-low shrink-0 cursor-pointer"
+                              />
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <div className="flex items-center justify-between gap-1.5">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="text-xs font-bold text-on-surface truncate">
+                                      Banner #{idx + 1}
+                                    </span>
+                                    {isSelectedInEditor && (
+                                      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-primary/15 text-primary border border-primary/30 shrink-0">
+                                        In Editor
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span
+                                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                                      isCurrentlyLive
+                                        ? 'bg-primary text-on-primary'
+                                        : isBannerOn
+                                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                        : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/40'
+                                    }`}
+                                  >
+                                    {isCurrentlyLive
+                                      ? 'ON · LIVE'
+                                      : isBannerOn
+                                      ? 'ON · HIDDEN'
+                                      : 'OFF'}
+                                  </span>
+                                </div>
+
+                                <div className="text-[11px] text-primary font-medium truncate" title={destLabel}>
+                                  {banner.clickToMenu ? destLabel : 'Tap link disabled'}
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-mono text-on-surface-variant">
+                                  <span className="bg-surface-container-low px-1.5 py-0.5 rounded border border-outline-variant/30">
+                                    {banner.delaySeconds}s delay
+                                  </span>
+                                  <span className="bg-surface-container-low px-1.5 py-0.5 rounded border border-outline-variant/30">
+                                    {banner.maxPerDay === 0 ? 'Every visit' : `${banner.maxPerDay}x/day`}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2 pt-2 border-t border-outline-variant/25">
+                              {/* Solely ON / OFF Toggle Switch for this Banner */}
+                              <button
+                                type="button"
+                                role="switch"
+                                aria-checked={isBannerOn}
+                                disabled={savingBannerSettings || uploadingBannerPhoto}
+                                onClick={() => handleToggleSavedBanner(banner, !isBannerOn)}
+                                className="inline-flex items-center gap-2 py-1 px-1.5 rounded-lg cursor-pointer select-none disabled:opacity-50 group"
+                              >
+                                <span
+                                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors duration-200 ${
+                                    isBannerOn
+                                      ? 'bg-primary border-primary'
+                                      : 'bg-surface-container-lowest border-outline-variant/60'
+                                  }`}
+                                >
+                                  <span
+                                    className={`inline-block h-4 w-4 transform rounded-full transition-transform duration-200 shadow-sm ${
+                                      isBannerOn
+                                        ? 'translate-x-5 bg-on-primary'
+                                        : 'translate-x-1 bg-on-surface-variant'
+                                    }`}
+                                  />
+                                </span>
+                                <span
+                                  className={`text-[11px] font-bold ${
+                                    isBannerOn ? 'text-primary' : 'text-on-surface-variant'
+                                  }`}
+                                >
+                                  {isBannerOn ? 'ON' : 'OFF'}
+                                </span>
+                              </button>
+
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSelectSavedBannerForEdit(banner)}
+                                  className={`py-1.5 px-3 rounded-lg text-[11px] font-semibold border transition-colors cursor-pointer ${
+                                    isSelectedInEditor
+                                      ? 'bg-primary/20 border-primary text-primary'
+                                      : 'bg-surface-container-low hover:bg-surface-container-high text-on-surface border-outline-variant/40'
+                                  }`}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={isDeleting}
+                                  onClick={() =>
+                                    setDeleteConfirm({
+                                      type: 'saved_promo_banner',
+                                      id: banner.id,
+                                      label: `Saved Banner #${idx + 1} (${destLabel})`,
+                                    })
+                                  }
+                                  className="py-1.5 px-2.5 rounded-lg text-[11px] font-bold bg-error/15 hover:bg-error/25 text-error border border-error/30 transition-colors disabled:opacity-50 cursor-pointer"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 2. Store Currency Card (Second) */}
+              <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-5 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-semibold text-on-surface">
+                      Menu Currency ($ / L.L.)
+                    </h2>
+                    <p className="text-xs text-on-surface-variant mt-1">
+                      Switch live menu prices between $ and L.L. (<span className="font-mono text-primary">89,000 L.L. = $1</span>).
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 sm:flex items-center gap-2 bg-surface-container p-1.5 rounded-xl border border-outline-variant/40 shrink-0">
+                    <button
+                      type="button"
+                      disabled={savingCurrency}
+                      onClick={() => handleToggleStoreCurrency('USD')}
+                      className={`px-4 py-2.5 sm:py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
+                        storeCurrency === 'USD'
+                          ? 'bg-primary text-on-primary'
+                          : 'text-on-surface-variant hover:text-on-surface'
+                      }`}
+                    >
+                      $ (USD)
+                    </button>
+                    <button
+                      type="button"
+                      disabled={savingCurrency}
+                      onClick={() => handleToggleStoreCurrency('LBP')}
+                      className={`px-4 py-2.5 sm:py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
+                        storeCurrency === 'LBP'
+                          ? 'bg-primary text-on-primary'
+                          : 'text-on-surface-variant hover:text-on-surface'
+                      }`}
+                    >
+                      L.L. (89,000)
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Admin Access Manager Card (Third) */}
               <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-5 sm:p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div>
@@ -2307,46 +3665,6 @@ const Admin = () => {
                         </button>
                       </div>
                     ))}
-                </div>
-              </div>
-
-              {/* 2. Store Currency Card (Placed After Authorized Gmails with Brief Copy) */}
-              <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-5 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-base sm:text-lg font-semibold text-on-surface">
-                      Menu Currency ($ / L.L.)
-                    </h2>
-                    <p className="text-xs text-on-surface-variant mt-1">
-                      Switch live menu prices between $ and L.L. (<span className="font-mono text-primary">89,000 L.L. = $1</span>).
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 sm:flex items-center gap-2 bg-surface-container p-1.5 rounded-xl border border-outline-variant/40 shrink-0">
-                    <button
-                      type="button"
-                      disabled={savingCurrency}
-                      onClick={() => handleToggleStoreCurrency('USD')}
-                      className={`px-4 py-2.5 sm:py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
-                        storeCurrency === 'USD'
-                          ? 'bg-primary text-on-primary'
-                          : 'text-on-surface-variant hover:text-on-surface'
-                      }`}
-                    >
-                      $ (USD)
-                    </button>
-                    <button
-                      type="button"
-                      disabled={savingCurrency}
-                      onClick={() => handleToggleStoreCurrency('LBP')}
-                      className={`px-4 py-2.5 sm:py-2 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
-                        storeCurrency === 'LBP'
-                          ? 'bg-primary text-on-primary'
-                          : 'text-on-surface-variant hover:text-on-surface'
-                      }`}
-                    >
-                      L.L. (89,000)
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>

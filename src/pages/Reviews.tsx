@@ -134,11 +134,20 @@ const Reviews = () => {
               >
                 <div className="flex items-center mb-6">
                   {/* Stars */}
-                  <div className="flex text-primary">
+                  <div className="flex text-primary gap-0.5">
                     {[...Array(5)].map((_, i) => (
-                      <span key={i} className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-                        {i < review.rating ? 'star' : 'star_border'}
-                      </span>
+                      <svg
+                        key={i}
+                        className={`w-5 h-5 fill-current shrink-0 ${i < review.rating ? 'text-primary' : 'text-on-surface-variant/30'}`}
+                        viewBox="0 -960 960 960"
+                        aria-hidden="true"
+                      >
+                        {i < review.rating ? (
+                          <path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z" />
+                        ) : (
+                          <path d="m354-287 126-76 126 77-33-144 111-96-146-13-58-136-58 135-146 13 111 97-33 143ZM233-120l65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Zm247-350Z" />
+                        )}
+                      </svg>
                     ))}
                   </div>
                 </div>
@@ -177,9 +186,12 @@ const Reviews = () => {
             >
               <button 
                 onClick={() => setShowForm(false)}
-                className="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface"
+                className="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface p-1"
+                aria-label="Close review dialog"
               >
-                <span className="material-symbols-outlined text-3xl">close</span>
+                <svg className="w-6 h-6 fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                  <path d="m256-214-42-42 224-224-224-224 42-42 224 224 224-224 42 42-224 224 224 224-42 42-224-224-224 224Z" />
+                </svg>
               </button>
               
               <h2 className="text-2xl font-headline text-primary mb-6">Write a Review</h2>
@@ -208,10 +220,16 @@ const Reviews = () => {
                           key={star}
                           type="button"
                           onClick={() => setRating(star)}
-                          className={`material-symbols-outlined focus:outline-none transition-colors ${star <= rating ? 'text-primary' : 'text-on-surface-variant/30'}`}
-                          style={{ fontVariationSettings: star <= rating ? "'FILL' 1" : "'FILL' 0" }}
+                          className={`p-1 focus:outline-none transition-colors ${star <= rating ? 'text-primary' : 'text-on-surface-variant/30'}`}
+                          aria-label={`${star} star`}
                         >
-                          star
+                          <svg className="w-7 h-7 fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                            {star <= rating ? (
+                              <path d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z" />
+                            ) : (
+                              <path d="m354-287 126-76 126 77-33-144 111-96-146-13-58-136-58 135-146 13 111 97-33 143ZM233-120l65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Zm247-350Z" />
+                            )}
+                          </svg>
                         </button>
                       ))}
                     </div>

@@ -176,6 +176,65 @@ function normalizeStoreData(raw: any): any {
         typeof raw.settings?.aiBubbleLabel === 'string' && raw.settings.aiBubbleLabel.trim()
           ? stripHtmlTags(raw.settings.aiBubbleLabel).slice(0, 28)
           : 'Corano AI',
+      aiTextBubbleEnabled: raw.settings?.aiTextBubbleEnabled !== false,
+      aiTextBubbleSeconds:
+        typeof raw.settings?.aiTextBubbleSeconds === 'number' &&
+        raw.settings.aiTextBubbleSeconds >= 1 &&
+        raw.settings.aiTextBubbleSeconds <= 600
+          ? Math.round(raw.settings.aiTextBubbleSeconds)
+          : 40,
+      promoBannerEnabled: raw.settings?.promoBannerEnabled === true,
+      promoBannerUrl:
+        typeof raw.settings?.promoBannerUrl === 'string' ? raw.settings.promoBannerUrl.trim() : '',
+      promoBannerDelaySeconds:
+        typeof raw.settings?.promoBannerDelaySeconds === 'number' &&
+        raw.settings.promoBannerDelaySeconds >= 0 &&
+        raw.settings.promoBannerDelaySeconds <= 60
+          ? Math.round(raw.settings.promoBannerDelaySeconds)
+          : 2,
+      promoBannerMaxPerDay:
+        typeof raw.settings?.promoBannerMaxPerDay === 'number' &&
+        raw.settings.promoBannerMaxPerDay >= 0 &&
+        raw.settings.promoBannerMaxPerDay <= 20
+          ? Math.round(raw.settings.promoBannerMaxPerDay)
+          : 2,
+      promoBannerClickToMenu: raw.settings?.promoBannerClickToMenu !== false,
+      promoBannerTargetUrl:
+        typeof raw.settings?.promoBannerTargetUrl === 'string' && raw.settings.promoBannerTargetUrl.trim().length > 0
+          ? raw.settings.promoBannerTargetUrl.trim()
+          : '/menu',
+      activePromoBannerId:
+        typeof raw.settings?.activePromoBannerId === 'string'
+          ? raw.settings.activePromoBannerId.trim()
+          : '',
+      savedPromoBanners: Array.isArray(raw.settings?.savedPromoBanners)
+        ? raw.settings.savedPromoBanners
+            .filter((b: any) => b && typeof b.imgUrl === 'string' && b.imgUrl.trim().length > 0)
+            .slice(0, 15)
+            .map((b: any) => ({
+              id: String(b.id || `banner-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`),
+              label: typeof b.label === 'string' ? stripHtmlTags(b.label).slice(0, 60) : '',
+              imgUrl: String(b.imgUrl).trim(),
+              delaySeconds:
+                typeof b.delaySeconds === 'number' && b.delaySeconds >= 0 && b.delaySeconds <= 60
+                  ? Math.round(b.delaySeconds)
+                  : 2,
+              maxPerDay:
+                typeof b.maxPerDay === 'number' && b.maxPerDay >= 0 && b.maxPerDay <= 20
+                  ? Math.round(b.maxPerDay)
+                  : 2,
+              clickToMenu: b.clickToMenu !== false,
+              targetUrl:
+                typeof b.targetUrl === 'string' && b.targetUrl.trim().length > 0
+                  ? b.targetUrl.trim()
+                  : '/menu',
+              sizeBadge: typeof b.sizeBadge === 'string' ? stripHtmlTags(b.sizeBadge).slice(0, 60) : '',
+              createdAt:
+                typeof b.createdAt === 'string' && b.createdAt.trim()
+                  ? b.createdAt.trim()
+                  : new Date().toISOString(),
+            }))
+        : [],
     },
     categories: Array.isArray(raw.categories) ? raw.categories : fallback.categories || [],
     items: Array.isArray(raw.items) ? raw.items : fallback.items || [],
@@ -411,14 +470,28 @@ export const onRequestOptions = async () => {
   });
 };
 
+function computeClientIpHash(request: Request): string {
+  const rawIp =
+    request.headers.get('cf-connecting-ip') ||
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    'anon';
+  let hash = 5381;
+  const str = `corano-ip-${rawIp}`;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(36);
+}
+
 export const onRequestGet = async (context: any) => {
   try {
     const storeData = await readStoreDataFromEnv(context.env || {});
+    const clientIpHash = computeClientIpHash(context.request);
     const authHeader = context.request.headers.get('Authorization');
     if (authHeader) {
       const authCheck = await verifyAdminAuthorization(authHeader, storeData);
       if (authCheck.ok) {
-        return new Response(JSON.stringify(storeData), {
+        return new Response(JSON.stringify({ ...storeData, clientIpHash }), {
           status: 200,
           headers: {
             ...R2_CORS_HEADERS,
@@ -428,14 +501,17 @@ export const onRequestGet = async (context: any) => {
         });
       }
     }
-    return new Response(JSON.stringify(sanitizePublicStoreData(storeData)), {
-      status: 200,
-      headers: {
-        ...R2_CORS_HEADERS,
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-      },
-    });
+    return new Response(
+      JSON.stringify({ ...sanitizePublicStoreData(storeData), clientIpHash }),
+      {
+        status: 200,
+        headers: {
+          ...R2_CORS_HEADERS,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
+      }
+    );
   } catch (error: any) {
     return new Response(
       JSON.stringify({ error: error?.message || 'Failed to read R2 store data' }),
@@ -726,7 +802,100 @@ export const onRequestPost = async (context: any) => {
         typeof body.aiBubbleLabel === 'string' && stripHtmlTags(body.aiBubbleLabel)
           ? stripHtmlTags(body.aiBubbleLabel).slice(0, 28)
           : storeData.settings?.aiBubbleLabel || 'Corano AI';
-      storeData.settings = { currency, exchangeRate, aiEnabled, aiBubbleLabel };
+      const aiTextBubbleEnabled =
+        typeof body.aiTextBubbleEnabled === 'boolean'
+          ? body.aiTextBubbleEnabled
+          : storeData.settings?.aiTextBubbleEnabled !== false;
+      const aiTextBubbleSeconds =
+        typeof body.aiTextBubbleSeconds === 'number' &&
+        body.aiTextBubbleSeconds >= 1 &&
+        body.aiTextBubbleSeconds <= 600
+          ? Math.round(body.aiTextBubbleSeconds)
+          : typeof storeData.settings?.aiTextBubbleSeconds === 'number'
+          ? storeData.settings.aiTextBubbleSeconds
+          : 40;
+      const promoBannerEnabled =
+        typeof body.promoBannerEnabled === 'boolean'
+          ? body.promoBannerEnabled
+          : storeData.settings?.promoBannerEnabled === true;
+      const promoBannerUrl =
+        typeof body.promoBannerUrl === 'string'
+          ? body.promoBannerUrl.trim()
+          : storeData.settings?.promoBannerUrl || '';
+      const promoBannerDelaySeconds =
+        typeof body.promoBannerDelaySeconds === 'number' &&
+        body.promoBannerDelaySeconds >= 0 &&
+        body.promoBannerDelaySeconds <= 60
+          ? Math.round(body.promoBannerDelaySeconds)
+          : typeof storeData.settings?.promoBannerDelaySeconds === 'number'
+          ? storeData.settings.promoBannerDelaySeconds
+          : 2;
+      const promoBannerMaxPerDay =
+        typeof body.promoBannerMaxPerDay === 'number' &&
+        body.promoBannerMaxPerDay >= 0 &&
+        body.promoBannerMaxPerDay <= 20
+          ? Math.round(body.promoBannerMaxPerDay)
+          : typeof storeData.settings?.promoBannerMaxPerDay === 'number'
+          ? storeData.settings.promoBannerMaxPerDay
+          : 2;
+      const promoBannerClickToMenu =
+        typeof body.promoBannerClickToMenu === 'boolean'
+          ? body.promoBannerClickToMenu
+          : storeData.settings?.promoBannerClickToMenu !== false;
+      const promoBannerTargetUrl =
+        typeof body.promoBannerTargetUrl === 'string' && body.promoBannerTargetUrl.trim().length > 0
+          ? body.promoBannerTargetUrl.trim()
+          : storeData.settings?.promoBannerTargetUrl || '/menu';
+      const activePromoBannerId =
+        typeof body.activePromoBannerId === 'string'
+          ? body.activePromoBannerId.trim()
+          : storeData.settings?.activePromoBannerId || '';
+      const savedPromoBanners = Array.isArray(body.savedPromoBanners)
+        ? body.savedPromoBanners
+            .filter((b: any) => b && typeof b.imgUrl === 'string' && b.imgUrl.trim().length > 0)
+            .slice(0, 15)
+            .map((b: any) => ({
+              id: String(b.id || `banner-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`),
+              label: typeof b.label === 'string' ? stripHtmlTags(b.label).slice(0, 60) : '',
+              imgUrl: String(b.imgUrl).trim(),
+              delaySeconds:
+                typeof b.delaySeconds === 'number' && b.delaySeconds >= 0 && b.delaySeconds <= 60
+                  ? Math.round(b.delaySeconds)
+                  : 2,
+              maxPerDay:
+                typeof b.maxPerDay === 'number' && b.maxPerDay >= 0 && b.maxPerDay <= 20
+                  ? Math.round(b.maxPerDay)
+                  : 2,
+              clickToMenu: b.clickToMenu !== false,
+              targetUrl:
+                typeof b.targetUrl === 'string' && b.targetUrl.trim().length > 0
+                  ? b.targetUrl.trim()
+                  : '/menu',
+              sizeBadge: typeof b.sizeBadge === 'string' ? stripHtmlTags(b.sizeBadge).slice(0, 60) : '',
+              createdAt:
+                typeof b.createdAt === 'string' && b.createdAt.trim()
+                  ? b.createdAt.trim()
+                  : new Date().toISOString(),
+            }))
+        : Array.isArray(storeData.settings?.savedPromoBanners)
+        ? storeData.settings.savedPromoBanners
+        : [];
+      storeData.settings = {
+        currency,
+        exchangeRate,
+        aiEnabled,
+        aiBubbleLabel,
+        aiTextBubbleEnabled,
+        aiTextBubbleSeconds,
+        promoBannerEnabled,
+        promoBannerUrl,
+        promoBannerDelaySeconds,
+        promoBannerMaxPerDay,
+        promoBannerClickToMenu,
+        promoBannerTargetUrl,
+        activePromoBannerId,
+        savedPromoBanners,
+      };
       const saved = await writeStoreDataToEnv(env, storeData);
       return new Response(
         JSON.stringify({ ok: true, settings: storeData.settings, storeData: saved }),

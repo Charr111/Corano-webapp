@@ -25,11 +25,68 @@ function normalizePayload(raw: any): StoreDataPayload {
         typeof raw.settings?.aiBubbleLabel === 'string' && raw.settings.aiBubbleLabel.trim()
           ? raw.settings.aiBubbleLabel.trim().slice(0, 28)
           : 'Corano AI',
+      aiTextBubbleEnabled: raw.settings?.aiTextBubbleEnabled !== false,
+      aiTextBubbleSeconds:
+        typeof raw.settings?.aiTextBubbleSeconds === 'number' &&
+        Number.isFinite(raw.settings.aiTextBubbleSeconds)
+          ? Math.max(1, Math.min(600, Math.round(raw.settings.aiTextBubbleSeconds)))
+          : 40,
+      promoBannerEnabled: Boolean(raw.settings?.promoBannerEnabled),
+      promoBannerUrl:
+        typeof raw.settings?.promoBannerUrl === 'string' ? raw.settings.promoBannerUrl.trim() : '',
+      promoBannerDelaySeconds:
+        typeof raw.settings?.promoBannerDelaySeconds === 'number' &&
+        Number.isFinite(raw.settings.promoBannerDelaySeconds)
+          ? Math.max(0, Math.min(60, raw.settings.promoBannerDelaySeconds))
+          : 2,
+      promoBannerMaxPerDay:
+        typeof raw.settings?.promoBannerMaxPerDay === 'number' &&
+        Number.isFinite(raw.settings.promoBannerMaxPerDay)
+          ? Math.max(0, Math.min(20, raw.settings.promoBannerMaxPerDay))
+          : 2,
+      promoBannerClickToMenu: raw.settings?.promoBannerClickToMenu !== false,
+      promoBannerTargetUrl:
+        typeof raw.settings?.promoBannerTargetUrl === 'string' && raw.settings.promoBannerTargetUrl.trim().length > 0
+          ? raw.settings.promoBannerTargetUrl.trim()
+          : '/menu',
+      activePromoBannerId:
+        typeof raw.settings?.activePromoBannerId === 'string'
+          ? raw.settings.activePromoBannerId.trim()
+          : '',
+      savedPromoBanners: Array.isArray(raw.settings?.savedPromoBanners)
+        ? raw.settings.savedPromoBanners
+            .filter((b: any) => b && typeof b.imgUrl === 'string' && b.imgUrl.trim().length > 0)
+            .slice(0, 15)
+            .map((b: any) => ({
+              id: String(b.id || `banner-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`),
+              label: typeof b.label === 'string' ? b.label.trim().slice(0, 60) : '',
+              imgUrl: String(b.imgUrl).trim(),
+              delaySeconds:
+                typeof b.delaySeconds === 'number' && b.delaySeconds >= 0 && b.delaySeconds <= 60
+                  ? Math.round(b.delaySeconds)
+                  : 2,
+              maxPerDay:
+                typeof b.maxPerDay === 'number' && b.maxPerDay >= 0 && b.maxPerDay <= 20
+                  ? Math.round(b.maxPerDay)
+                  : 2,
+              clickToMenu: b.clickToMenu !== false,
+              targetUrl:
+                typeof b.targetUrl === 'string' && b.targetUrl.trim().length > 0
+                  ? b.targetUrl.trim()
+                  : '/menu',
+              sizeBadge: typeof b.sizeBadge === 'string' ? b.sizeBadge.trim().slice(0, 60) : '',
+              createdAt:
+                typeof b.createdAt === 'string' && b.createdAt.trim()
+                  ? b.createdAt.trim()
+                  : new Date().toISOString(),
+            }))
+        : [],
     },
     categories: Array.isArray(raw.categories) ? raw.categories : seed.categories || [],
     items: Array.isArray(raw.items) ? raw.items : seed.items || [],
     reviews: Array.isArray(raw.reviews) ? raw.reviews : seed.reviews || [],
     admins: Array.isArray(raw.admins) ? raw.admins : [],
+    clientIpHash: typeof raw.clientIpHash === 'string' ? raw.clientIpHash : undefined,
   };
 }
 
@@ -63,6 +120,7 @@ export function saveCachedStoreData(data: StoreDataPayload): void {
     try {
       const publicSafe = sanitizeForPublicCache(data);
       window.localStorage.setItem(R2_STORE_CACHE_KEY, JSON.stringify(publicSafe));
+      window.dispatchEvent(new CustomEvent('corano-store-updated', { detail: publicSafe }));
     } catch {
       // ignore quota/storage errors
     }

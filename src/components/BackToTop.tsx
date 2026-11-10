@@ -41,7 +41,9 @@ const BackToTop = () => {
           className="fixed bottom-40 md:bottom-40 right-4 md:right-6 z-[45] p-3.5 bg-[#E4CD86] text-black rounded-full shadow-2xl hover:bg-[#E4CD86]/90 transition-colors active:scale-95 flex items-center justify-center"
           aria-label="Back to top"
         >
-          <span className="material-symbols-outlined text-3xl leading-none">arrow_upward</span>
+          <svg className="w-6 h-6 fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+            <path d="M440-160v-487L216-423l-56-57 320-320 320 320-56 57-224-224v487h-80Z" />
+          </svg>
         </motion.button>
       )}
     </AnimatePresence>

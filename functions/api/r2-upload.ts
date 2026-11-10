@@ -292,7 +292,8 @@ export const onRequestPost = async (context: any) => {
     }
 
     const body = await context.request.json();
-    const { fileName, contentType, base64Data, oldImageUrl, skipDeleteOld } = body || {};
+    const { fileName, contentType, base64Data, oldImageUrl, skipDeleteOld, isPromoBanner } =
+      body || {};
 
     if (!fileName || !base64Data) {
       return new Response(
@@ -314,11 +315,15 @@ export const onRequestPost = async (context: any) => {
     const cleanFileName = sanitizeFileName(fileName);
     const objectKey = `items/${cleanFileName}`;
     const bytes = base64ToUint8Array(String(base64Data));
+    const isBannerUpload = Boolean(isPromoBanner) || cleanFileName.startsWith('promo-banner-');
+    const maxAllowedBytes = isBannerUpload ? 8 * 1024 * 1024 : MAX_UPLOAD_BYTES;
 
-    if (bytes.byteLength === 0 || bytes.byteLength > MAX_UPLOAD_BYTES) {
+    if (bytes.byteLength === 0 || bytes.byteLength > maxAllowedBytes) {
       return new Response(
         JSON.stringify({
-          error: `Image size (${Math.round(bytes.byteLength / 1024)} KB) exceeds the 150 KB maximum limit for menu items.`,
+          error: isBannerUpload
+            ? `Banner size (${Math.round(bytes.byteLength / 1024)} KB) exceeds the 8 MB maximum limit.`
+            : `Image size (${Math.round(bytes.byteLength / 1024)} KB) exceeds the 150 KB maximum limit for menu items.`,
         }),
         { status: 400, headers: jsonHeaders }
       );
@@ -423,6 +428,68 @@ export const onRequestPost = async (context: any) => {
   } catch (error: any) {
     return new Response(
       JSON.stringify({ error: error?.message || 'Internal R2 upload error' }),
+      { status: 500, headers: jsonHeaders }
+    );
+  }
+};
+
+export const onRequestDelete = async (context: any) => {
+  const jsonHeaders = { ...R2_CORS_HEADERS, 'Content-Type': 'application/json' };
+  try {
+    const env = context.env || {};
+    const authHeader = context.request.headers.get('Authorization');
+    const authCheck = await verifyAdminAuthorization(authHeader, env);
+    if (!authCheck.ok) {
+      return new Response(
+        JSON.stringify({ error: authCheck.error || 'Unauthorized delete attempt.' }),
+        { status: 403, headers: jsonHeaders }
+      );
+    }
+
+    const body = await context.request.json().catch(() => ({}));
+    const imageUrl = String(body?.imageUrl || '').trim();
+    const publicBaseUrl = String(
+      env.R2_PUBLIC_BASE_URL || 'https://images.restocorano.com'
+    ).replace(/\/+$/, '');
+    const bucketName = String(env.R2_BUCKET_NAME || 'corano-images');
+    const r2Prefix = `${publicBaseUrl}/items/`;
+
+    if (!imageUrl || !imageUrl.startsWith(r2Prefix)) {
+      return new Response(JSON.stringify({ ok: true, skipped: true }), {
+        status: 200,
+        headers: jsonHeaders,
+      });
+    }
+
+    const rawFileName = imageUrl.slice(r2Prefix.length).split('?')[0];
+    const objectKey = `items/${sanitizeFileName(rawFileName)}`;
+
+    const r2Bucket = getBoundR2Bucket(env);
+    if (r2Bucket && typeof r2Bucket.delete === 'function') {
+      await r2Bucket.delete(objectKey).catch(() => {});
+    } else {
+      const accountId = String(env.R2_ACCOUNT_ID || '').trim();
+      const accessKeyId = String(env.R2_ACCESS_KEY_ID || '').trim();
+      const secretAccessKey = String(env.R2_SECRET_ACCESS_KEY || '').trim();
+      if (accountId && accessKeyId && secretAccessKey) {
+        await signedR2Request({
+          method: 'DELETE',
+          accountId,
+          accessKeyId,
+          secretAccessKey,
+          bucketName,
+          objectKey,
+        }).catch(() => {});
+      }
+    }
+
+    return new Response(JSON.stringify({ ok: true, deletedKey: objectKey }), {
+      status: 200,
+      headers: jsonHeaders,
+    });
+  } catch (error: any) {
+    return new Response(
+      JSON.stringify({ error: error?.message || 'Failed to delete image from R2' }),
       { status: 500, headers: jsonHeaders }
     );
   }

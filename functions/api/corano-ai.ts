@@ -465,27 +465,53 @@ function expandLebaneseFrancoToken(word: string): string[] {
       variants.add('kabis');
       variants.add('pickles');
     } else if (
+      v === 'lent' ||
+      v === 'lenten' ||
+      v === 'fasting' ||
+      v === 'ate3' ||
+      v === '2ate3' ||
+      v === 'aate3' ||
+      v === 'kate3' ||
+      v === 'qate3' ||
+      v === 'ati3' ||
+      v === '2ati3' ||
+      v === 'aati3' ||
+      v === 'kati3' ||
+      v === 'qati3' ||
+      v === 'atea' ||
+      v === 'katea' ||
+      v === 'qatea' ||
+      v === 'atia' ||
+      v === 'katia' ||
+      v === 'qatia' ||
+      v === 'at3' ||
+      v === '2at3' ||
+      v === 'kat3' ||
+      v === 'qat3' ||
       v === 'siyam' ||
       v === 'syam' ||
       v === 'siyame' ||
       v === 'syame' ||
       v === '9iyam' ||
       v === '9yam' ||
-      v === 'vegan' ||
-      v === 'صيامي' ||
-      v === 'صيام'
-    ) {
-      variants.add('siyam');
-      variants.add('vegetarian');
-    } else if (
+      v === 'soyam' ||
+      v === 'souyam' ||
+      v === 'sayem' ||
+      v === '9ayem' ||
       v === 'nebate' ||
       v === 'nabati' ||
       v === 'nabate' ||
       v === 'vegetarian' ||
+      v === 'vegan' ||
       v === 'meatless' ||
       v === 'veggie' ||
+      v === 'قاطع' ||
+      v === 'صيامي' ||
+      v === 'صيام' ||
       v === 'نباتي'
     ) {
+      variants.add('lent');
+      variants.add('siyam');
       variants.add('vegetarian');
     } else if (
       v === 'kilo' ||
@@ -530,7 +556,7 @@ function detectUserLanguage(msg: string): 'English' | 'Lebanese' | 'Arabic' {
   if (/[\u0600-\u06FF]/.test(msg)) return 'Arabic';
   const combined = `${msg} ${normalizeLebaneseFrancoText(msg)}`;
   if (
-    /\b(shu|chou|baddi|bade|badde|atyab|3andkon|andkon|3endkon|endkon|3endak|3enddak|aandak|andak|bala|bla|bela|bdoun|bidoun|toum|thoum|basal|5as|khas|akel|kabis|feter|banadoura|kifak|ahla|shi|fi|akid|tayeb|wajbe|7ar|har|shawarma|tawouk|kbeir|zghir|as3ar|asaar|se3er|seaer|7a2|ha2|la7me|lahme|djej|jebne|batata|7doud|hdoud|b7doud|bhdoud|ta7et|tahet|a2al|aqal|2arib|arib|ma3|ma33|maa|sa7en|sahen)\b/i.test(
+    /\b(shu|chou|baddi|bade|badde|atyab|3andkon|andkon|3endkon|endkon|3endak|3enddak|aandak|andak|bala|bla|bela|bdoun|bidoun|toum|thoum|basal|5as|khas|akel|akl|akil|ate3|2ate3|aate3|kate3|qate3|ati3|2ati3|aati3|kati3|qati3|at3|siyam|syam|kabis|feter|banadoura|kifak|ahla|shi|fi|akid|tayeb|wajbe|7ar|har|shawarma|tawouk|kbeir|zghir|as3ar|asaar|se3er|seaer|7a2|ha2|la7me|lahme|djej|djeij|jebne|batata|7doud|hdoud|b7doud|bhdoud|ta7et|tahet|a2al|aqal|2arib|arib|ma3|ma33|maa|sa7en|sahen)\b/i.test(
       combined
     ) ||
     /[235789][a-z]|[a-z][235789]/i.test(msg)
@@ -543,7 +569,7 @@ function detectUserLanguage(msg: string): 'English' | 'Lebanese' | 'Arabic' {
 function classifyTopicTag(msg: string): string {
   const q = `${msg} ${normalizeLebaneseFrancoText(msg)}`.toLowerCase();
   if (
-    /allerg|gluten|celiac|coeliac|dairy|lactose|nut|without|no |bala |bla |bela |bdoun |bidoun |حساسية|بدون|بلا/.test(
+    /allerg|gluten|celiac|coeliac|dairy|lactose|nut|without|no |bala |bla |bela |bdoun |bidoun |lent|ate3|2ate3|aate3|kate3|qate3|ati3|2ati3|aati3|kati3|qati3|at3|siyam|syam|meatless|قاطع|صيامي|صيام|نباتي|حساسية|بدون|بلا/.test(
       q
     )
   ) {
@@ -672,49 +698,117 @@ const INGREDIENT_EXCLUSION_GROUPS: Array<{
     itemMatchTerms: ['avocado'],
   },
   {
-    labelEn: 'meat or chicken',
-    labelLb: 'la7me aw djej (meat/chicken)',
-    labelAr: 'لحم أو دجاج',
+    labelEn: 'meat or chicken (Lent / Meatless)',
+    labelLb: 'la7me aw djej (akel ate3)',
+    labelAr: 'لحم أو دجاج (أكل قاطع / صيامي)',
     queryTriggers:
-      /\b(meat|meatless|la7me|lahme|la7em|lahem|beef|chicken|djej|djeij|lamb|8anam|ghanam)\b|لحمة|لحم|دجاج|فروج/i,
-    itemMatchTerms: [
-      'beef',
-      'chicken',
-      'djeij',
-      'djej',
-      'tawouk',
-      'tawook',
-      'taouk',
-      'kafta',
-      'kabab',
-      'kebab',
-      'lahme',
-      'makanek',
-      'soujouk',
-      'sawda',
-      'liver',
-      'ham',
-      'salameh',
-      'bacon',
-      'pepperoni',
-      'crab',
-      'tuna',
-      'farrouj',
-      'farouj',
-      'steak',
-      'fajita',
-      'francisco',
-      'rosted',
-      'philadelphia',
-      'twister',
-      'crispy',
-      'crunchy',
-      'shish',
-      'chich',
-      'skewers',
-    ],
+      /\b(meat|meatless|meat-free|la7me|lahme|la7em|lahem|beef|chicken|djej|djeij|lamb|8anam|ghanam|lent|lenten|ate3|2ate3|aate3|kate3|qate3|ati3|2ati3|aati3|kati3|qati3|at3|2at3|kat3|qat3|siyam|syam|siyame|syame|soyam|souyam|sayem|9ayem)\b|لحمة|لحم|دجاج|فروج|قاطع|صيامي|صيام/i,
+    itemMatchTerms: ['__LENT_OR_MEATLESS__'],
   },
 ];
+
+const LENT_OR_MEATLESS_DIRECT_REGEX =
+  /\b(lent|lenten|fasting|ate3|2ate3|aate3|kate3|qate3|ati3|2ati3|aati3|kati3|qati3|atea|katea|qatea|atia|katia|qatia|at3|2at3|kat3|qat3|siyam|syam|siyame|syame|9iyam|9yam|soyam|souyam|sayem|9ayem|nebate|nabati|nabate|vegetarian|vegan|meatless|meat-free|veggie)\b|أكل\s*قاطع|اكل\s*قاطع|أكل\s*صيامي|اكل\s*صيامي|قاطع|صيامي|صيام|نباتي/i;
+
+function isLentOrMeatlessQuery(message: string): boolean {
+  const combined = `${message} ${normalizeLebaneseFrancoText(message)}`;
+  if (LENT_OR_MEATLESS_DIRECT_REGEX.test(combined)) return true;
+  if (
+    NEGATION_TRIGGER_REGEX.test(combined) &&
+    /\b(meat|la7me|lahme|la7em|lahem|beef|chicken|djej|djeij|lamb|8anam|ghanam)\b|لحمة|لحم|دجاج|فروج/i.test(
+      combined
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function isItemMeatOrChicken(item: any): boolean {
+  const titleLower = String(item?.title || '').toLowerCase().trim();
+  const catLower = String(item?.category || '').toLowerCase().trim();
+  const descLower = String(item?.desc || '').toLowerCase().trim();
+  const combined = `${titleLower} ${catLower} ${descLower}`;
+
+  // Explicit Lent / Meatless / Falafel / Seafood / Vegetarian categories or titles are NEVER meat/chicken
+  if (
+    /\b(lent|lenten|ate3|2ate3|qate3|kate3|siyam|syam|falafel|tuna|crab|halloumi|mozzarella\s+sticks|mozzarella\s+pane|marguerita|margherita|vegetarian|hummus|hommos|motabal|moutabal|batata\s+harra|wara2|cheese\s+rolls|fries\s+sando|quinoa|fatouche|fattoush|tabbouleh|french\s+fries|potato\s+wedges|baked\s+potato)\b|قاطع|صيامي|صيام|فلافل|حمص|متبل|بطاطا\s+حرة|حلوم/i.test(
+      `${titleLower} ${catLower}`
+    )
+  ) {
+    return false;
+  }
+
+  // Burgers category items are beef/chicken burgers EXCEPT Mozzarella Pane (and any future veggie/lent/fish burger)
+  if (
+    catLower.includes('burger') &&
+    !titleLower.includes('mozzarella') &&
+    !titleLower.includes('halloumi') &&
+    !titleLower.includes('veggie') &&
+    !titleLower.includes('vegetarian') &&
+    !titleLower.includes('lent') &&
+    !titleLower.includes('ate3') &&
+    !titleLower.includes('fish') &&
+    !titleLower.includes('tuna') &&
+    !titleLower.includes('crab')
+  ) {
+    return true;
+  }
+
+  // Check all meat, beef, lamb, chicken, turkey, ham, salami, pepperoni, and grill keywords
+  return /\b(beef|chicken|djeij|djej|farrouj|farouj|tawouk|tawook|taouk|kafta|kefta|kabab|kebab|lahme|la7me|lahem|la7em|ghanam|8anam|sheep|lamb|makanek|ma2anek|soujouk|sujuk|sawda|liver|ham|salameh|salami|bacon|pork|pepperoni|turkey|steak|philly|fajita|francisco|rosted|philadelphia|twister|crispy|crunchy|nuggets|tenders|wings|jaweneh|shish|chich|skewers|mashewe|mashawi|kebbe|kibbeh|mchakale|mshakale|submarine)\b|لحمة|لحم|دجاج|فروج|طاووق|كفتة|كباب|سجق|مقانق|سودة|كبة|حبش|بيبروني/i.test(
+    combined
+  );
+}
+
+function getLentPriorityScore(item: any): number {
+  if (isItemMeatOrChicken(item)) return 0;
+  const titleLower = String(item?.title || '').toLowerCase().trim();
+  const catLower = String(item?.category || '').toLowerCase().trim();
+  const descLower = String(item?.desc || '').toLowerCase().trim();
+  const combined = `${titleLower} ${catLower} ${descLower}`;
+
+  // 1. Future-proof: Any category or dish explicitly named Lent / قاطع / صيامي by the admin gets highest priority
+  if (
+    /\b(lent|lenten|ate3|2ate3|qate3|kate3|siyam|syam|siyame|syame)\b|قاطع|صيامي|صيام/i.test(
+      combined
+    )
+  ) {
+    return 75;
+  }
+
+  // 2. User's explicit Lent / Meatless dishes list:
+  // Falafel, Tuna, Crab, Mozzarella Pane (Mozzarella-only burger), Halloumi Sticks, Mozzarella Sticks,
+  // Marguerita Pizza, Vegetarian Pizza, Hummus, Motabal, Batata Harra
+  if (catLower.includes('falafel') || titleLower.includes('falafel')) return 64;
+  if (titleLower.includes('tuna')) return 62;
+  if (titleLower.includes('crab')) return 62;
+  if (titleLower.includes('mozzarella pane')) return 62;
+  if (titleLower.includes('halloumi')) return 60;
+  if (titleLower.includes('mozzarella sticks')) return 60;
+  if (titleLower.includes('marguerita') || titleLower.includes('margherita')) return 60;
+  if (titleLower.includes('vegetarian')) return 60;
+  if (titleLower.includes('hummus') || titleLower.includes('hommos')) return 58;
+  if (titleLower.includes('motabal') || titleLower.includes('moutabal')) return 58;
+  if (titleLower.includes('batata harra')) return 58;
+
+  // 3. Other 100% meatless & chicken-free dishes on the menu
+  if (
+    titleLower.includes('wara2') ||
+    titleLower.includes('cheese rolls') ||
+    titleLower.includes('fries sando') ||
+    titleLower.includes('quinoa') ||
+    titleLower.includes('fatouche') ||
+    titleLower.includes('tabbouleh') ||
+    titleLower.includes('french fries') ||
+    titleLower.includes('wedges') ||
+    titleLower.includes('baked potato')
+  ) {
+    return 40;
+  }
+
+  return 20;
+}
 
 function extractExclusionsFromMessage(message: string): {
   excludedTerms: string[];
@@ -723,7 +817,8 @@ function extractExclusionsFromMessage(message: string): {
   labelsAr: string[];
 } {
   const combined = `${message} ${normalizeLebaneseFrancoText(message)}`;
-  if (!NEGATION_TRIGGER_REGEX.test(combined)) {
+  const isLentQuery = isLentOrMeatlessQuery(message);
+  if (!NEGATION_TRIGGER_REGEX.test(combined) && !isLentQuery) {
     return { excludedTerms: [], labelsEn: [], labelsLb: [], labelsAr: [] };
   }
   const excludedTerms: string[] = [];
@@ -731,14 +826,27 @@ function extractExclusionsFromMessage(message: string): {
   const labelsLb: string[] = [];
   const labelsAr: string[] = [];
 
-  for (const group of INGREDIENT_EXCLUSION_GROUPS) {
-    if (group.queryTriggers.test(combined)) {
-      excludedTerms.push(...group.itemMatchTerms);
-      labelsEn.push(group.labelEn);
-      labelsLb.push(group.labelLb);
-      labelsAr.push(group.labelAr);
+  if (isLentQuery) {
+    excludedTerms.push('__LENT_OR_MEATLESS__');
+    labelsEn.push('meat or chicken (Lent / Meatless)');
+    labelsLb.push('la7me aw djej (akel ate3)');
+    labelsAr.push('لحم أو دجاج (أكل قاطع / صيامي)');
+  }
+
+  if (NEGATION_TRIGGER_REGEX.test(combined)) {
+    for (const group of INGREDIENT_EXCLUSION_GROUPS) {
+      if (group.itemMatchTerms.includes('__LENT_OR_MEATLESS__') && isLentQuery) {
+        continue;
+      }
+      if (group.queryTriggers.test(combined)) {
+        excludedTerms.push(...group.itemMatchTerms);
+        labelsEn.push(group.labelEn);
+        labelsLb.push(group.labelLb);
+        labelsAr.push(group.labelAr);
+      }
     }
   }
+
   return {
     excludedTerms: Array.from(new Set(excludedTerms)),
     labelsEn,
@@ -749,11 +857,22 @@ function extractExclusionsFromMessage(message: string): {
 
 function itemContainsExcludedTerm(item: any, excludedTerms: string[]): boolean {
   if (!excludedTerms.length) return false;
+
+  const checksLentMeatless = excludedTerms.includes('__LENT_OR_MEATLESS__');
+  if (checksLentMeatless && isItemMeatOrChicken(item)) {
+    return true;
+  }
+
+  const otherTerms = excludedTerms.filter((t) => t !== '__LENT_OR_MEATLESS__');
+  if (!otherTerms.length) {
+    return false;
+  }
+
   const desc = String(item?.desc || '').trim();
-  // When filtering out an allergen/ingredient, skip items that have no listed ingredients to verify
+  // When filtering out a specific allergen/ingredient (e.g. garlic, mayo), skip items that have no listed ingredients to verify
   if (!desc) return true;
   const haystack = `${String(item?.title || '')} ${desc}`.toLowerCase();
-  return excludedTerms.some((term) => haystack.includes(term.toLowerCase()));
+  return otherTerms.some((term) => haystack.includes(term.toLowerCase()));
 }
 
 interface BudgetAndComboSpec {
@@ -875,7 +994,18 @@ function extractPositiveQueryWords(
     'need',
     'want',
     'food',
+    'foods',
+    'meal',
+    'meals',
+    'eat',
+    'eating',
     'akel',
+    'akl',
+    'akil',
+    '2akel',
+    '2akl',
+    'أكل',
+    'اكل',
     'baddi',
     'bade',
     'badde',
@@ -1031,6 +1161,18 @@ function extractPositiveQueryWords(
     'dollars',
     'dolar',
     'usd',
+    'ana',
+    '3emel',
+    'aamel',
+    '3am',
+    'aam',
+    'btonsa7ne',
+    'btensa7ne',
+    'btonsa7ni',
+    'btensa7ni',
+    'ekol',
+    '2ekol',
+    'akol',
     ...(activeSpec.wantsCombo
       ? [
           'pepsi',
@@ -1068,6 +1210,19 @@ function extractPositiveQueryWords(
           'onion',
           'onions',
           'lettuce',
+          'la7me',
+          'lahme',
+          'la7em',
+          'lahem',
+          'djej',
+          'djeij',
+          'meat',
+          'chicken',
+          'beef',
+          'لحمة',
+          'لحم',
+          'دجاج',
+          'فروج',
         ]
       : []),
   ]);
@@ -1087,6 +1242,160 @@ function extractPositiveQueryWords(
     }
   }
   return expanded;
+}
+
+function buildPhoneticSkeleton(word: string): string {
+  return word
+    .toLowerCase()
+    .replace(/[^a-z]/g, '')
+    .replace(/ph/g, 'f')
+    .replace(/gh/g, 'g')
+    .replace(/kh/g, 'k')
+    .replace(/sh|ch/g, 's')
+    .replace(/ge|ij|dj/g, 'j')
+    .replace(/oo|ou|ow|aw/g, 'u')
+    .replace(/ee|ea|ie|ey|y/g, 'i')
+    .replace(/aa|ae|e/g, 'a')
+    .replace(/[cq]/g, 'k')
+    .replace(/z/g, 's')
+    .replace(/(.)\1+/g, '$1');
+}
+
+function damerauLevenshteinDistance(a: string, b: string): number {
+  const alen = a.length;
+  const blen = b.length;
+  if (alen === 0) return blen;
+  if (blen === 0) return alen;
+  if (Math.abs(alen - blen) > 2) return 99;
+
+  const dp: number[][] = Array.from({ length: alen + 1 }, () => new Array(blen + 1).fill(0));
+  for (let i = 0; i <= alen; i++) dp[i][0] = i;
+  for (let j = 0; j <= blen; j++) dp[0][j] = j;
+
+  for (let i = 1; i <= alen; i++) {
+    for (let j = 1; j <= blen; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        dp[i][j] = Math.min(dp[i][j], dp[i - 2][j - 2] + cost);
+      }
+    }
+  }
+  return dp[alen][blen];
+}
+
+function resolveFuzzyMenuTokens(words: string[], storeData: any): string[] {
+  if (!words.length) return [];
+  const vocabSet = new Set<string>([
+    'farrouj',
+    'tawouk',
+    'falafel',
+    'philadelphia',
+    'fajita',
+    'francisco',
+    'halloumi',
+    'mozzarella',
+    'marguerita',
+    'margherita',
+    'vegetarian',
+    'quinoa',
+    'tabbouleh',
+    'fatouche',
+    'motabal',
+    'hummus',
+    'soujouk',
+    'makanek',
+    'kafta',
+    'kabab',
+    'mashewe',
+    'crispy',
+    'burger',
+    'sandwich',
+    'submarine',
+    'pepperoni',
+    'tandoori',
+    'mexican',
+    'twister',
+    'nuggets',
+    'tenders',
+    'wedges',
+    'coleslaw',
+    'caesar',
+    'lent',
+    'lenten',
+    'siyam',
+    'ate3',
+    'ati3',
+  ]);
+
+  for (const item of storeData?.items || []) {
+    const titleTokens = String(item?.title || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/);
+    const catTokens = String(item?.category || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/);
+    for (const t of [...titleTokens, ...catTokens]) {
+      if (t.length >= 4) vocabSet.add(t);
+    }
+  }
+
+  const vocabList = Array.from(vocabSet);
+  const result = new Set<string>(words);
+
+  for (const w of words) {
+    if (w.length < 4 || !/^[a-z]+$/.test(w) || vocabSet.has(w)) continue;
+    const wSkel = buildPhoneticSkeleton(w);
+    let bestCandidate = '';
+    let bestDist = 99;
+
+    for (const cand of vocabList) {
+      if (Math.abs(cand.length - w.length) > 2) continue;
+      if (cand[0] !== w[0] && buildPhoneticSkeleton(cand)[0] !== wSkel[0]) continue;
+
+      const candSkel = buildPhoneticSkeleton(cand);
+      if (wSkel.length >= 3 && wSkel === candSkel) {
+        bestCandidate = cand;
+        bestDist = 0;
+        break;
+      }
+
+      const dist = damerauLevenshteinDistance(w, cand);
+      const maxAllowed = cand.length >= 6 ? 2 : 1;
+      if (dist <= maxAllowed && dist < bestDist) {
+        bestDist = dist;
+        bestCandidate = cand;
+      }
+    }
+
+    if (bestCandidate) {
+      result.add(bestCandidate);
+    }
+  }
+
+  return Array.from(result);
+}
+
+const LIGHT_HEALTHY_DIET_REGIME_REGEX =
+  /\b(light|healthy|diet|dieting|regime|rejim|rjim|rijim|so77e|so7e|sa77e|sa7e|sohhe|sohe|se77e|se7e|sihhi|calorie|calories|low\s*cal|fit|fitness)\b|صحي|دايت|لايت|ريجيم|رجيم|حمية/i;
+
+function isLightHealthyDietRegimeQuery(message: string): boolean {
+  const combined = `${message} ${normalizeLebaneseFrancoText(message)}`.toLowerCase();
+  if (!LIGHT_HEALTHY_DIET_REGIME_REGEX.test(combined)) return false;
+  if (
+    /\b(salad|salads|fatouche|fattoush|tabbouleh|taboule|quinoa|caesar|coleslaw|rocca)\b|سلطة|سلطات|فتوش|تبولة|كينوا/i.test(
+      combined
+    )
+  ) {
+    return false;
+  }
+  return true;
 }
 
 function getDishFamilyKey(item: any): string {
@@ -1318,55 +1627,19 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
       continue;
     }
     if (w === 'healthy' || w === 'light' || w === 'diet' || w === 'صحي' || w === 'لايت' || w === 'دايت') {
-      if (catLower.includes('light') || catLower.includes('healthy') || catLower.includes('salad')) {
-        score += 20;
+      if (catLower.includes('light') || catLower.includes('healthy')) {
+        score += 36;
+      } else if (catLower.includes('salad')) {
+        score += 22;
       } else if (titleLower.includes('light') || titleLower.includes('salad') || titleLower.includes('quinoa')) {
         score += 16;
       }
       continue;
     }
-    if (w === 'siyam' || w === 'vegetarian') {
-      const hasMeatOrFish =
-        /\b(beef|chicken|djeij|djej|tawouk|tawook|taouk|kafta|kabab|kebab|lahme|makanek|soujouk|sawda|liver|ham|salameh|bacon|pepperoni|crab|tuna|farrouj|farouj|steak|fajita|francisco|rosted|philadelphia|twister|crispy|crunchy|shish|chich|skewers|mashewe)\b/i.test(
-          combined
-        );
-      if (hasMeatOrFish) continue;
-      const hasDairyOrCheese =
-        /\b(cheese|cheddar|mozzarella|halloumi|halloum|parmesan|feta|kashkaval|cream|mayo|mayonnaise|laban)\b/i.test(
-          combined
-        );
-      if (w === 'siyam') {
-        if (hasDairyOrCheese) continue;
-        if (
-          catLower.includes('falafel') ||
-          titleLower.includes('hummus') ||
-          titleLower.includes('motabal') ||
-          titleLower.includes('wara2') ||
-          titleLower.includes('batata harra') ||
-          titleLower.includes('fatouche') ||
-          titleLower.includes('tabbouleh') ||
-          titleLower.includes('french fries') ||
-          titleLower.includes('wedges')
-        ) {
-          score += 48;
-        }
-      } else {
-        if (
-          catLower.includes('falafel') ||
-          titleLower.includes('hummus') ||
-          titleLower.includes('motabal') ||
-          titleLower.includes('wara2') ||
-          titleLower.includes('batata harra') ||
-          titleLower.includes('cheese') ||
-          titleLower.includes('halloumi') ||
-          titleLower.includes('margherita') ||
-          titleLower.includes('vegetarian') ||
-          titleLower.includes('quinoa') ||
-          titleLower.includes('fatouche') ||
-          titleLower.includes('tabbouleh')
-        ) {
-          score += 36;
-        }
+    if (w === 'lent' || w === 'siyam' || w === 'vegetarian') {
+      const lentScore = getLentPriorityScore(item);
+      if (lentScore > 0) {
+        score += lentScore;
       }
       continue;
     }
@@ -1506,7 +1779,10 @@ function getStrictPositiveMatchedItems(
   const budgetFilteredPool = basePool.filter((i: any) => itemFitsBudgetAndCombo(i, budgetSpec));
   const pool = budgetFilteredPool.length > 0 ? budgetFilteredPool : basePool;
 
-  const rawWords = extractPositiveQueryWords(message, excludedTerms, budgetSpec);
+  const rawWords = resolveFuzzyMenuTokens(
+    extractPositiveQueryWords(message, excludedTerms, budgetSpec),
+    storeData
+  );
   // When asking for a dish with a specific sauce (e.g. "sando with bbq sauce"), drop generic word "sauce" so other sauces don't match
   const words =
     wantsDishWithIngredient && rawWords.length > 1
@@ -1757,10 +2033,182 @@ function getTurnTargetItems(
   previousAssistantTurns: number;
   budgetSpec: BudgetAndComboSpec;
   isSignatureBestQuery?: boolean;
+  healthyStage?: 'light_first' | 'salads_followup';
 } {
   const rate = storeData.settings?.exchangeRate || 89000;
   const activeBudgetSpec = budgetSpec || extractBudgetAndComboSpec(message, rate);
   const { previouslyRecommendedIds, previousAssistantTurns } = extractHistoryRotationState(history);
+
+  // Two-stage Light / Healthy / Diet / Regime rule:
+  // Always show "light & healthy" category items first; if the guest keeps asking, show "salads".
+  if (isLightHealthyDietRegimeQuery(message)) {
+    const safePool = (storeData.items || []).filter(
+      (i: any) =>
+        i.available !== false &&
+        !itemContainsExcludedTerm(i, excludedTerms) &&
+        itemFitsBudgetAndCombo(i, activeBudgetSpec)
+    );
+    const lightItems = safePool
+      .filter((i: any) => {
+        const cat = String(i.category || '').toLowerCase();
+        return cat.includes('light') || cat.includes('healthy');
+      })
+      .sort((a: any, b: any) => {
+        const aPop = a.popular ? 1 : 0;
+        const bPop = b.popular ? 1 : 0;
+        if (bPop !== aPop) return bPop - aPop;
+        return (a.order ?? 99) - (b.order ?? 99);
+      });
+
+    const saladItems = safePool
+      .filter((i: any) => String(i.category || '').toLowerCase().includes('salad'))
+      .sort((a: any, b: any) => {
+        const aPop = a.popular ? 1 : 0;
+        const bPop = b.popular ? 1 : 0;
+        if (bPop !== aPop) return bPop - aPop;
+        return (a.order ?? 99) - (b.order ?? 99);
+      });
+
+    const unseenLightItems = lightItems.filter(
+      (i: any) => !previouslyRecommendedIds.has(String(i.id))
+    );
+
+    if (unseenLightItems.length > 0) {
+      const turnItems = selectVariedItemsFromPool(
+        lightItems,
+        previouslyRecommendedIds,
+        previousAssistantTurns,
+        false,
+        4
+      );
+      return {
+        turnItems,
+        strictMatches: lightItems,
+        previousAssistantTurns,
+        budgetSpec: activeBudgetSpec,
+        healthyStage: 'light_first',
+      };
+    }
+
+    if (saladItems.length > 0) {
+      const turnItems = selectVariedItemsFromPool(
+        saladItems,
+        previouslyRecommendedIds,
+        previousAssistantTurns,
+        false,
+        4
+      );
+      return {
+        turnItems,
+        strictMatches: saladItems,
+        previousAssistantTurns,
+        budgetSpec: activeBudgetSpec,
+        healthyStage: 'salads_followup',
+      };
+    }
+  }
+
+  // Dedicated Lent / Meatless / Akel Ate3 ("Lent", "Lent food", "Lent menu", "ate3", "Akel ate3", "akl ati3", "food without meat", "bala lahme", "bala djej", "أكل قاطع") handler:
+  if (isLentOrMeatlessQuery(message) || excludedTerms.includes('__LENT_OR_MEATLESS__')) {
+    const lentTerms = Array.from(new Set([...excludedTerms, '__LENT_OR_MEATLESS__']));
+    const allMeatlessItems = (storeData.items || []).filter(
+      (i: any) =>
+        i.available !== false &&
+        !isItemMeatOrChicken(i) &&
+        !itemContainsExcludedTerm(i, lentTerms) &&
+        itemFitsBudgetAndCombo(i, activeBudgetSpec)
+    );
+    const meatlessFoodItems = allMeatlessItems.filter((i: any) => {
+      const cat = String(i.category || '').toLowerCase();
+      return !cat.includes('drink') && !cat.includes('sauce') && !cat.includes('beverage');
+    });
+    const workingMeatlessPool =
+      meatlessFoodItems.length > 0 ? meatlessFoodItems : allMeatlessItems;
+
+    const qLent = `${message} ${normalizeLebaneseFrancoText(message)}`.toLowerCase();
+    const wantsSpecificBurger = /\b(burger|burgers|برغر)\b/i.test(qLent);
+    const wantsSpecificPizza = /\b(pizza|pizzas|بيتزا)\b/i.test(qLent);
+    const wantsSpecificFalafel = /\b(falafel|فلافل)\b/i.test(qLent);
+    const wantsSpecificSubOrSando = /\b(sub|subs|sandwich|sandwiches|sandwish|sando|ساب|سندويش|ساندويش)\b/i.test(
+      qLent
+    );
+    const wantsSpecificSalad = /\b(salad|salads|سلطة|سلطات)\b/i.test(qLent);
+
+    const scoredLent = workingMeatlessPool
+      .map((item: any) => {
+        const baseLentScore = getLentPriorityScore(item);
+        const titleLower = String(item.title || '').toLowerCase();
+        const catLower = String(item.category || '').toLowerCase();
+        let bonus = 0;
+
+        if (wantsSpecificBurger && (catLower.includes('burger') || titleLower.includes('mozzarella pane'))) {
+          bonus += 50;
+        }
+        if (wantsSpecificPizza && catLower.includes('pizza')) {
+          bonus += 50;
+        }
+        if (wantsSpecificFalafel && (catLower.includes('falafel') || titleLower.includes('falafel'))) {
+          bonus += 50;
+        }
+        if (
+          wantsSpecificSubOrSando &&
+          (catLower.includes('sub') ||
+            catLower.includes('sandwich') ||
+            catLower.includes('falafel') ||
+            titleLower.includes('sub') ||
+            titleLower.includes('sando'))
+        ) {
+          bonus += 40;
+        }
+        if (wantsSpecificSalad && (catLower.includes('salad') || titleLower.includes('salad'))) {
+          bonus += 45;
+        }
+        if (item.popular) bonus += 6;
+
+        return {
+          item,
+          score: baseLentScore + bonus,
+          baseLentScore,
+        };
+      })
+      .filter((entry: any) => entry.baseLentScore > 0);
+
+    // Prioritize primary Lent dishes (score >= 58: Falafel, Tuna, Crab, Mozzarella Pane, Halloumi/Mozzarella Sticks, Marguerita/Vegetarian Pizza, Hummus, Motabal, Batata Harra, or any future Lent category)
+    const primaryLentMatches = scoredLent
+      .filter((e: any) => e.baseLentScore >= 58 || e.score >= 80)
+      .sort((a: any, b: any) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return (a.item.order ?? 99) - (b.item.order ?? 99);
+      })
+      .map((e: any) => e.item);
+
+    const allRankedLentMatches = scoredLent
+      .sort((a: any, b: any) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return (a.item.order ?? 99) - (b.item.order ?? 99);
+      })
+      .map((e: any) => e.item);
+
+    const orderedLentPool =
+      primaryLentMatches.length >= 4 ? primaryLentMatches : allRankedLentMatches;
+
+    if (orderedLentPool.length > 0) {
+      const turnItems = selectVariedItemsFromPool(
+        orderedLentPool,
+        previouslyRecommendedIds,
+        previousAssistantTurns,
+        true,
+        4
+      );
+      return {
+        turnItems,
+        strictMatches: orderedLentPool,
+        previousAssistantTurns,
+        budgetSpec: activeBudgetSpec,
+      };
+    }
+  }
+
   const strictMatches = getStrictPositiveMatchedItems(
     message,
     storeData,
@@ -1823,10 +2271,15 @@ function getTurnTargetItems(
     }
   }
 
+  const isLentQuery = excludedTerms.includes('__LENT_OR_MEATLESS__') || isLentOrMeatlessQuery(message);
+
   const scored = pool.map((item) => {
     let score = 0;
     const catLower = String(item.category || '').toLowerCase();
     const descLower = String(item.desc || '').toLowerCase();
+    if (isLentQuery) {
+      score += getLentPriorityScore(item);
+    }
     if (item.popular) score += 14;
     if (item.isNew) score += 5;
     if (descLower.length > 10) score += 4;
@@ -1872,12 +2325,14 @@ function shouldUseInstantDeterministicFastPath(
   strictMatches: any[]
 ): boolean {
   if (exclusions.excludedTerms.length > 0) return true;
+  if (isLentOrMeatlessQuery(message)) return true;
+  if (isLightHealthyDietRegimeQuery(message)) return true;
   if (budgetSpec.maxBudgetUsd !== null || budgetSpec.wantsCombo) return true;
   if (strictMatches.length > 0) return true;
   const q = `${message} ${normalizeLebaneseFrancoText(message)}`.toLowerCase();
   if (RESTAURANT_INFO_REGEX.test(q)) return true;
   if (
-    /\b(popular|best|top|recommend|favorite|special|atyab|ashhar|healthy|light|diet|siyam|syam|vegetarian|vegan|nebate|nabati|sharing|family|group|3ayle|aayle|jem3a|jam3a|crispy|cheesy|mashewe|mashawi|burger|sub|sandwich|sandwish|salad|pizza|pasta|أطيب|أشهر|صحي|دايت|لايت|صيامي|نباتي|عيلة|عائلة|جمعة|مشاوي)\b/i.test(
+    /\b(popular|best|top|recommend|favorite|special|atyab|ashhar|healthy|light|diet|regime|rejim|rjim|so77e|so7e|sa77e|sa7e|lent|lenten|ate3|2ate3|aate3|kate3|qate3|siyam|syam|vegetarian|vegan|nebate|nabati|sharing|family|group|3ayle|aayle|jem3a|jam3a|crispy|cheesy|mashewe|mashawi|burger|sub|sandwich|sandwish|salad|pizza|pasta|أطيب|أشهر|صحي|دايت|لايت|ريجيم|رجيم|قاطع|صيامي|نباتي|عيلة|عائلة|جمعة|مشاوي)\b/i.test(
       q
     )
   ) {
@@ -1908,6 +2363,7 @@ function runDeterministicMenuMatcher(
     turnItems: topPicks,
     previousAssistantTurns,
     isSignatureBestQuery,
+    healthyStage,
   } = getTurnTargetItems(message, storeData, exclusions.excludedTerms, history, budgetSpec);
 
   const pickNames = topPicks
@@ -1938,6 +2394,45 @@ function runDeterministicMenuMatcher(
       reply = `Ahla w sahla fik bi Corano! Nehna maftou7in kel youm (Monday – Sunday) men el 11:00 AM lal 12:00 AM (nos lel). Lal talab aw el delivery, fik te7kina moubashara 3ala 03 220 810 (+961 3 220 810), w maw2a3na mawjoud bi saf7et Visit Us 3al Google Maps. W hayde kamen men atyab el asnaf 3anna: ${pickNames}!`;
     } else {
       reply = `Welcome to Corano Restaurant! We are open daily (Monday – Sunday) from 11:00 AM until 12:00 AM (Midnight). To place an order or inquire about delivery, please call us directly at +961 3 220 810 (03 220 810), and you can view our exact Google Maps location anytime in the Visit Us tab. Here are also some of our top dishes to try: ${pickNames}!`;
+    }
+  } else if (exclusions.excludedTerms.includes('__LENT_OR_MEATLESS__') || isLentOrMeatlessQuery(message)) {
+    if (lang === 'Arabic') {
+      const arLentTemplates = [
+        `أهلاً وسهلاً بك في كورانو! بالتأكيد، لدينا تشكيلة مميزة من الأكل القاطع / الصيامي المحضر بدون لحم أو دجاج (بما في ذلك الفلافل، التونا، الكراب، برغر الموزاريلا بانيه، أصابع الحلوم والموزاريلا، بيتزا مارغريتا وخضار، حمص، متبل، وبطاطا حرة). نرشح لك تجربة: ${pickNames}!`,
+        `بكل سرور! إليك المزيد من خيارات الأكل القاطع الخالية تماماً من اللحم والدجاج لدينا: ${pickNames}. اضغط على أي صنف بالأسفل لعرض التفاصيل!`,
+        `أهلاً بك مجدداً! نرشح لك أيضاً هذه الأصناف الشهية بدون لحم أو دجاج: ${pickNames}!`,
+      ];
+      reply = arLentTemplates[variantIdx];
+    } else if (lang === 'Lebanese') {
+      const lbLentTemplates = [
+        `Ahla w sahla fik bi Corano! Akid tekram, 3anna تشكيلة taybe ktir men el akel el ate3 (bala la7me w bala djej) metel el Falafel, Tuna Sub & Pasta, Crab Sub & Salad, Mozzarella Pane Burger, Halloumi & Mozzarella Sticks, Marguerita & Vegetarian Pizza, Hummus, Motabal, w Batata Harra. Bansa7ak tjareb: ${pickNames}!`,
+        `Tekram 3aynak! Hayde kamen تشكيلة tenye men atyab el akel el ate3 (bala la7me w bala djej) 3anna: ${pickNames}. Ekbus 3ala ayya wajbe ta7et la tshouf el tafasil!`,
+        `Miyet ahla! Jareb kamen hal kheyarat el taybe men el Lent / akel ate3 بلا لحمة وبلا دجاج: ${pickNames}!`,
+      ];
+      reply = lbLentTemplates[variantIdx];
+    } else {
+      const enLentTemplates = [
+        `Welcome to Corano! Here are our top Lent & meatless options prepared completely without meat or chicken — including our Falafel, Tuna Sub & Pasta, Crab Sub & Salad, Mozzarella Pane Burger, Halloumi & Mozzarella Sticks, Marguerita & Vegetarian Pizzas, Hummus, Motabal, and Batata Harra: ${pickNames}. Tap any dish below for full details!`,
+        `Here are more delicious Lent & meatless dishes from our kitchen made without any meat or chicken: ${pickNames}. Tap any card below to explore!`,
+        `Happy to share more Lent & meatless favorites! You can also enjoy these fresh picks prepared without meat or chicken: ${pickNames}!`,
+      ];
+      reply = enLentTemplates[variantIdx];
+    }
+  } else if (healthyStage === 'light_first') {
+    if (lang === 'Arabic') {
+      reply = `أهلاً وسهلاً بك في كورانو! للنظام الصحي والريجيم (Light & Healthy)، ننصحك أولاً بتشكيلتنا الخاصة من قسم اللايت والصحي المحضرة بمكونات خفيفة وصحية: ${pickNames}. اضغط على أي صنف بالأسفل لعرض التفاصيل!`;
+    } else if (lang === 'Lebanese') {
+      reply = `Ahla w sahla fik bi Corano! Kirmel el regime w el akel el so77e (Light & Healthy), bansa7ak awwal shi tjareb تشكيلة قسم الـ Light & Healthy 3anna: ${pickNames}. Ekbus 3ala ayya wajbe ta7et la tshouf kel el moukawinet!`;
+    } else {
+      reply = `Welcome to Corano! For a light, healthy, or diet-friendly meal, here are our top picks from our dedicated Light & Healthy section: ${pickNames}. Tap any dish card below to view its full ingredients!`;
+    }
+  } else if (healthyStage === 'salads_followup') {
+    if (lang === 'Arabic') {
+      reply = `بكل سرور! بالإضافة إلى قسم اللايت، إليك أشهى السلطات الطازجة والصحية من قسم السلطات (Salads) لدينا والمثالية للريجيم: ${pickNames}. اضغط على أي سلطة بالأسفل لعرض مكوناتها!`;
+    } else if (lang === 'Lebanese') {
+      reply = `Tekram 3aynak! Bil idafe la qesem el Light & Healthy, hayde atyab el Salads el fresh w el so77iye 3anna yalli bteneseb el regime: ${pickNames}. Ekbus 3ala ayya salad ta7et la tshouf el tafasil!`;
+    } else {
+      reply = `Happy to share more healthy options! From our fresh Salads section, here are delicious light salads that are perfect for your diet: ${pickNames}. Tap any card below for full details!`;
     }
   } else if (exclusions.excludedTerms.length > 0) {
     if (lang === 'Arabic') {

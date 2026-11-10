@@ -1,24 +1,54 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { MenuItem, MenuCategory, StoreDataPayload } from '../types';
 import BackToTop from '../components/BackToTop';
 import { DEFAULT_LBP_RATE, formatStorePrice, StoreCurrency } from '../utils/currency';
 import { fetchLiveStoreData, getCachedStoreData } from '../utils/r2DataClient';
+import { sanitizeSlug } from '../utils/imageCompressor';
 
 const Menu = () => {
+  const { categorySlug, itemSlug } = useParams<{ categorySlug?: string; itemSlug?: string }>();
+  const navigate = useNavigate();
+
   const initialStore = getCachedStoreData();
   const sortedInitialCats = [...(initialStore.categories || [])].sort(
     (a, b) => (a.order ?? 99) - (b.order ?? 99)
   );
 
+  // Match initial category from URL slug if available
+  const initialCategoryFromSlug = categorySlug
+    ? sortedInitialCats.find(
+        (c) =>
+          sanitizeSlug(c.name) === categorySlug.toLowerCase() ||
+          sanitizeSlug(c.id) === categorySlug.toLowerCase() ||
+          c.name.toLowerCase() === categorySlug.toLowerCase() ||
+          c.id.toLowerCase() === categorySlug.toLowerCase()
+      )
+    : null;
+
+  // Match initial item from URL slug if available
+  const initialItemFromSlug = itemSlug
+    ? (initialStore.items || []).find(
+        (i) =>
+          sanitizeSlug(i.title) === itemSlug.toLowerCase() ||
+          sanitizeSlug(i.id) === itemSlug.toLowerCase() ||
+          i.id.toLowerCase() === itemSlug.toLowerCase()
+      ) || null
+    : null;
+
   const [categories, setCategories] = useState<MenuCategory[]>(sortedInitialCats);
   const [allItems, setAllItems] = useState<MenuItem[]>(initialStore.items || []);
   const [activeCategory, setActiveCategory] = useState<string>(
-    sortedInitialCats[0]?.name.toLowerCase() || ''
+    initialCategoryFromSlug
+      ? initialCategoryFromSlug.name.toLowerCase()
+      : initialItemFromSlug
+      ? (initialItemFromSlug.category || sortedInitialCats[0]?.name || '').toLowerCase()
+      : sortedInitialCats[0]?.name.toLowerCase() || ''
   );
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loadingCats, setLoadingCats] = useState<boolean>(sortedInitialCats.length === 0);
-  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(initialItemFromSlug);
   const [storeCurrency, setStoreCurrency] = useState<StoreCurrency>(
     initialStore.settings?.currency === 'LBP' ? 'LBP' : 'USD'
   );
@@ -39,6 +69,16 @@ const Menu = () => {
         : DEFAULT_LBP_RATE
     );
     setActiveCategory((prev) => {
+      if (categorySlug) {
+        const found = cats.find(
+          (c) =>
+            sanitizeSlug(c.name) === categorySlug.toLowerCase() ||
+            sanitizeSlug(c.id) === categorySlug.toLowerCase() ||
+            c.name.toLowerCase() === categorySlug.toLowerCase() ||
+            c.id.toLowerCase() === categorySlug.toLowerCase()
+        );
+        if (found) return found.name.toLowerCase();
+      }
       if (
         prev &&
         cats.some(
@@ -71,6 +111,46 @@ const Menu = () => {
       mounted = false;
     };
   }, []);
+
+  // Synchronize category and item states whenever URL route slugs change
+  useEffect(() => {
+    if (categories.length === 0) return;
+
+    if (categorySlug) {
+      const foundCat = categories.find(
+        (c) =>
+          sanitizeSlug(c.name) === categorySlug.toLowerCase() ||
+          sanitizeSlug(c.id) === categorySlug.toLowerCase() ||
+          c.name.toLowerCase() === categorySlug.toLowerCase() ||
+          c.id.toLowerCase() === categorySlug.toLowerCase()
+      );
+      if (foundCat && foundCat.name.toLowerCase() !== activeCategory.toLowerCase()) {
+        setActiveCategory(foundCat.name.toLowerCase());
+      }
+    }
+
+    if (itemSlug) {
+      const foundItem = allItems.find(
+        (i) =>
+          sanitizeSlug(i.title) === itemSlug.toLowerCase() ||
+          sanitizeSlug(i.id) === itemSlug.toLowerCase() ||
+          i.id.toLowerCase() === itemSlug.toLowerCase()
+      );
+      if (foundItem) {
+        setSelectedItem(foundItem);
+        const cat = categories.find(
+          (c) =>
+            c.name.toLowerCase() === (foundItem.category || '').toLowerCase() ||
+            c.id.toLowerCase() === (foundItem.category || '').toLowerCase()
+        );
+        if (cat && cat.name.toLowerCase() !== activeCategory.toLowerCase()) {
+          setActiveCategory(cat.name.toLowerCase());
+        }
+      }
+    } else {
+      setSelectedItem(null);
+    }
+  }, [categorySlug, itemSlug, categories, allItems]);
 
   const activeCategoryObj = categories.find(
     (c) =>
@@ -106,6 +186,10 @@ const Menu = () => {
     setActiveCategory(catNameLower);
     if (searchQuery) setSearchQuery('');
 
+    const catObj = categories.find((c) => c.name.toLowerCase() === catNameLower);
+    const slug = catObj ? sanitizeSlug(catObj.name) : sanitizeSlug(catNameLower);
+    navigate(`/menu/${slug}`);
+
     // Pure horizontal scroll centering on the category container only (never scrollIntoView)
     const container = categoryScrollRef.current;
     const btn = e.currentTarget;
@@ -117,6 +201,26 @@ const Menu = () => {
         behavior: 'smooth',
       });
     }
+  };
+
+  const handleItemClick = (item: MenuItem) => {
+    setSelectedItem(item);
+    const cat =
+      categories.find(
+        (c) =>
+          c.name.toLowerCase() === (item.category || '').toLowerCase() ||
+          c.id.toLowerCase() === (item.category || '').toLowerCase()
+      ) || activeCategoryObj;
+    const catSlug = cat ? sanitizeSlug(cat.name) : 'all';
+    const itSlug = sanitizeSlug(item.title);
+    navigate(`/menu/${catSlug}/${itSlug}`);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedItem(null);
+    const cat = activeCategoryObj;
+    const catSlug = cat ? sanitizeSlug(cat.name) : '';
+    navigate(catSlug ? `/menu/${catSlug}` : '/menu');
   };
 
   if (loadingCats) {
@@ -138,9 +242,13 @@ const Menu = () => {
         {/* Instant Menu Search Bar (Below heading, above category bar) */}
         <div className="max-w-md mx-auto mb-6">
           <div className="relative flex items-center">
-            <span className="material-symbols-outlined text-[20px] text-on-surface-variant absolute left-3.5 pointer-events-none">
-              search
-            </span>
+            <svg
+              className="w-5 h-5 fill-current text-on-surface-variant absolute left-3.5 pointer-events-none shrink-0"
+              viewBox="0 -960 960 960"
+              aria-hidden="true"
+            >
+              <path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z" />
+            </svg>
             <input
               type="text"
               value={searchQuery}
@@ -156,7 +264,9 @@ const Menu = () => {
                 aria-label="Clear search"
                 className="absolute right-2.5 min-w-[32px] min-h-[32px] flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors"
               >
-                <span className="material-symbols-outlined text-[18px]">close</span>
+                <svg className="w-[18px] h-[18px] fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                  <path d="m256-214-42-42 224-224-224-224 42-42 224 224 224-224 42 42-224 224 224 224-42 42-224-224-224 224Z" />
+                </svg>
               </button>
             )}
           </div>
@@ -205,7 +315,7 @@ const Menu = () => {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
                 key={item.id}
-                onClick={() => setSelectedItem(item)}
+                onClick={() => handleItemClick(item)}
                 className="bg-surface-container-low rounded-2xl overflow-hidden border border-outline-variant/20 cursor-pointer hover:border-primary/50 transition-colors flex md:flex-col"
               >
                 <div className="w-32 h-32 md:w-full md:h-48 shrink-0 bg-surface-container relative">
@@ -233,7 +343,9 @@ const Menu = () => {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <span className="material-symbols-outlined text-4xl text-outline-variant">restaurant</span>
+                      <svg className="w-10 h-10 fill-current text-outline-variant/50 shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                        <path d="M292-120v-334q-50-11-83-52t-33-98v-236h60v236q0 28 19 47t47 19q28 0 47-19t19-47v-236h60v236q0 57-33 98t-83 52v334h-60Zm364 0v-320H548v-284q0-69 48.5-112.5T716-880v760h-60Z" />
+                      </svg>
                     </div>
                   )}
                 </div>
@@ -276,7 +388,7 @@ const Menu = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-sm sm:p-4"
-            onClick={() => setSelectedItem(null)}
+            onClick={handleCloseModal}
           >
             <motion.div 
               initial={{ y: "100%" }}
@@ -295,7 +407,9 @@ const Menu = () => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <span className="material-symbols-outlined text-6xl text-outline-variant">restaurant</span>
+                    <svg className="w-16 h-16 fill-current text-outline-variant/50 shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                      <path d="M292-120v-334q-50-11-83-52t-33-98v-236h60v236q0 28 19 47t47 19q28 0 47-19t19-47v-236h60v236q0 57-33 98t-83 52v334h-60Zm364 0v-320H548v-284q0-69 48.5-112.5T716-880v760h-60Z" />
+                    </svg>
                   </div>
                 )}
                 {selectedItem.available !== false && selectedItem.popular && (
@@ -304,11 +418,13 @@ const Menu = () => {
                   </div>
                 )}
                 <button 
-                  onClick={() => setSelectedItem(null)} 
+                  onClick={handleCloseModal} 
                   aria-label="Close item details"
-                  className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white rounded-full p-2 hover:bg-black/80 transition-colors"
+                  className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white rounded-full p-2.5 hover:bg-black/80 transition-colors flex items-center justify-center"
                 >
-                  <span className="material-symbols-outlined">close</span>
+                  <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                    <path d="m256-214-42-42 224-224-224-224 42-42 224 224 224-224 42 42-224 224 224 224-42 42-224-224-224 224Z" />
+                  </svg>
                 </button>
               </div>
               <div className="p-6 md:p-8 flex flex-col overflow-y-auto hide-scrollbar pb-safe">

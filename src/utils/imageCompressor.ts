@@ -308,7 +308,89 @@ export async function fetchImageBlobForMigration(rawUrl: string): Promise<Blob> 
 }
 
 /**
- * Uploads a compressed image payload to /api/r2-upload and returns the resulting R2 URL.
+  * Compresses a promotional banner image to shrink its file size (KB) by ~60%
+  * (targeting ~40% of the original file size) while preserving razor-sharp visual quality
+  * and high resolution (up to 1600px max dimension). Leaves menu item compression untouched.
+  */
+export async function readOriginalImageForBanner(file: File): Promise<{
+  base64Data: string;
+  contentType: string;
+  extension: string;
+  originalSizeKB: number;
+  sizeKB: number;
+  sizeBytes: number;
+}> {
+  const originalSizeKB = Math.max(1, Math.round(file.size / 1024));
+  const targetMaxBytes = Math.max(25 * 1024, Math.round(file.size * 0.4)); // Shrink file size by ~60%
+  const bannerMaxDimension = 1600;
+
+  const img = await loadImageFromBlob(file);
+  const srcWidth = img.naturalWidth || img.width || 1200;
+  const srcHeight = img.naturalHeight || img.height || 1200;
+
+  let width = srcWidth;
+  let height = srcHeight;
+  if (width > bannerMaxDimension || height > bannerMaxDimension) {
+    if (width >= height) {
+      height = Math.round((height * bannerMaxDimension) / width);
+      width = bannerMaxDimension;
+    } else {
+      width = Math.round((width * bannerMaxDimension) / height);
+      height = bannerMaxDimension;
+    }
+  }
+
+  let canvas = renderToCanvas(img, width, height);
+  const bannerQualitySteps = [0.86, 0.8, 0.74, 0.68];
+  let bestCandidate = await encodeBestFormatAtQuality(canvas, bannerQualitySteps[0]);
+
+  for (let i = 0; i < bannerQualitySteps.length; i++) {
+    const q = bannerQualitySteps[i];
+    const candidate = i === 0 ? bestCandidate : await encodeBestFormatAtQuality(canvas, q);
+    if (candidate.blob.size < bestCandidate.blob.size) {
+      bestCandidate = candidate;
+    }
+    if (bestCandidate.blob.size <= targetMaxBytes) {
+      break;
+    }
+  }
+
+  // If the uploaded file was already compressed and still above 40% of original bytes, step dimensions gently (keeping >= 960px for crispness)
+  let scalePasses = 0;
+  while (
+    bestCandidate.blob.size > targetMaxBytes &&
+    scalePasses < 2 &&
+    width > 960 &&
+    height > 960
+  ) {
+    scalePasses++;
+    width = Math.round(width * 0.88);
+    height = Math.round(height * 0.88);
+    canvas = renderToCanvas(img, width, height);
+    const scaledCandidate = await encodeBestFormatAtQuality(canvas, 0.74);
+    if (scaledCandidate.blob.size < bestCandidate.blob.size) {
+      bestCandidate = scaledCandidate;
+    }
+    if (bestCandidate.blob.size <= targetMaxBytes) {
+      break;
+    }
+  }
+
+  const base64Data = await blobToBase64(bestCandidate.blob);
+  const sizeKB = Math.max(1, Math.round(bestCandidate.blob.size / 1024));
+
+  return {
+    base64Data,
+    contentType: bestCandidate.contentType,
+    extension: bestCandidate.extension,
+    originalSizeKB,
+    sizeKB,
+    sizeBytes: bestCandidate.blob.size,
+  };
+}
+
+/**
+ * Uploads an image payload to /api/r2-upload and returns the resulting R2 URL.
  */
 export async function uploadCompressedToR2(params: {
   fileName: string;
@@ -316,6 +398,7 @@ export async function uploadCompressedToR2(params: {
   base64Data: string;
   oldImageUrl?: string;
   skipDeleteOld?: boolean;
+  isPromoBanner?: boolean;
 }): Promise<{ url: string; key: string; sizeBytes: number }> {
   const currentUser = auth.currentUser;
   if (!currentUser) {
@@ -337,6 +420,32 @@ export async function uploadCompressedToR2(params: {
     throw new Error(data.error || `Photo upload failed (${res.status})`);
   }
   return data;
+}
+
+/**
+ * Permanently deletes an image from Cloudflare R2 via DELETE /api/r2-upload.
+ */
+export async function deleteImageFromR2(imageUrl: string): Promise<void> {
+  if (!imageUrl || !imageUrl.trim()) return;
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error('Please sign in with your Google Admin account first.');
+  }
+  const idToken = await currentUser.getIdToken();
+
+  const res = await fetch('/api/r2-upload', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ imageUrl }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to delete banner from R2 (${res.status})`);
+  }
 }
 
 /**

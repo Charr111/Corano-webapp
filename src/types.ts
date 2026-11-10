@@ -35,11 +35,33 @@ export type AdminUser = {
   createdAt?: string;
 };
 
+export type SavedPromoBanner = {
+  id: string;
+  label?: string;
+  imgUrl: string;
+  delaySeconds: number;
+  maxPerDay: number;
+  clickToMenu: boolean;
+  targetUrl: string;
+  sizeBadge?: string;
+  createdAt: string;
+};
+
 export type StoreSettings = {
   currency: 'USD' | 'LBP';
   exchangeRate: number;
   aiEnabled?: boolean;
   aiBubbleLabel?: string;
+  aiTextBubbleEnabled?: boolean;
+  aiTextBubbleSeconds?: number;
+  promoBannerEnabled?: boolean;
+  promoBannerUrl?: string;
+  promoBannerDelaySeconds?: number;
+  promoBannerMaxPerDay?: number;
+  promoBannerClickToMenu?: boolean;
+  promoBannerTargetUrl?: string;
+  activePromoBannerId?: string;
+  savedPromoBanners?: SavedPromoBanner[];
 };
 
 export type StoreDataPayload = {
@@ -50,6 +72,7 @@ export type StoreDataPayload = {
   items: MenuItem[];
   reviews: Review[];
   admins: AdminUser[];
+  clientIpHash?: string;
 };
 
 export type AiChatMessage = {

@@ -149,18 +149,36 @@ const CoranoAiWidget: React.FC = () => {
   const nameInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    if (location.pathname.startsWith('/admin')) return;
+    const applySettingsFromStore = (store: ReturnType<typeof getCachedStoreData>) => {
+      if (!store) return;
+      setAiEnabled(store.settings?.aiEnabled !== false);
+      setAiBubbleLabel(store.settings?.aiBubbleLabel || 'Corano AI');
+      setStoreCurrency(store.settings?.currency === 'LBP' ? 'LBP' : 'USD');
+      setExchangeRate(store.settings?.exchangeRate || DEFAULT_LBP_RATE);
+      setAllItems(store.items || []);
+    };
+
     fetchLiveStoreData()
       .then((live) => {
-        setAiEnabled(live.settings?.aiEnabled !== false);
-        setAiBubbleLabel(live.settings?.aiBubbleLabel || 'Corano AI');
-        setStoreCurrency(live.settings?.currency === 'LBP' ? 'LBP' : 'USD');
-        setExchangeRate(live.settings?.exchangeRate || DEFAULT_LBP_RATE);
-        setAllItems(live.items || []);
+        applySettingsFromStore(live);
       })
       .catch(() => {
         // use cached
       });
+
+    const handleStoreUpdated = (evt: Event) => {
+      const customEvt = evt as CustomEvent;
+      if (customEvt.detail) {
+        applySettingsFromStore(customEvt.detail);
+      } else {
+        applySettingsFromStore(getCachedStoreData());
+      }
+    };
+
+    window.addEventListener('corano-store-updated', handleStoreUpdated);
+    return () => {
+      window.removeEventListener('corano-store-updated', handleStoreUpdated);
+    };
   }, [isOpen, location.pathname]);
 
   useEffect(() => {
@@ -182,7 +200,14 @@ const CoranoAiWidget: React.FC = () => {
     }
   }, [showNameModal]);
 
-  if (location.pathname.startsWith('/admin') || !aiEnabled) {
+  const normalizedPath = location.pathname.toLowerCase();
+  const isAllowedRoute =
+    normalizedPath === '/' ||
+    normalizedPath === '/home' ||
+    normalizedPath.startsWith('/menu') ||
+    normalizedPath.startsWith('/admin');
+
+  if (!isAllowedRoute || !aiEnabled) {
     return null;
   }
 
@@ -296,39 +321,68 @@ const CoranoAiWidget: React.FC = () => {
     (/iPhone|iPod|iPad/i.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
 
+  const isAndroidMobile =
+    typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+
   return (
     <>
-      {/* Floating Corano AI Bubble (Optimized for mobile & desktop, with iOS-specific elevation so it floats slightly over Contact Us) */}
+      {/* Floating Corano AI Bubble (Optimized for mobile & desktop, 5% smaller on Android only, with speech bubble above circle) */}
       <div
         className={`fixed ${
           isIosMobile
             ? 'bottom-[calc(5.35rem+env(safe-area-inset-bottom))] right-3'
             : 'bottom-[calc(4.35rem+env(safe-area-inset-bottom))] right-2.5'
-        } sm:bottom-20 sm:right-6 z-40 flex flex-col items-center`}
+        } sm:bottom-20 sm:right-6 z-40 flex flex-col items-end ${
+          isAndroidMobile ? 'scale-[0.95] origin-bottom-right' : ''
+        }`}
       >
-        {!isOpen && (
+        <AnimatePresence>
+          {!isOpen && (
+            <motion.button
+              key="ask-waiter-callout"
+              type="button"
+              initial={{ opacity: 0, y: 5, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 4, scale: 0.92 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+              onClick={() => setIsOpen(true)}
+              aria-label="Ask AI Waiter"
+              className="relative z-10 mb-2 bg-[#1A1917]/95 border border-[#E4CD86]/85 text-[#F5EFE0] text-[9.5px] sm:text-[10.5px] leading-none font-headline font-medium tracking-wide px-2.5 sm:px-3 py-[5px] sm:py-[6px] rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.75)] hover:border-[#E4CD86] transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <span>Ask AI Waiter</span>
+              {/* Downward Speech Triangle Pointer aligned over the AI circle */}
+              <span
+                aria-hidden="true"
+                className="
+                  absolute -bottom-[4.5px] right-[18px] sm:right-[22px]
+                  w-2 h-2 bg-[#1A1917]
+                  border-b border-r border-[#E4CD86]/85
+                  rotate-45
+                "
+              />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        <div className="relative flex items-center justify-center">
           <motion.button
             type="button"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={() => setIsOpen(true)}
-            className="relative z-10 -mb-1 bg-[#101010] border border-[#E4CD86]/70 text-[#E4CD86] text-[8px] sm:text-[9px] leading-none font-headline font-bold tracking-wider uppercase px-1.5 sm:px-2 py-[2px] sm:py-[3px] rounded-full shadow-md hover:border-[#E4CD86] transition-colors cursor-pointer whitespace-nowrap"
+            whileTap={{ scale: 0.94 }}
+            onClick={() => setIsOpen((prev) => !prev)}
+            aria-label="Open Corano AI Waiter"
+            className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-[#141413] border-[1.75px] border-[#E4CD86] text-[#E4CD86] shadow-[0_8px_28px_rgba(228,205,134,0.32)] flex items-center justify-center hover:bg-[#1C1B18] transition-colors cursor-pointer relative"
           >
-            {aiBubbleLabel || 'Corano AI'}
+            {isOpen ? (
+              <svg className="w-[21px] h-[21px] sm:w-[25px] sm:h-[25px] fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                <path d="m256-214-42-42 224-224-224-224 42-42 224 224 224-224 42 42-224 224 224 224-42 42-224-224-224 224Z" />
+              </svg>
+            ) : (
+              <svg className="w-[21px] h-[21px] sm:w-[25px] sm:h-[25px] fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                <path d="m744-96-30-66-66-30 66-30 30-66 30 66 66 30-66 30-30 66Zm0-576-30-66-66-30 66-30 30-66 30 66 66 30-66 30-30 66ZM396-204l-79-173-173-79 173-79 79-173 79 173 173 79-173 79-79 173Zm0-137 32-70 70-32-70-32-32-70-32 70-70 32 70 32 32 70Zm0-102Z" />
+              </svg>
+            )}
           </motion.button>
-        )}
-
-        <motion.button
-          type="button"
-          whileTap={{ scale: 0.94 }}
-          onClick={() => setIsOpen((prev) => !prev)}
-          aria-label="Open Corano AI Waiter"
-          className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-[#101010] border-2 border-[#E4CD86] text-[#E4CD86] shadow-[0_8px_28px_rgba(228,205,134,0.32)] flex items-center justify-center hover:bg-[#181818] transition-colors cursor-pointer relative"
-        >
-          <span className="material-symbols-outlined text-[21px] sm:text-[25px]">
-            {isOpen ? 'close' : 'auto_awesome'}
-          </span>
-        </motion.button>
+        </div>
       </div>
 
       {/* Chat Modal Window */}
@@ -353,7 +407,9 @@ const CoranoAiWidget: React.FC = () => {
               <div className="px-5 py-4 bg-[#161615] border-b border-outline-variant/30 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-[#101010] border border-[#E4CD86]/60 flex items-center justify-center text-[#E4CD86]">
-                    <span className="material-symbols-outlined text-[20px]">room_service</span>
+                    <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                      <path d="M120-210v-60h720v60H120Zm24-110q12-122 93.5-209.5T444-634v-46q0-15 10.5-25.5T480-716q15 0 25.5 10.5T516-680v46q125 17 206.5 104.5T816-320H144Zm64-60h544q-17-95-88.5-157.5T480-600q-112 0-183.5 62.5T208-380Zm272 0Z" />
+                    </svg>
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -378,7 +434,9 @@ const CoranoAiWidget: React.FC = () => {
                       title="Start new conversation"
                       className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-[#E4CD86] transition-colors"
                     >
-                      <span className="material-symbols-outlined text-[18px]">refresh</span>
+                      <svg className="w-[18px] h-[18px] fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                        <path d="M480-180q-125 0-212.5-87.5T180-480q0-125 87.5-212.5T480-780q71 0 132 31t104 87v-118h60v220H556v-60h117q-32-45-81.5-72.5T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q87 0 151.5-54T714-432h62q-18 111-101.5 181.5T480-180Z" />
+                      </svg>
                     </button>
                   )}
                   <button
@@ -387,7 +445,9 @@ const CoranoAiWidget: React.FC = () => {
                     aria-label="Close Corano AI"
                     className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors"
                   >
-                    <span className="material-symbols-outlined text-[20px]">close</span>
+                    <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                      <path d="m256-214-42-42 224-224-224-224 42-42 224 224 224-224 42 42-224 224 224 224-42 42-224-224-224 224Z" />
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -411,9 +471,9 @@ const CoranoAiWidget: React.FC = () => {
                             className="text-left text-xs sm:text-xs font-medium px-3.5 py-2.5 rounded-xl bg-[#101010] border border-[#E4CD86]/30 text-[#E4CD86] hover:bg-[#E4CD86]/10 hover:border-[#E4CD86] transition-all flex items-center justify-between gap-2 cursor-pointer disabled:opacity-50"
                           >
                             <span>{q}</span>
-                            <span className="material-symbols-outlined text-[15px] shrink-0">
-                              arrow_forward
-                            </span>
+                            <svg className="w-[15px] h-[15px] fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                              <path d="M666-450H180v-60h486L438-738l42-42 300 300-300 300-42-42 228-228Z" />
+                            </svg>
                           </button>
                         ))}
                       </div>
@@ -460,9 +520,9 @@ const CoranoAiWidget: React.FC = () => {
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-2xl text-outline-variant">
-                                      restaurant
-                                    </span>
+                                    <svg className="w-6 h-6 fill-current text-outline-variant" viewBox="0 -960 960 960" aria-hidden="true">
+                                      <path d="M292-120v-334q-50-11-83-52t-33-98v-236h60v236q0 28 19 47t47 19q28 0 47-19t19-47v-236h60v236q0 57-33 98t-83 52v334h-60Zm364 0v-320H548v-284q0-69 48.5-112.5T716-880v760h-60Z" />
+                                    </svg>
                                   </div>
                                 )}
                                 {dish.popular && (
@@ -527,7 +587,9 @@ const CoranoAiWidget: React.FC = () => {
                   aria-label="Send question"
                   className="w-10 h-10 rounded-xl bg-[#E4CD86] text-[#101010] flex items-center justify-center hover:bg-[#E4CD86]/90 disabled:opacity-40 transition-opacity shrink-0 cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[20px]">send</span>
+                  <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                    <path d="M140-180v-240l300-60-300-60v-240l720 300-720 300Z" />
+                  </svg>
                 </button>
               </form>
 
@@ -560,7 +622,9 @@ const CoranoAiWidget: React.FC = () => {
                           className="text-on-surface-variant hover:text-on-surface transition-colors"
                           aria-label="Close name prompt"
                         >
-                          <span className="material-symbols-outlined text-[16px]">close</span>
+                          <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                            <path d="m256-214-42-42 224-224-224-224 42-42 224 224 224-224 42 42-224 224 224 224-42 42-224-224-224 224Z" />
+                          </svg>
                         </button>
                       </div>
                       <input
@@ -603,9 +667,9 @@ const CoranoAiWidget: React.FC = () => {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <span className="material-symbols-outlined text-5xl text-outline-variant">
-                            restaurant
-                          </span>
+                          <svg className="w-12 h-12 fill-current text-outline-variant" viewBox="0 -960 960 960" aria-hidden="true">
+                            <path d="M292-120v-334q-50-11-83-52t-33-98v-236h60v236q0 28 19 47t47 19q28 0 47-19t19-47v-236h60v236q0 57-33 98t-83 52v334h-60Zm364 0v-320H548v-284q0-69 48.5-112.5T716-880v760h-60Z" />
+                          </svg>
                         </div>
                       )}
                       {previewItem.popular && (
@@ -619,7 +683,9 @@ const CoranoAiWidget: React.FC = () => {
                         aria-label="Back to chat"
                         className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white rounded-full p-2 hover:bg-black/80 transition-colors"
                       >
-                        <span className="material-symbols-outlined">close</span>
+                        <svg className="w-6 h-6 fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                          <path d="m256-214-42-42 224-224-224-224 42-42 224 224 224-224 42 42-224 224 224 224-42 42-224-224-224 224Z" />
+                        </svg>
                       </button>
                     </div>
 

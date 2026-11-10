@@ -42,7 +42,9 @@ const About = () => {
         <div className="flex flex-col gap-10 items-center">
           {/* Info Card - Opening Hours Only */}
           <div className="w-full bg-surface-container-low p-8 md:p-10 rounded-3xl border border-outline-variant/30 flex flex-col items-center text-center">
-            <span className="material-symbols-outlined text-primary text-4xl mb-4">schedule</span>
+            <svg className="w-10 h-10 fill-current text-primary mb-4 shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+              <path d="m612-292 56-56-148-148v-184h-80v216l172 172ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z" />
+            </svg>
             <h3 className="font-headline font-bold text-2xl text-on-surface mb-2">Opening Hours</h3>
             <p className="font-headline text-on-surface-variant leading-relaxed text-lg">
               Monday - Sunday<br />
@@ -88,7 +90,9 @@ const About = () => {
                 rel="noopener noreferrer"
                 className="font-headline px-8 py-3 border-2 border-primary text-primary rounded-full font-bold hover:bg-primary hover:text-on-primary transition-colors flex items-center gap-2"
               >
-                <span className="material-symbols-outlined">map</span>
+                <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                  <path d="m600-120-240-84-186 72q-20 8-37-4.5T120-170v-560q0-13 7.5-23t20.5-15l212-72 240 84 186-72q20-8 37 4.5t17 33.5v560q0 13-7.5 23T832-192l-232 72Zm-40-86v-530l-160-56v530l160 56Zm80 0 120-40v-530l-120 42v528Zm-320-56v-528l-120 40v530l120-42Z" />
+                </svg>
                 Open Map
               </a>
             </div>
