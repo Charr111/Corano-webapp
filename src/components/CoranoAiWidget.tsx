@@ -291,10 +291,21 @@ const CoranoAiWidget: React.FC = () => {
     setSessionId(`chat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`);
   };
 
+  const isIosMobile =
+    typeof navigator !== 'undefined' &&
+    (/iPhone|iPod|iPad/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+
   return (
     <>
-      {/* Floating Corano AI Bubble (Optimized for mobile & desktop, cleanly above bottom nav) */}
-      <div className="fixed bottom-[calc(4.35rem+env(safe-area-inset-bottom))] right-2.5 sm:bottom-20 sm:right-6 z-40 flex flex-col items-center">
+      {/* Floating Corano AI Bubble (Optimized for mobile & desktop, with iOS-specific elevation so it floats slightly over Contact Us) */}
+      <div
+        className={`fixed ${
+          isIosMobile
+            ? 'bottom-[calc(5.35rem+env(safe-area-inset-bottom))] right-3'
+            : 'bottom-[calc(4.35rem+env(safe-area-inset-bottom))] right-2.5'
+        } sm:bottom-20 sm:right-6 z-40 flex flex-col items-center`}
+      >
         {!isOpen && (
           <motion.button
             type="button"

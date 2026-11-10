@@ -1724,13 +1724,23 @@ function getSignatureBestPicksFromPool(pool: any[]): any[] {
       String(i.title || '').toLowerCase().includes('farrouj')
   );
 
-  // 4. Tawouk (Sheesh Tawouk or Charcoal Tawouk)
+  // 4. Tawouk in Sandwiches (ID: sM7HMeH7eJXJ3IydhtzN, title: "Tawouk" in category "sandwiches")
   findAndAdd(
     (i) =>
-      String(i.id) === 'GGH1ydfnexgcCaPPbXxL' ||
-      String(i.title || '').toLowerCase() === 'sheesh tawouk' ||
-      String(i.title || '').toLowerCase().includes('tawouk')
+      String(i.id) === 'sM7HMeH7eJXJ3IydhtzN' ||
+      (String(i.category || '').toLowerCase().includes('sandwich') &&
+        String(i.title || '').toLowerCase().trim() === 'tawouk')
   );
+  if (picks.length < 4) {
+    findAndAdd(
+      (i) =>
+        String(i.category || '').toLowerCase().includes('sandwich') &&
+        String(i.title || '').toLowerCase().includes('tawouk')
+    );
+  }
+  if (picks.length < 4) {
+    findAndAdd((i) => String(i.title || '').toLowerCase().includes('tawouk'));
+  }
 
   return picks;
 }

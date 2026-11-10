@@ -4,6 +4,10 @@ import { motion } from 'motion/react';
 
 const Home = () => {
   const navigate = useNavigate();
+  const isIosMobile =
+    typeof navigator !== 'undefined' &&
+    (/iPhone|iPod|iPad/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
 
   return (
     <div className="min-h-[100svh] w-full overflow-y-auto hide-scrollbar flex flex-col">
@@ -26,7 +30,11 @@ const Home = () => {
         </div>
         
         {/* Main Content */}
-        <div className="relative z-10 w-full px-6 flex flex-col items-center mt-auto mb-14 sm:mb-16 md:mb-24 lg:mb-8 lg:mt-0">
+        <div
+          className={`relative z-10 w-full px-6 flex flex-col items-center mt-auto ${
+            isIosMobile ? 'mb-9' : 'mb-14'
+          } sm:mb-16 md:mb-24 lg:mb-8 lg:mt-0`}
+        >
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
