@@ -880,8 +880,37 @@ function extractPositiveQueryWords(
     'bade',
     'badde',
     'shi',
+    'chi',
+    'che',
+    'she',
+    'chu',
+    'shu',
+    'chou',
+    'like',
+    'thing',
+    'things',
     'have',
+    'has',
+    'had',
+    'are',
+    'was',
+    'were',
+    'does',
+    'did',
     'what',
+    'which',
+    'where',
+    'when',
+    'who',
+    'how',
+    'why',
+    'this',
+    'that',
+    'these',
+    'those',
+    'some',
+    'any',
+    'all',
     'types',
     'type',
     'kind',
@@ -916,9 +945,24 @@ function extractPositiveQueryWords(
     'give',
     'show',
     'tell',
-    'shu',
-    'chou',
     'atyab',
+    '2atyab',
+    'ashhar',
+    '2ashhar',
+    'a7san',
+    'ahsan',
+    'أطيب',
+    'اطيب',
+    'أشهر',
+    'اشهر',
+    'أحسن',
+    'احسن',
+    'شي',
+    'شيء',
+    'شو',
+    'عندك',
+    'عندكم',
+    'عندكن',
     '3andkon',
     'andkon',
     '3endkon',
@@ -1558,7 +1602,7 @@ function selectVariedItemsFromPool(
   previouslyRecommendedIds: Set<string>,
   previousAssistantTurns: number,
   enforceCategoryDiversity: boolean,
-  limit = 3
+  limit = 4
 ): any[] {
   if (!orderedMatches.length) return [];
   if (orderedMatches.length <= limit) return orderedMatches;
@@ -1641,6 +1685,56 @@ function selectVariedItemsFromPool(
   return selected;
 }
 
+const SIGNATURE_BEST_QUERY_REGEX =
+  /\b(best|popular|atyab|2atyab|ashhar|2ashhar|favorite|top|recommend|special)\b|أطيب|اطيب|أشهر|اشهر|شو بتنصح/i;
+
+function getSignatureBestPicksFromPool(pool: any[]): any[] {
+  const picks: any[] = [];
+  const usedIds = new Set<string>();
+
+  const findAndAdd = (matcher: (item: any) => boolean) => {
+    const found = pool.find((item) => !usedIds.has(String(item.id)) && matcher(item));
+    if (found) {
+      usedIds.add(String(found.id));
+      picks.push(found);
+    }
+  };
+
+  // 1. Famous Barbecue Chicken Sub (Famous Crispy BBQ)
+  findAndAdd(
+    (i) =>
+      String(i.id) === '1YsUMiTfk2OBDpJpNnuQ' ||
+      String(i.title || '').toLowerCase().includes('famous crispy bbq') ||
+      (String(i.title || '').toLowerCase().includes('famous') &&
+        String(i.title || '').toLowerCase().includes('bbq'))
+  );
+
+  // 2. Chicken Corano Sub (Chicken Corano)
+  findAndAdd(
+    (i) =>
+      String(i.id) === 'd7RltNIWPyWLRnyzeVah' ||
+      String(i.title || '').toLowerCase().includes('chicken corano')
+  );
+
+  // 3. Farrouj (Farrouj Dine In or Farrouj)
+  findAndAdd(
+    (i) =>
+      String(i.id) === 'PtmFvRE079t6A0xJNI7N' ||
+      String(i.title || '').toLowerCase() === 'farrouj dine in' ||
+      String(i.title || '').toLowerCase().includes('farrouj')
+  );
+
+  // 4. Tawouk (Sheesh Tawouk or Charcoal Tawouk)
+  findAndAdd(
+    (i) =>
+      String(i.id) === 'GGH1ydfnexgcCaPPbXxL' ||
+      String(i.title || '').toLowerCase() === 'sheesh tawouk' ||
+      String(i.title || '').toLowerCase().includes('tawouk')
+  );
+
+  return picks;
+}
+
 function getTurnTargetItems(
   message: string,
   storeData: any,
@@ -1652,6 +1746,7 @@ function getTurnTargetItems(
   strictMatches: any[];
   previousAssistantTurns: number;
   budgetSpec: BudgetAndComboSpec;
+  isSignatureBestQuery?: boolean;
 } {
   const rate = storeData.settings?.exchangeRate || 89000;
   const activeBudgetSpec = budgetSpec || extractBudgetAndComboSpec(message, rate);
@@ -1675,7 +1770,7 @@ function getTurnTargetItems(
       previouslyRecommendedIds,
       previousAssistantTurns,
       !isSingleCategoryQuery,
-      3
+      4
     );
     return { turnItems, strictMatches, previousAssistantTurns, budgetSpec: activeBudgetSpec };
   }
@@ -1696,6 +1791,27 @@ function getTurnTargetItems(
   const basePool = candidateItems.length > 0 ? candidateItems : allAvailableItems;
   const budgetPool = basePool.filter((i: any) => itemFitsBudgetAndCombo(i, activeBudgetSpec));
   const pool = budgetPool.length > 0 ? budgetPool : basePool;
+
+  const isSignatureBestQuery =
+    SIGNATURE_BEST_QUERY_REGEX.test(q) &&
+    topicTag !== 'Healthy & Light' &&
+    !isAskingForDrinkOrSauce;
+
+  if (isSignatureBestQuery) {
+    const signatureFour = getSignatureBestPicksFromPool(pool);
+    const allFourAlreadySeen =
+      signatureFour.length > 0 &&
+      signatureFour.every((item) => previouslyRecommendedIds.has(String(item.id)));
+    if (signatureFour.length > 0 && !allFourAlreadySeen) {
+      return {
+        turnItems: signatureFour.slice(0, 4),
+        strictMatches: [],
+        previousAssistantTurns,
+        budgetSpec: activeBudgetSpec,
+        isSignatureBestQuery: true,
+      };
+    }
+  }
 
   const scored = pool.map((item) => {
     let score = 0;
@@ -1724,10 +1840,16 @@ function getTurnTargetItems(
     previouslyRecommendedIds,
     previousAssistantTurns,
     true,
-    3
+    4
   );
 
-  return { turnItems, strictMatches: [], previousAssistantTurns, budgetSpec: activeBudgetSpec };
+  return {
+    turnItems,
+    strictMatches: [],
+    previousAssistantTurns,
+    budgetSpec: activeBudgetSpec,
+    isSignatureBestQuery,
+  };
 }
 
 const RESTAURANT_INFO_REGEX =
@@ -1772,13 +1894,11 @@ function runDeterministicMenuMatcher(
   const exclusions = extractExclusionsFromMessage(message);
   const budgetSpec = extractBudgetAndComboSpec(message, rate);
 
-  const { turnItems: topPicks, previousAssistantTurns } = getTurnTargetItems(
-    message,
-    storeData,
-    exclusions.excludedTerms,
-    history,
-    budgetSpec
-  );
+  const {
+    turnItems: topPicks,
+    previousAssistantTurns,
+    isSignatureBestQuery,
+  } = getTurnTargetItems(message, storeData, exclusions.excludedTerms, history, budgetSpec);
 
   const pickNames = topPicks
     .map(
@@ -1872,6 +1992,14 @@ function runDeterministicMenuMatcher(
         `Looking for more from our charcoal grill? We also highly recommend trying: ${pickNames}!`,
       ];
       reply = enMashewe[variantIdx];
+    }
+  } else if (isSignatureBestQuery) {
+    if (lang === 'Arabic') {
+      reply = `أهلاً وسهلاً بك في مطعم كورانو! أطيب وأشهر 4 أصناف لدينا هي ساب الدجاج بالباربكيو الشهير (Famous Barbecue Chicken Sub / Famous Crispy BBQ)، ساب تشيكن كورانو (Chicken Corano Sub)، الفروج المشوي على الفحم (Farrouj)، والطاووق (Tawouk): ${pickNames}. اضغط على أي صنف بالأسفل لعرض كافة المكونات والتفاصيل!`;
+    } else if (lang === 'Lebanese') {
+      reply = `Ahla w sahla fik bi Corano! Atyab w ashhar 4 asnaf 3anna henni el Famous Barbecue Chicken Sub (Famous Crispy BBQ), Chicken Corano Sub, el Farrouj 3al fahem, w el Tawouk: ${pickNames}. Fik tekbus 3ala ayya wajbe ta7et la tshouf kel el moukawinet!`;
+    } else {
+      reply = `Welcome to Corano! Our 4 signature best-selling dishes are our Famous Barbecue Chicken Sub (Famous Crispy BBQ), Chicken Corano Sub, Charcoal Farrouj, and Tawouk: ${pickNames}. Tap any dish card below to view its full ingredients and details!`;
     }
   } else if (lang === 'Arabic') {
     const arGeneral = [
@@ -1990,7 +2118,7 @@ function buildCoranoMenuSystemPrompt(
       : '';
 
   return `You are "Corano AI", the warm, knowledgeable AI Waiter at Corano Restaurant in Lebanon (Open daily 11:00 AM - 12:00 AM).
-Your job is to help guests choose dishes, answer ingredient or allergy questions accurately, and recommend 1 to 3 dishes from our LIVE AVAILABLE MENU below.
+Your job is to help guests choose dishes, answer ingredient or allergy questions accurately, and recommend 1 to 4 dishes from our LIVE AVAILABLE MENU below.
 
 STRICT RULES:
 1. LANGUAGE MIRRORING:
@@ -2123,7 +2251,7 @@ async function generateCoranoAiEdgeResponse(
                 ? parsed.language
                 : detectUserLanguage(message);
 
-            let finalIds = turnTargetIds.slice(0, 3);
+            let finalIds = turnTargetIds.slice(0, 4);
             if (finalIds.length === 0) {
               finalIds = (Array.isArray(parsed.recommendedItemIds) ? parsed.recommendedItemIds : [])
                 .map(String)
@@ -2134,7 +2262,7 @@ async function generateCoranoAiEdgeResponse(
                   if (strictMatchIds.size > 0 && !strictMatchIds.has(id)) return false;
                   return true;
                 })
-                .slice(0, 3);
+                .slice(0, 4);
             }
 
             return {
@@ -2199,7 +2327,7 @@ async function generateCoranoAiEdgeResponse(
       }
 
       if (parsed && typeof parsed.reply === 'string' && parsed.reply.trim()) {
-        let finalIds = turnTargetIds.slice(0, 3);
+        let finalIds = turnTargetIds.slice(0, 4);
         if (finalIds.length === 0) {
           finalIds = (Array.isArray(parsed.recommendedItemIds) ? parsed.recommendedItemIds : [])
             .map(String)
@@ -2210,7 +2338,7 @@ async function generateCoranoAiEdgeResponse(
               if (strictMatchIds.size > 0 && !strictMatchIds.has(id)) return false;
               return true;
             })
-            .slice(0, 3);
+            .slice(0, 4);
         }
 
         return {
@@ -2368,7 +2496,7 @@ export const onRequestPost = async (context: any) => {
         (id: string, idx: number, arr: string[]) =>
           availableItemsMap.has(id) && arr.indexOf(id) === idx
       )
-      .slice(0, 3);
+      .slice(0, 4);
 
     const recommendedItems = validItemIds.map((id: string) => availableItemsMap.get(id));
 

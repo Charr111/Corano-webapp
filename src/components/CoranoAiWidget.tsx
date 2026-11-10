@@ -120,7 +120,8 @@ const CoranoAiWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [guestName, setGuestName] = useState<string>(() => getCachedGuestName());
   const [nameDraft, setNameDraft] = useState<string>('');
-  const [nameInputRefFocus, setNameInputRefFocus] = useState(false);
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
+  const [showNameModal, setShowNameModal] = useState(false);
   const [sessionId, setSessionId] = useState<string>(
     () => `chat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
   );
@@ -172,39 +173,21 @@ const CoranoAiWidget: React.FC = () => {
     }
   }, [messages, isThinking, isOpen, guestName]);
 
+  useEffect(() => {
+    if (showNameModal) {
+      const timer = setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 60);
+      return () => clearTimeout(timer);
+    }
+  }, [showNameModal]);
+
   if (location.pathname.startsWith('/admin') || !aiEnabled) {
     return null;
   }
 
-  const handleSaveGuestName = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleaned = nameDraft.trim().replace(/\s+/g, ' ').slice(0, 60);
-    if (!cleaned) return;
-    saveCachedGuestName(cleaned);
-    setGuestName(cleaned);
-    setNameDraft('');
-    setNameInputRefFocus(false);
-  };
-
-  const handleSendQuestion = async (rawQuestion: string) => {
-    const trimmed = rawQuestion.trim();
+  const executeSendQuestion = async (trimmed: string, activeGuestName: string) => {
     if (!trimmed || isThinking) return;
-
-    let activeGuestName = guestName;
-    if (!activeGuestName) {
-      const fromDraft = nameDraft.trim().replace(/\s+/g, ' ').slice(0, 60);
-      if (fromDraft) {
-        saveCachedGuestName(fromDraft);
-        setGuestName(fromDraft);
-        setNameDraft('');
-        setNameInputRefFocus(false);
-        activeGuestName = fromDraft;
-      } else {
-        setNameInputRefFocus(true);
-        nameInputRef.current?.focus();
-        return;
-      }
-    }
 
     const userMsg: WidgetMessage = {
       id: `u-${Date.now()}`,
@@ -254,7 +237,7 @@ const CoranoAiWidget: React.FC = () => {
     } catch {
       const fallbackPicks = allItems
         .filter((i) => i.available !== false && i.popular)
-        .slice(0, 3);
+        .slice(0, 4);
       setMessages((prev) => [
         ...prev,
         {
@@ -262,11 +245,43 @@ const CoranoAiWidget: React.FC = () => {
           role: 'assistant',
           text: 'Welcome to Corano! Here are some of our guests’ favorite freshly prepared dishes:',
           recommendedItems:
-            fallbackPicks.length > 0 ? fallbackPicks : allItems.slice(0, 3),
+            fallbackPicks.length > 0 ? fallbackPicks : allItems.slice(0, 4),
         },
       ]);
     } finally {
       setIsThinking(false);
+    }
+  };
+
+  const handleSendQuestion = async (rawQuestion: string) => {
+    const trimmed = rawQuestion.trim();
+    if (!trimmed || isThinking) return;
+
+    const currentName = guestName || getCachedGuestName();
+    if (!currentName) {
+      setPendingQuestion(trimmed);
+      setShowNameModal(true);
+      return;
+    }
+
+    if (currentName !== guestName) {
+      setGuestName(currentName);
+    }
+    await executeSendQuestion(trimmed, currentName);
+  };
+
+  const handleConfirmNameAndSend = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleaned = nameDraft.trim().replace(/\s+/g, ' ').slice(0, 60);
+    if (!cleaned) return;
+    saveCachedGuestName(cleaned);
+    setGuestName(cleaned);
+    setNameDraft('');
+    setShowNameModal(false);
+    const questionToSend = pendingQuestion;
+    setPendingQuestion(null);
+    if (questionToSend) {
+      void executeSendQuestion(questionToSend, cleaned);
     }
   };
 
@@ -278,15 +293,15 @@ const CoranoAiWidget: React.FC = () => {
 
   return (
     <>
-      {/* Floating Corano AI Bubble (Cleanly above the h-16 Bottom Nav Bar on both mobile & desktop) */}
-      <div className="fixed bottom-20 right-4 md:bottom-20 md:right-6 z-40 flex flex-col items-center">
+      {/* Floating Corano AI Bubble (Optimized for mobile & desktop, cleanly above bottom nav) */}
+      <div className="fixed bottom-[calc(4.35rem+env(safe-area-inset-bottom))] right-2.5 sm:bottom-20 sm:right-6 z-40 flex flex-col items-center">
         {!isOpen && (
           <motion.button
             type="button"
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={() => setIsOpen(true)}
-            className="relative z-10 -mb-1.5 bg-[#101010] border border-[#E4CD86]/70 text-[#E4CD86] text-[9px] leading-none font-headline font-bold tracking-wider uppercase px-2 py-[3px] rounded-full shadow-md hover:border-[#E4CD86] transition-colors cursor-pointer whitespace-nowrap"
+            className="relative z-10 -mb-1 bg-[#101010] border border-[#E4CD86]/70 text-[#E4CD86] text-[8px] sm:text-[9px] leading-none font-headline font-bold tracking-wider uppercase px-1.5 sm:px-2 py-[2px] sm:py-[3px] rounded-full shadow-md hover:border-[#E4CD86] transition-colors cursor-pointer whitespace-nowrap"
           >
             {aiBubbleLabel || 'Corano AI'}
           </motion.button>
@@ -297,9 +312,9 @@ const CoranoAiWidget: React.FC = () => {
           whileTap={{ scale: 0.94 }}
           onClick={() => setIsOpen((prev) => !prev)}
           aria-label="Open Corano AI Waiter"
-          className="w-13 h-13 rounded-full bg-[#101010] border-2 border-[#E4CD86] text-[#E4CD86] shadow-[0_8px_28px_rgba(228,205,134,0.32)] flex items-center justify-center hover:bg-[#181818] transition-colors cursor-pointer relative"
+          className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-[#101010] border-2 border-[#E4CD86] text-[#E4CD86] shadow-[0_8px_28px_rgba(228,205,134,0.32)] flex items-center justify-center hover:bg-[#181818] transition-colors cursor-pointer relative"
         >
-          <span className="material-symbols-outlined text-[25px]">
+          <span className="material-symbols-outlined text-[21px] sm:text-[25px]">
             {isOpen ? 'close' : 'auto_awesome'}
           </span>
         </motion.button>
@@ -366,45 +381,9 @@ const CoranoAiWidget: React.FC = () => {
                 </div>
               </div>
 
-              {/* Minimal, Non-Pushy First-Time Name / Nickname Bar */}
-              {!guestName && (
-                <form
-                  onSubmit={handleSaveGuestName}
-                  className={`px-4 py-2.5 bg-[#151514] border-b transition-colors shrink-0 ${
-                    nameInputRefFocus ? 'border-[#E4CD86]' : 'border-outline-variant/30'
-                  }`}
-                >
-                  <label className="block text-[11px] text-on-surface-variant mb-1.5">
-                    Add your <span className="text-[#E4CD86] font-medium">name & last name or nickname</span> to chat:
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      ref={nameInputRef}
-                      type="text"
-                      dir="auto"
-                      maxLength={60}
-                      value={nameDraft}
-                      onChange={(e) => {
-                        setNameDraft(e.target.value);
-                        if (nameInputRefFocus) setNameInputRefFocus(false);
-                      }}
-                      placeholder="Name & last name or nickname..."
-                      className="flex-1 bg-[#101010] border border-outline-variant/40 focus:border-[#E4CD86] rounded-lg px-3 py-1.5 text-base sm:text-xs text-on-surface placeholder-on-surface-variant/60 focus:outline-none"
-                    />
-                    <button
-                      type="submit"
-                      disabled={!nameDraft.trim()}
-                      className="px-3 py-1.5 rounded-lg bg-[#E4CD86] text-[#101010] font-bold text-xs hover:bg-[#E4CD86]/90 disabled:opacity-40 transition-opacity shrink-0 cursor-pointer"
-                    >
-                      Save
-                    </button>
-                  </div>
-                </form>
-              )}
-
               {/* Scrollable Messages Area */}
               <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 hide-scrollbar">
-                    {/* Initial Welcome Card + 5 Pre-Written Suggestion Questions */}
+                    {/* Initial Welcome Card + Pre-Written Suggestion Questions */}
                     <div className="bg-[#181817] border border-outline-variant/30 rounded-2xl p-4 space-y-3">
                       <p className="text-sm text-on-surface leading-relaxed font-headline">
                         Welcome to <span className="text-[#E4CD86] font-bold">Corano</span>! Ask me
@@ -540,6 +519,60 @@ const CoranoAiWidget: React.FC = () => {
                   <span className="material-symbols-outlined text-[20px]">send</span>
                 </button>
               </form>
+
+              {/* Minimal Centered Name Pop-Up inside the AI Chat Window */}
+              <AnimatePresence>
+                {showNameModal && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xs p-5"
+                    onClick={() => setShowNameModal(false)}
+                  >
+                    <motion.form
+                      initial={{ scale: 0.94, opacity: 0, y: 6 }}
+                      animate={{ scale: 1, opacity: 1, y: 0 }}
+                      exit={{ scale: 0.94, opacity: 0, y: 6 }}
+                      transition={{ duration: 0.16 }}
+                      onClick={(e) => e.stopPropagation()}
+                      onSubmit={handleConfirmNameAndSend}
+                      className="w-full max-w-[285px] bg-[#161615] border border-[#E4CD86]/50 rounded-2xl p-4 shadow-2xl space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-headline font-bold text-[#E4CD86] tracking-wide">
+                          Type your name to continue
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowNameModal(false)}
+                          className="text-on-surface-variant hover:text-on-surface transition-colors"
+                          aria-label="Close name prompt"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">close</span>
+                        </button>
+                      </div>
+                      <input
+                        ref={nameInputRef}
+                        type="text"
+                        dir="auto"
+                        maxLength={60}
+                        value={nameDraft}
+                        onChange={(e) => setNameDraft(e.target.value)}
+                        placeholder="Your name or nickname..."
+                        className="w-full bg-[#101010] border border-outline-variant/50 focus:border-[#E4CD86] rounded-xl px-3 py-2 text-base sm:text-xs text-on-surface placeholder-on-surface-variant/60 focus:outline-none"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!nameDraft.trim()}
+                        className="w-full py-2 rounded-xl bg-[#E4CD86] text-[#101010] font-bold text-xs hover:bg-[#E4CD86]/90 disabled:opacity-40 transition-opacity cursor-pointer"
+                      >
+                        Send Message
+                      </button>
+                    </motion.form>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Dish Detail Preview Overlay inside the Widget */}
               <AnimatePresence>

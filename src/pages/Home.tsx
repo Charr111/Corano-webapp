@@ -26,7 +26,7 @@ const Home = () => {
         </div>
         
         {/* Main Content */}
-        <div className="relative z-10 w-full px-6 flex flex-col items-center mt-auto mb-10 md:mb-24 lg:mb-8 lg:mt-0">
+        <div className="relative z-10 w-full px-6 flex flex-col items-center mt-auto mb-14 sm:mb-16 md:mb-24 lg:mb-8 lg:mt-0">
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
