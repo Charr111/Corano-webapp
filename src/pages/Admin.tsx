@@ -10,6 +10,7 @@ import {
   StoreDataPayload,
   AiConversationSession,
   SavedPromoBanner,
+  PromoDiscountType,
 } from '../types';
 import {
   buildCollisionProofFileName,
@@ -21,9 +22,11 @@ import {
   uploadCompressedToR2,
 } from '../utils/imageCompressor';
 import {
+  computeDiscountedUsdPriceString,
   convertLbpInputToUsdString,
   convertUsdStringToLbpInput,
   DEFAULT_LBP_RATE,
+  formatDiscountBadgeText,
   formatStorePrice,
   StoreCurrency,
 } from '../utils/currency';
@@ -113,6 +116,12 @@ const Admin = () => {
   const [promoBannerMaxInput, setPromoBannerMaxInput] = useState<string>('2');
   const [promoBannerClickToMenu, setPromoBannerClickToMenu] = useState<boolean>(true);
   const [promoBannerTargetUrl, setPromoBannerTargetUrl] = useState<string>('/menu');
+  const [promoBannerDiscountEnabled, setPromoBannerDiscountEnabled] = useState<boolean>(false);
+  const [promoBannerDiscountType, setPromoBannerDiscountType] = useState<PromoDiscountType>('percent');
+  const [promoBannerDiscountValue, setPromoBannerDiscountValue] = useState<number>(0);
+  const [promoBannerDiscountInput, setPromoBannerDiscountInput] = useState<string>('');
+  const [promoBannerDiscountInputCurrency, setPromoBannerDiscountInputCurrency] =
+    useState<StoreCurrency>('USD');
   const [activePromoBannerId, setActivePromoBannerId] = useState<string>('');
   const [editingBannerId, setEditingBannerId] = useState<string | null>(null);
   const [hasUnsavedBannerDraft, setHasUnsavedBannerDraft] = useState<boolean>(false);
@@ -224,6 +233,15 @@ const Admin = () => {
         : 2;
     const loadedClickToMenu = store.settings?.promoBannerClickToMenu !== false;
     const loadedTargetUrl = store.settings?.promoBannerTargetUrl || '/menu';
+    const loadedDiscountEnabled = store.settings?.promoBannerDiscountEnabled === true;
+    const loadedDiscountType: PromoDiscountType =
+      store.settings?.promoBannerDiscountType === 'fixed' ? 'fixed' : 'percent';
+    const loadedDiscountValue =
+      typeof store.settings?.promoBannerDiscountValue === 'number' &&
+      Number.isFinite(store.settings.promoBannerDiscountValue) &&
+      store.settings.promoBannerDiscountValue > 0
+        ? store.settings.promoBannerDiscountValue
+        : 0;
 
     const rawSavedList = Array.isArray(store.settings?.savedPromoBanners)
       ? [...store.settings.savedPromoBanners]
@@ -241,6 +259,9 @@ const Admin = () => {
         maxPerDay: loadedMax,
         clickToMenu: loadedClickToMenu,
         targetUrl: loadedTargetUrl,
+        discountEnabled: loadedDiscountEnabled,
+        discountType: loadedDiscountType,
+        discountValue: loadedDiscountValue,
         createdAt: store.updatedAt || new Date().toISOString(),
       });
     }
@@ -264,6 +285,27 @@ const Admin = () => {
       setHasUnsavedBannerDraft(false);
     }
 
+    const formatDiscountInputFromBanner = (
+      dType: PromoDiscountType,
+      dVal: number,
+      rateToUse: number
+    ): string => {
+      if (!dVal || dVal <= 0) return '';
+      if (dType === 'percent') {
+        return String(Math.round(dVal));
+      }
+      if (promoBannerDiscountInputCurrency === 'LBP') {
+        return convertUsdStringToLbpInput(String(dVal), rateToUse);
+      }
+      const cleanUsd = Math.round(dVal * 100) / 100;
+      return Number.isInteger(cleanUsd) ? String(cleanUsd) : String(cleanUsd);
+    };
+
+    const effectiveRate =
+      typeof store.settings?.exchangeRate === 'number' && store.settings.exchangeRate > 0
+        ? store.settings.exchangeRate
+        : exchangeRate || DEFAULT_LBP_RATE;
+
     // Only overwrite the top Banner Editor fields if the admin does NOT have an unsaved photo/draft in the editor
     if (!hasUnsavedBannerDraftRef.current || options?.clearDraft) {
       const targetEditId =
@@ -278,6 +320,12 @@ const Admin = () => {
         null;
 
       if (editorBanner) {
+        const bDiscType: PromoDiscountType =
+          editorBanner.discountType === 'fixed' ? 'fixed' : 'percent';
+        const bDiscVal =
+          typeof editorBanner.discountValue === 'number' && editorBanner.discountValue > 0
+            ? editorBanner.discountValue
+            : 0;
         setEditingBannerId(editorBanner.id);
         setPromoBannerUrl(editorBanner.imgUrl);
         setPromoBannerDelaySeconds(editorBanner.delaySeconds);
@@ -286,6 +334,12 @@ const Admin = () => {
         setPromoBannerMaxInput(String(editorBanner.maxPerDay));
         setPromoBannerClickToMenu(editorBanner.clickToMenu);
         setPromoBannerTargetUrl(editorBanner.targetUrl || '/menu');
+        setPromoBannerDiscountEnabled(Boolean(editorBanner.discountEnabled && bDiscVal > 0));
+        setPromoBannerDiscountType(bDiscType);
+        setPromoBannerDiscountValue(bDiscVal);
+        setPromoBannerDiscountInput(
+          formatDiscountInputFromBanner(bDiscType, bDiscVal, effectiveRate)
+        );
         setBannerPhotoBadge(editorBanner.sizeBadge || null);
       } else {
         setEditingBannerId(null);
@@ -296,6 +350,12 @@ const Admin = () => {
         setPromoBannerMaxInput(String(loadedMax));
         setPromoBannerClickToMenu(loadedClickToMenu);
         setPromoBannerTargetUrl(loadedTargetUrl);
+        setPromoBannerDiscountEnabled(Boolean(loadedDiscountEnabled && loadedDiscountValue > 0));
+        setPromoBannerDiscountType(loadedDiscountType);
+        setPromoBannerDiscountValue(loadedDiscountValue);
+        setPromoBannerDiscountInput(
+          formatDiscountInputFromBanner(loadedDiscountType, loadedDiscountValue, effectiveRate)
+        );
         setBannerPhotoBadge(null);
       }
     }
@@ -951,6 +1011,12 @@ const Admin = () => {
             savedPromoBanners[0] ||
             null;
           if (fallback) {
+            const fDiscType: PromoDiscountType =
+              fallback.discountType === 'fixed' ? 'fixed' : 'percent';
+            const fDiscVal =
+              typeof fallback.discountValue === 'number' && fallback.discountValue > 0
+                ? fallback.discountValue
+                : 0;
             editingBannerIdRef.current = fallback.id;
             setEditingBannerId(fallback.id);
             setPromoBannerUrl(fallback.imgUrl);
@@ -960,11 +1026,26 @@ const Admin = () => {
             setPromoBannerMaxInput(String(fallback.maxPerDay));
             setPromoBannerClickToMenu(fallback.clickToMenu);
             setPromoBannerTargetUrl(fallback.targetUrl || '/menu');
+            setPromoBannerDiscountEnabled(Boolean(fallback.discountEnabled && fDiscVal > 0));
+            setPromoBannerDiscountType(fDiscType);
+            setPromoBannerDiscountValue(fDiscVal);
+            setPromoBannerDiscountInput(
+              fDiscVal > 0
+                ? fDiscType === 'percent'
+                  ? String(Math.round(fDiscVal))
+                  : promoBannerDiscountInputCurrency === 'LBP'
+                  ? convertUsdStringToLbpInput(String(fDiscVal), exchangeRate)
+                  : String(fDiscVal)
+                : ''
+            );
             setBannerPhotoBadge(fallback.sizeBadge || null);
           } else {
             editingBannerIdRef.current = null;
             setEditingBannerId(null);
             setPromoBannerUrl('');
+            setPromoBannerDiscountEnabled(false);
+            setPromoBannerDiscountValue(0);
+            setPromoBannerDiscountInput('');
           }
           setStatusNotice('✓ Unsaved banner draft removed from editor.');
           setDeleteConfirm(null);
@@ -1015,6 +1096,17 @@ const Admin = () => {
         const nextTarget = remainingActiveBanner
           ? remainingActiveBanner.targetUrl
           : promoBannerTargetUrl || '/menu';
+        const nextDiscEnabled = remainingActiveBanner
+          ? Boolean(remainingActiveBanner.discountEnabled && (remainingActiveBanner.discountValue || 0) > 0)
+          : false;
+        const nextDiscType: PromoDiscountType = remainingActiveBanner
+          ? remainingActiveBanner.discountType === 'fixed'
+            ? 'fixed'
+            : 'percent'
+          : 'percent';
+        const nextDiscVal = remainingActiveBanner
+          ? remainingActiveBanner.discountValue || 0
+          : 0;
 
         const nextEditorFallback =
           editingBannerId && targetBanner && editingBannerId !== targetBanner.id
@@ -1032,6 +1124,9 @@ const Admin = () => {
           promoBannerMaxPerDay: nextMax,
           promoBannerClickToMenu: nextClick,
           promoBannerTargetUrl: nextTarget,
+          promoBannerDiscountEnabled: nextDiscEnabled,
+          promoBannerDiscountType: nextDiscType,
+          promoBannerDiscountValue: nextDiscVal,
           activePromoBannerId: nextActiveId,
           savedPromoBanners: nextSavedList,
         });
@@ -1132,7 +1227,7 @@ const Admin = () => {
   };
 
   const handleDelayInputChange = (rawVal: string) => {
-    const digitsOnly = rawVal.replace(/[^0-9]/g, '');
+    const digitsOnly = rawVal.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
     if (digitsOnly === '') {
       setPromoBannerDelayInput('');
       return;
@@ -1143,7 +1238,7 @@ const Admin = () => {
   };
 
   const handleMaxPerDayInputChange = (rawVal: string) => {
-    const digitsOnly = rawVal.replace(/[^0-9]/g, '');
+    const digitsOnly = rawVal.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
     if (digitsOnly === '') {
       setPromoBannerMaxInput('');
       return;
@@ -1151,6 +1246,88 @@ const Admin = () => {
     const normalized = String(Math.min(20, parseInt(digitsOnly, 10)));
     setPromoBannerMaxInput(normalized);
     setPromoBannerMaxPerDay(Number(normalized));
+  };
+
+  // Zero-glitch number input handler for Promo Banner Discount (% or $ / L.L.)
+  // Strips any leading zeros immediately so deleting and typing 50 always shows "50" (never "050")
+  const handlePromoDiscountInputChange = (rawVal: string) => {
+    const rate = exchangeRate || DEFAULT_LBP_RATE;
+    if (promoBannerDiscountType === 'percent') {
+      const digitsOnly = rawVal.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
+      if (digitsOnly === '' || digitsOnly === '0') {
+        setPromoBannerDiscountInput('');
+        setPromoBannerDiscountValue(0);
+        return;
+      }
+      const parsed = Math.min(99, Math.max(1, parseInt(digitsOnly, 10)));
+      setPromoBannerDiscountInput(String(parsed));
+      setPromoBannerDiscountValue(parsed);
+      return;
+    }
+
+    // Fixed amount ($ USD or L.L.)
+    if (promoBannerDiscountInputCurrency === 'LBP') {
+      const digitsOnly = rawVal.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
+      if (digitsOnly === '' || digitsOnly === '0') {
+        setPromoBannerDiscountInput('');
+        setPromoBannerDiscountValue(0);
+        return;
+      }
+      setPromoBannerDiscountInput(digitsOnly);
+      const usdStr = convertLbpInputToUsdString(digitsOnly, rate);
+      const usdVal = parseFloat(usdStr);
+      setPromoBannerDiscountValue(Number.isFinite(usdVal) && usdVal > 0 ? usdVal : 0);
+      return;
+    }
+
+    // USD mode: allow digits and at most one decimal point, stripping leading zeros before integer digits
+    let cleaned = rawVal.replace(/[^0-9.]/g, '');
+    const dotParts = cleaned.split('.');
+    if (dotParts.length > 2) {
+      cleaned = `${dotParts[0]}.${dotParts.slice(1).join('')}`;
+    }
+    if (cleaned.startsWith('.')) {
+      cleaned = `0${cleaned}`;
+    } else {
+      cleaned = cleaned.replace(/^0+(?=\d)/, '');
+    }
+    if (cleaned === '' || cleaned === '0') {
+      setPromoBannerDiscountInput('');
+      setPromoBannerDiscountValue(0);
+      return;
+    }
+    setPromoBannerDiscountInput(cleaned);
+    const parsedUsd = parseFloat(cleaned);
+    setPromoBannerDiscountValue(
+      Number.isFinite(parsedUsd) && parsedUsd > 0 ? Math.round(parsedUsd * 100) / 100 : 0
+    );
+  };
+
+  const handleSwitchPromoDiscountType = (nextType: PromoDiscountType) => {
+    if (nextType === promoBannerDiscountType) return;
+    setPromoBannerDiscountType(nextType);
+    setPromoBannerDiscountValue(0);
+    setPromoBannerDiscountInput('');
+  };
+
+  const handleSwitchPromoDiscountInputCurrency = (nextCurr: StoreCurrency) => {
+    if (nextCurr === promoBannerDiscountInputCurrency) return;
+    const rate = exchangeRate || DEFAULT_LBP_RATE;
+    if (promoBannerDiscountValue > 0) {
+      if (nextCurr === 'LBP') {
+        setPromoBannerDiscountInput(
+          convertUsdStringToLbpInput(String(promoBannerDiscountValue), rate)
+        );
+      } else {
+        const cleanUsd = Math.round(promoBannerDiscountValue * 100) / 100;
+        setPromoBannerDiscountInput(
+          Number.isInteger(cleanUsd) ? String(cleanUsd) : String(cleanUsd)
+        );
+      }
+    } else {
+      setPromoBannerDiscountInput('');
+    }
+    setPromoBannerDiscountInputCurrency(nextCurr);
   };
 
   // Master Active / Hidden Switch at Top of Promo Banner Card (Solely turns the live website pop-up banner feature ON or OFF)
@@ -1181,6 +1358,15 @@ const Admin = () => {
         promoBannerTargetUrl: currentOnBanner
           ? currentOnBanner.targetUrl || '/menu'
           : promoBannerTargetUrl || '/menu',
+        promoBannerDiscountEnabled: currentOnBanner
+          ? Boolean(currentOnBanner.discountEnabled && (currentOnBanner.discountValue || 0) > 0)
+          : Boolean(promoBannerDiscountEnabled && promoBannerDiscountValue > 0),
+        promoBannerDiscountType: currentOnBanner
+          ? currentOnBanner.discountType || 'percent'
+          : promoBannerDiscountType,
+        promoBannerDiscountValue: currentOnBanner
+          ? currentOnBanner.discountValue || 0
+          : promoBannerDiscountValue,
         activePromoBannerId: currentOnBanner ? currentOnBanner.id : '',
         savedPromoBanners,
       });
@@ -1190,7 +1376,7 @@ const Admin = () => {
           ? currentOnBanner
             ? '✓ Promo Banner master switch set to Active (the ON banner in Save Banners is now live on the website).'
             : '✓ Promo Banner master switch set to Active. Toggle a banner ON in Save Banners (or Save Banner below) to display it on the website.'
-          : '✓ Promo Banner master switch set to Hidden (no banner will appear on the live website).'
+          : '✓ Promo Banner master switch set to Hidden (no banner or promo discount will appear on the live website).'
       );
     } catch (err: any) {
       console.error('Failed to toggle master promo banner status:', err);
@@ -1223,6 +1409,18 @@ const Admin = () => {
       );
       const cleanTarget = promoBannerTargetUrl.trim() || '/menu';
 
+      const finalDiscVal =
+        promoBannerDiscountEnabled &&
+        Number.isFinite(promoBannerDiscountValue) &&
+        promoBannerDiscountValue > 0
+          ? promoBannerDiscountType === 'percent'
+            ? Math.min(99, Math.max(1, Math.round(promoBannerDiscountValue)))
+            : Math.round(promoBannerDiscountValue * 100) / 100
+          : 0;
+      const finalDiscEnabled = Boolean(promoBannerDiscountEnabled && finalDiscVal > 0);
+      const finalDiscType: PromoDiscountType =
+        promoBannerDiscountType === 'fixed' ? 'fixed' : 'percent';
+
       let nextSavedList = [...savedPromoBanners];
       let savedBannerId = editingBannerId || '';
       let nextActiveId = activePromoBannerId;
@@ -1240,6 +1438,9 @@ const Admin = () => {
           maxPerDay: clampedMax,
           clickToMenu: promoBannerClickToMenu,
           targetUrl: cleanTarget,
+          discountEnabled: finalDiscEnabled,
+          discountType: finalDiscType,
+          discountValue: finalDiscVal,
           label: getReadableDestinationLabel(cleanTarget),
           sizeBadge: bannerPhotoBadge || nextSavedList[existingIdx].sizeBadge,
         };
@@ -1271,6 +1472,9 @@ const Admin = () => {
           maxPerDay: clampedMax,
           clickToMenu: promoBannerClickToMenu,
           targetUrl: cleanTarget,
+          discountEnabled: finalDiscEnabled,
+          discountType: finalDiscType,
+          discountValue: finalDiscVal,
           sizeBadge: bannerPhotoBadge || undefined,
           createdAt: new Date().toISOString(),
         };
@@ -1306,6 +1510,15 @@ const Admin = () => {
         promoBannerTargetUrl: activeBannerInList
           ? activeBannerInList.targetUrl || '/menu'
           : cleanTarget,
+        promoBannerDiscountEnabled: activeBannerInList
+          ? Boolean(activeBannerInList.discountEnabled && (activeBannerInList.discountValue || 0) > 0)
+          : false,
+        promoBannerDiscountType: activeBannerInList
+          ? activeBannerInList.discountType || 'percent'
+          : finalDiscType,
+        promoBannerDiscountValue: activeBannerInList
+          ? activeBannerInList.discountValue || 0
+          : 0,
         activePromoBannerId: activeBannerInList ? activeBannerInList.id : '',
         savedPromoBanners: nextSavedList,
       });
@@ -1314,14 +1527,22 @@ const Admin = () => {
         clearDraft: true,
         syncEditorBannerId: savedBannerId,
       });
+      const discSummary = finalDiscEnabled
+        ? ` · ${formatDiscountBadgeText(
+            finalDiscType,
+            finalDiscVal,
+            storeCurrency,
+            exchangeRate || DEFAULT_LBP_RATE
+          )}`
+        : '';
       setStatusNotice(
         existingIdx >= 0
           ? `✓ Banner updated in Save Banners (${clampedDelay}s delay · ${
               clampedMax === 0 ? 'every visit' : `${clampedMax}x/day`
-            } · ${getReadableDestinationLabel(cleanTarget)}).`
+            } · ${getReadableDestinationLabel(cleanTarget)}${discSummary}).`
           : `✓ Banner saved to Save Banners (${clampedDelay}s delay · ${
               clampedMax === 0 ? 'every visit' : `${clampedMax}x/day`
-            } · ${getReadableDestinationLabel(cleanTarget)}).`
+            } · ${getReadableDestinationLabel(cleanTarget)}${discSummary}).`
       );
     } catch (err: any) {
       console.error('Failed to save promo banner:', err);
@@ -1336,6 +1557,9 @@ const Admin = () => {
     setSavingBannerSettings(true);
     try {
       const nextActiveId = turnOn ? banner.id : '';
+      const bannerHasDiscount = Boolean(
+        banner.discountEnabled && typeof banner.discountValue === 'number' && banner.discountValue > 0
+      );
       const updatedStore = await mutateR2StoreData('updateSettings', {
         currency: storeCurrency,
         exchangeRate: exchangeRate || DEFAULT_LBP_RATE,
@@ -1347,6 +1571,9 @@ const Admin = () => {
         promoBannerMaxPerDay: banner.maxPerDay,
         promoBannerClickToMenu: banner.clickToMenu,
         promoBannerTargetUrl: banner.targetUrl || '/menu',
+        promoBannerDiscountEnabled: turnOn ? bannerHasDiscount : false,
+        promoBannerDiscountType: banner.discountType === 'fixed' ? 'fixed' : 'percent',
+        promoBannerDiscountValue: turnOn && bannerHasDiscount ? banner.discountValue || 0 : 0,
         activePromoBannerId: nextActiveId,
         savedPromoBanners,
       });
@@ -1383,6 +1610,25 @@ const Admin = () => {
     setPromoBannerMaxInput(String(banner.maxPerDay));
     setPromoBannerClickToMenu(banner.clickToMenu);
     setPromoBannerTargetUrl(banner.targetUrl || '/menu');
+    const bDiscType: PromoDiscountType =
+      banner.discountType === 'fixed' ? 'fixed' : 'percent';
+    const bDiscVal =
+      typeof banner.discountValue === 'number' && banner.discountValue > 0
+        ? banner.discountValue
+        : 0;
+    setPromoBannerDiscountEnabled(Boolean(banner.discountEnabled && bDiscVal > 0));
+    setPromoBannerDiscountType(bDiscType);
+    setPromoBannerDiscountValue(bDiscVal);
+    const rate = exchangeRate || DEFAULT_LBP_RATE;
+    setPromoBannerDiscountInput(
+      bDiscVal > 0
+        ? bDiscType === 'percent'
+          ? String(Math.round(bDiscVal))
+          : promoBannerDiscountInputCurrency === 'LBP'
+          ? convertUsdStringToLbpInput(String(bDiscVal), rate)
+          : String(bDiscVal)
+        : ''
+    );
     setBannerPhotoBadge(banner.sizeBadge || null);
     setStatusNotice(
       `✓ Loaded banner (${getReadableDestinationLabel(banner.targetUrl)}) into editor above. Adjust settings and click Save Banner.`
@@ -1576,7 +1822,7 @@ const Admin = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background text-on-surface flex flex-col lg:flex-row">
+    <div className="min-h-[100dvh] bg-background text-on-surface flex flex-col lg:flex-row w-full max-w-[100vw] overflow-x-hidden">
       {/* Mobile Sidebar Drawer Backdrop */}
       {mobileSidebarOpen && (
         <div
@@ -1695,7 +1941,7 @@ const Admin = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 pb-24 lg:pb-10">
+      <div className="flex-1 flex flex-col min-w-0 max-w-full overflow-x-hidden pb-24 lg:pb-10">
         {/* Sticky Top App Bar (Optimized for iPhone/Android & Desktop) */}
         <header className="sticky top-0 z-30 h-16 lg:h-20 px-4 sm:px-6 lg:px-10 bg-background/95 backdrop-blur-md border-b border-outline-variant/30 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -1822,7 +2068,7 @@ const Admin = () => {
         </header>
 
         {/* Main Scrollable Viewport */}
-        <div className="flex-1 px-4 py-5 sm:px-6 lg:px-10 lg:py-8 max-w-[1400px] w-full mx-auto space-y-6 lg:space-y-8">
+        <div className="flex-1 px-4 py-5 sm:px-6 lg:px-10 lg:py-8 max-w-[1400px] w-full min-w-0 overflow-x-hidden mx-auto space-y-6 lg:space-y-8">
           {statusNotice && (
             <div className="px-4 py-3 rounded-xl bg-surface-container-low border border-primary/50 text-xs sm:text-sm text-on-surface flex justify-between items-center gap-2">
               <span>{statusNotice}</span>
@@ -2887,16 +3133,16 @@ const Admin = () => {
 
           {/* SETTINGS & ADMIN ACCESS MANAGER SECTION */}
           {activeSection === 'settings' && (
-            <div className="space-y-6">
+            <div className="space-y-6 min-w-0 max-w-full overflow-hidden">
               {/* 1. Homepage Promotional Banner Pop-Up Manager Card (First) */}
               <div
                 ref={promoBannerEditorRef}
-                className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-5 sm:p-6 space-y-5 scroll-mt-24"
+                className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-4 sm:p-6 space-y-5 scroll-mt-24 min-w-0 max-w-full overflow-hidden"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <AdminSvgIcon name="campaign" className="text-primary text-[22px]" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 min-w-0">
+                      <AdminSvgIcon name="campaign" className="text-primary text-[22px] shrink-0" />
                       <h2 className="text-base sm:text-lg font-semibold text-on-surface">
                         Homepage Promotional Banner Pop-Up
                       </h2>
@@ -2960,14 +3206,14 @@ const Admin = () => {
                 </div>
 
                 {/* Banner Preview & Upload / Replace / Delete Controls */}
-                <div className="grid md:grid-cols-12 gap-5 items-start pt-2 border-t border-outline-variant/30">
-                  <div className="md:col-span-5 flex flex-col items-center justify-center bg-surface-container border border-outline-variant/40 rounded-2xl p-4 min-h-[220px]">
+                <div className="grid md:grid-cols-12 gap-5 items-start pt-2 border-t border-outline-variant/30 min-w-0 max-w-full">
+                  <div className="md:col-span-5 min-w-0 max-w-full flex flex-col items-center justify-center bg-surface-container border border-outline-variant/40 rounded-2xl p-4 min-h-[220px] overflow-hidden">
                     {promoBannerUrl ? (
-                      <div className="w-full flex flex-col items-center gap-3">
+                      <div className="w-full min-w-0 flex flex-col items-center gap-3">
                         <img
                           src={promoBannerUrl}
                           alt="Promotional Banner Preview"
-                          className="max-h-[260px] w-auto object-contain rounded-xl border border-primary/30 shadow-lg"
+                          className="max-h-[260px] max-w-full w-auto object-contain rounded-xl border border-primary/30 shadow-lg"
                         />
                         <div className="flex flex-wrap items-center justify-center gap-2 w-full">
                           <button
@@ -3038,23 +3284,23 @@ const Admin = () => {
                       className="hidden"
                     />
                     {bannerPhotoBadge && (
-                      <div className="mt-2.5 text-[11px] font-mono text-primary text-center">
+                      <div className="mt-2.5 text-[11px] font-mono text-primary text-center break-words max-w-full">
                         {bannerPhotoBadge}
                       </div>
                     )}
                   </div>
 
-                  {/* Timing & Frequency Controls */}
-                  <div className="md:col-span-7 space-y-4">
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30">
+                  {/* Timing, Destination & Promotional Discount Controls */}
+                  <div className="md:col-span-7 min-w-0 max-w-full space-y-4">
+                    <div className="grid sm:grid-cols-2 gap-4 min-w-0">
+                      <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30 min-w-0">
                         <label className="block text-xs font-semibold text-on-surface mb-1">
                           Pop-Up Delay After Entering (Seconds)
                         </label>
                         <p className="text-[11px] text-on-surface-variant mb-2.5">
                           How many seconds after a visitor lands on the website before the banner pops up (0–60s).
                         </p>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
                           <input
                             type="text"
                             inputMode="numeric"
@@ -3073,14 +3319,14 @@ const Admin = () => {
                         </div>
                       </div>
 
-                      <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30">
+                      <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30 min-w-0">
                         <label className="block text-xs font-semibold text-on-surface mb-1">
                           Max Pop-Ups Per IP / Visitor Per Day
                         </label>
                         <p className="text-[11px] text-on-surface-variant mb-2.5">
                           How many times per day the same visitor IP sees the pop-up (set 0 for every visit).
                         </p>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
                           <input
                             type="text"
                             inputMode="numeric"
@@ -3095,16 +3341,16 @@ const Admin = () => {
                             }}
                             className="w-24 bg-surface-container-low border border-outline/40 rounded-xl px-3 py-2 text-base sm:text-sm text-on-surface font-mono tabular-nums focus:outline-none focus:border-primary"
                           />
-                          <span className="text-xs text-on-surface-variant font-mono">
+                          <span className="text-xs text-on-surface-variant font-mono truncate">
                             {promoBannerMaxPerDay === 0 ? 'unlimited / every visit' : 'times / day'}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30 space-y-3">
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
+                    <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30 space-y-3 min-w-0 max-w-full overflow-hidden">
+                      <div className="flex items-center justify-between gap-3 min-w-0">
+                        <div className="min-w-0">
                           <div className="text-xs font-semibold text-on-surface">
                             Tap Banner Image to Open Menu or Specific Dish
                           </div>
@@ -3126,9 +3372,9 @@ const Admin = () => {
                       </div>
 
                       {promoBannerClickToMenu && (
-                        <div className="pt-3 border-t border-outline-variant/20 space-y-2.5">
-                          <div>
-                            <div className="flex items-center justify-between mb-1.5">
+                        <div className="pt-3 border-t border-outline-variant/20 space-y-2.5 min-w-0 max-w-full">
+                          <div className="min-w-0 max-w-full">
+                            <div className="flex items-center justify-between gap-2 mb-1.5 min-w-0">
                               <label className="text-xs font-semibold text-on-surface">
                                 Destination Link (Auto-Generated for All Categories & Dishes)
                               </label>
@@ -3136,15 +3382,15 @@ const Admin = () => {
                                 <button
                                   type="button"
                                   onClick={() => setBannerDestSearch('')}
-                                  className="text-[11px] text-primary hover:underline font-medium"
+                                  className="text-[11px] text-primary hover:underline font-medium shrink-0"
                                 >
                                   Clear filter
                                 </button>
                               )}
                             </div>
 
-                            {/* Small search bar to quickly find any dish or category */}
-                            <div className="relative flex items-center mb-2">
+                            {/* Small search bar to quickly find any dish or category (text-base on mobile prevents iOS Safari auto-zoom) */}
+                            <div className="relative flex items-center mb-2 min-w-0 max-w-full">
                               <svg
                                 className="w-3.5 h-3.5 fill-current text-on-surface-variant absolute left-3 pointer-events-none shrink-0"
                                 viewBox="0 -960 960 960"
@@ -3157,14 +3403,14 @@ const Admin = () => {
                                 value={bannerDestSearch}
                                 onChange={(e) => setBannerDestSearch(e.target.value)}
                                 placeholder="Search category or dish (e.g. tawouk, burger, sub)..."
-                                className="w-full bg-surface-container-low border border-outline/40 rounded-xl pl-8 pr-8 py-1.5 text-xs text-on-surface placeholder-on-surface-variant/60 focus:outline-none focus:border-primary"
+                                className="w-full min-w-0 max-w-full bg-surface-container-low border border-outline/40 rounded-xl pl-8 pr-8 py-2 sm:py-1.5 text-base sm:text-xs text-on-surface placeholder-on-surface-variant/60 focus:outline-none focus:border-primary"
                               />
                               {bannerDestSearch && (
                                 <button
                                   type="button"
                                   onClick={() => setBannerDestSearch('')}
                                   aria-label="Clear destination search"
-                                  className="absolute right-2 text-on-surface-variant hover:text-primary p-0.5"
+                                  className="absolute right-2 text-on-surface-variant hover:text-primary p-1"
                                 >
                                   <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
                                     <path d="m256-214-42-42 224-224-224-224 42-42 224 224 224-224 42 42-224 224 224 224-42 42-224-224-224 224Z" />
@@ -3175,7 +3421,7 @@ const Admin = () => {
 
                             {/* If searching, display quick-select matches directly */}
                             {bannerDestSearch.trim() && (
-                              <div className="max-h-40 overflow-y-auto bg-surface-container-low border border-primary/30 rounded-xl p-1.5 mb-2 space-y-1 w-full max-w-full">
+                              <div className="max-h-40 overflow-y-auto overflow-x-hidden bg-surface-container-low border border-primary/30 rounded-xl p-1.5 mb-2 space-y-1 w-full min-w-0 max-w-full">
                                 {(() => {
                                   const q = bannerDestSearch.toLowerCase().trim();
                                   const matchedCats = categories.filter((c) =>
@@ -3208,7 +3454,7 @@ const Admin = () => {
                                               setPromoBannerTargetUrl(url);
                                               setBannerDestSearch('');
                                             }}
-                                            className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center gap-2 transition-colors min-w-0 ${
+                                            className={`w-full max-w-full text-left px-3 py-2 rounded-lg text-xs flex items-center gap-2 transition-colors min-w-0 overflow-hidden ${
                                               isChosen
                                                 ? 'bg-primary/20 text-primary font-bold'
                                                 : 'hover:bg-surface-container text-on-surface'
@@ -3217,7 +3463,7 @@ const Admin = () => {
                                             <span className="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-semibold text-primary uppercase shrink-0">
                                               Category
                                             </span>
-                                            <span className="truncate font-medium">{cat.name}</span>
+                                            <span className="truncate font-medium min-w-0">{cat.name}</span>
                                           </button>
                                         );
                                       })}
@@ -3239,7 +3485,7 @@ const Admin = () => {
                                               setPromoBannerTargetUrl(url);
                                               setBannerDestSearch('');
                                             }}
-                                            className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center gap-2 transition-colors min-w-0 ${
+                                            className={`w-full max-w-full text-left px-3 py-2 rounded-lg text-xs flex items-center gap-2 transition-colors min-w-0 overflow-hidden ${
                                               isChosen
                                                 ? 'bg-primary/20 text-primary font-bold'
                                                 : 'hover:bg-surface-container text-on-surface'
@@ -3260,64 +3506,66 @@ const Admin = () => {
                               </div>
                             )}
 
-                            <select
-                              value={promoBannerTargetUrl}
-                              onChange={(e) => setPromoBannerTargetUrl(e.target.value)}
-                              className="w-full bg-surface-container-low border border-outline/40 rounded-xl px-3 py-2 text-xs text-on-surface focus:outline-none focus:border-primary truncate"
-                            >
-                              <option value="/menu">Whole Menu (/menu)</option>
-                              {categories.length > 0 && (
-                                <optgroup label="Categories">
-                                  {categories
-                                    .filter((cat) =>
-                                      !bannerDestSearch.trim() ||
-                                      (cat.name || '')
-                                        .toLowerCase()
-                                        .includes(bannerDestSearch.toLowerCase().trim())
-                                    )
-                                    .map((cat) => {
-                                      const catSlug = sanitizeSlug(cat.name);
-                                      const url = `/menu/${catSlug}`;
-                                      return (
-                                        <option key={cat.id} value={url}>
-                                          Category: {cat.name}
-                                        </option>
-                                      );
-                                    })}
-                                </optgroup>
-                              )}
-                              {items.length > 0 && (
-                                <optgroup label="Dishes & Products">
-                                  {items
-                                    .filter((it) => {
-                                      if (!bannerDestSearch.trim()) return true;
-                                      const q = bannerDestSearch.toLowerCase().trim();
-                                      return (
-                                        (it.title || '').toLowerCase().includes(q) ||
-                                        (it.category || '').toLowerCase().includes(q)
-                                      );
-                                    })
-                                    .map((it) => {
-                                      const cat = categories.find(
-                                        (c) =>
-                                          c.name.toLowerCase() === (it.category || '').toLowerCase() ||
-                                          c.id.toLowerCase() === (it.category || '').toLowerCase()
-                                      );
-                                      const catSlug = cat ? sanitizeSlug(cat.name) : 'all';
-                                      const itSlug = sanitizeSlug(it.title);
-                                      const url = `/menu/${catSlug}/${itSlug}`;
-                                      return (
-                                        <option key={it.id} value={url}>
-                                          {it.title} ({it.category})
-                                        </option>
-                                      );
-                                    })}
-                                </optgroup>
-                              )}
-                            </select>
+                            <div className="min-w-0 w-full max-w-full overflow-hidden">
+                              <select
+                                value={promoBannerTargetUrl}
+                                onChange={(e) => setPromoBannerTargetUrl(e.target.value)}
+                                className="w-full min-w-0 max-w-full bg-surface-container-low border border-outline/40 rounded-xl px-3 py-2 text-base sm:text-xs text-on-surface focus:outline-none focus:border-primary truncate"
+                              >
+                                <option value="/menu">Whole Menu (/menu)</option>
+                                {categories.length > 0 && (
+                                  <optgroup label="Categories">
+                                    {categories
+                                      .filter((cat) =>
+                                        !bannerDestSearch.trim() ||
+                                        (cat.name || '')
+                                          .toLowerCase()
+                                          .includes(bannerDestSearch.toLowerCase().trim())
+                                      )
+                                      .map((cat) => {
+                                        const catSlug = sanitizeSlug(cat.name);
+                                        const url = `/menu/${catSlug}`;
+                                        return (
+                                          <option key={cat.id} value={url}>
+                                            Category: {cat.name}
+                                          </option>
+                                        );
+                                      })}
+                                  </optgroup>
+                                )}
+                                {items.length > 0 && (
+                                  <optgroup label="Dishes & Products">
+                                    {items
+                                      .filter((it) => {
+                                        if (!bannerDestSearch.trim()) return true;
+                                        const q = bannerDestSearch.toLowerCase().trim();
+                                        return (
+                                          (it.title || '').toLowerCase().includes(q) ||
+                                          (it.category || '').toLowerCase().includes(q)
+                                        );
+                                      })
+                                      .map((it) => {
+                                        const cat = categories.find(
+                                          (c) =>
+                                            c.name.toLowerCase() === (it.category || '').toLowerCase() ||
+                                            c.id.toLowerCase() === (it.category || '').toLowerCase()
+                                        );
+                                        const catSlug = cat ? sanitizeSlug(cat.name) : 'all';
+                                        const itSlug = sanitizeSlug(it.title);
+                                        const url = `/menu/${catSlug}/${itSlug}`;
+                                        return (
+                                          <option key={it.id} value={url}>
+                                            {it.title} ({it.category})
+                                          </option>
+                                        );
+                                      })}
+                                  </optgroup>
+                                )}
+                              </select>
+                            </div>
                           </div>
 
-                          <div className="flex items-center gap-2 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 min-w-0 max-w-full">
                             <span className="text-[11px] text-on-surface-variant font-mono shrink-0">
                               Direct Path:
                             </span>
@@ -3326,19 +3574,22 @@ const Admin = () => {
                               value={promoBannerTargetUrl}
                               onChange={(e) => setPromoBannerTargetUrl(e.target.value)}
                               placeholder="/menu/sandwiches/tawouk"
-                              className="min-w-0 flex-1 bg-surface-container-low border border-outline/40 rounded-lg px-2.5 py-1.5 text-xs text-on-surface font-mono focus:outline-none focus:border-primary truncate"
+                              className="min-w-0 w-full max-w-full flex-1 bg-surface-container-low border border-outline/40 rounded-lg px-2.5 py-2 sm:py-1.5 text-base sm:text-xs text-on-surface font-mono focus:outline-none focus:border-primary truncate"
                             />
                           </div>
 
-                          <div className="flex items-center justify-between text-[11px] text-on-surface-variant bg-surface-container-lowest/70 px-3 py-2 rounded-lg border border-outline-variant/20 min-w-0">
-                            <span className="truncate min-w-0 mr-2">
-                              Preview: <strong className="text-primary font-mono font-medium">restocorano.com{promoBannerTargetUrl || '/menu'}</strong>
+                          <div className="flex items-center justify-between gap-2 text-[11px] text-on-surface-variant bg-surface-container-lowest/70 px-3 py-2 rounded-lg border border-outline-variant/20 min-w-0 max-w-full overflow-hidden">
+                            <span className="truncate min-w-0 flex-1">
+                              Preview:{' '}
+                              <strong className="text-primary font-mono font-medium">
+                                restocorano.com{promoBannerTargetUrl || '/menu'}
+                              </strong>
                             </span>
                             <Link
                               to={promoBannerTargetUrl || '/menu'}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-primary hover:underline font-semibold ml-2 shrink-0"
+                              className="text-primary hover:underline font-semibold shrink-0"
                             >
                               Test ↗
                             </Link>
@@ -3347,7 +3598,224 @@ const Admin = () => {
                       )}
                     </div>
 
-                    <div className="flex justify-end">
+                    {/* Promotional Discount on Selected Item / Category (% or $ / L.L.) */}
+                    <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30 space-y-3.5 min-w-0 max-w-full overflow-hidden">
+                      <div className="flex items-center justify-between gap-3 min-w-0">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-semibold text-on-surface">
+                              Discount on Selected Item or Category
+                            </span>
+                            {promoBannerDiscountEnabled && promoBannerDiscountValue > 0 && (
+                              <span className="bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs">
+                                {formatDiscountBadgeText(
+                                  promoBannerDiscountType,
+                                  promoBannerDiscountValue,
+                                  storeCurrency,
+                                  exchangeRate || DEFAULT_LBP_RATE
+                                )}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-on-surface-variant mt-0.5">
+                            Add a discount in % or $ / L.L. to the selected dish or category above. When this banner is ON & Active, the item shows a discount tag and slashed original price; turning the banner OFF restores original prices immediately.
+                          </div>
+                        </div>
+
+                        {/* Toggle Switch ON / OFF */}
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={promoBannerDiscountEnabled}
+                          onClick={() => setPromoBannerDiscountEnabled((prev) => !prev)}
+                          className="inline-flex items-center gap-2 py-1 px-1.5 rounded-lg cursor-pointer select-none shrink-0"
+                        >
+                          <span
+                            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors duration-200 ${
+                              promoBannerDiscountEnabled
+                                ? 'bg-primary border-primary'
+                                : 'bg-surface-container-lowest border-outline-variant/60'
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full transition-transform duration-200 shadow-sm ${
+                                promoBannerDiscountEnabled
+                                  ? 'translate-x-5 bg-on-primary'
+                                  : 'translate-x-1 bg-on-surface-variant'
+                              }`}
+                            />
+                          </span>
+                          <span
+                            className={`text-xs font-bold ${
+                              promoBannerDiscountEnabled ? 'text-primary' : 'text-on-surface-variant'
+                            }`}
+                          >
+                            {promoBannerDiscountEnabled ? 'ON' : 'OFF'}
+                          </span>
+                        </button>
+                      </div>
+
+                      {promoBannerDiscountEnabled && (
+                        <div className="pt-3 border-t border-outline-variant/20 space-y-3 min-w-0 max-w-full">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 min-w-0">
+                            {/* Discount Type Selector: % vs $ / L.L. */}
+                            <div className="grid grid-cols-2 bg-surface-container-low p-1 rounded-xl border border-outline-variant/40 w-full sm:w-auto">
+                              <button
+                                type="button"
+                                onClick={() => handleSwitchPromoDiscountType('percent')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
+                                  promoBannerDiscountType === 'percent'
+                                    ? 'bg-primary text-on-primary'
+                                    : 'text-on-surface-variant hover:text-on-surface'
+                                }`}
+                              >
+                                % Percentage
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSwitchPromoDiscountType('fixed')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
+                                  promoBannerDiscountType === 'fixed'
+                                    ? 'bg-primary text-on-primary'
+                                    : 'text-on-surface-variant hover:text-on-surface'
+                                }`}
+                              >
+                                $ / L.L. Amount
+                              </button>
+                            </div>
+
+                            {/* Currency Unit Switcher when Fixed Amount is chosen */}
+                            {promoBannerDiscountType === 'fixed' && (
+                              <div className="grid grid-cols-2 bg-surface-container-low p-1 rounded-xl border border-outline-variant/40 w-full sm:w-auto shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSwitchPromoDiscountInputCurrency('USD')}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-colors whitespace-nowrap ${
+                                    promoBannerDiscountInputCurrency === 'USD'
+                                      ? 'bg-primary text-on-primary'
+                                      : 'text-on-surface-variant hover:text-on-surface'
+                                  }`}
+                                >
+                                  $ (USD)
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSwitchPromoDiscountInputCurrency('LBP')}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-colors whitespace-nowrap ${
+                                    promoBannerDiscountInputCurrency === 'LBP'
+                                      ? 'bg-primary text-on-primary'
+                                      : 'text-on-surface-variant hover:text-on-surface'
+                                  }`}
+                                >
+                                  L.L. (89,000)
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Zero-Glitch Discount Number Box */}
+                          <div className="flex flex-wrap items-center gap-2.5 min-w-0">
+                            <div className="relative flex items-center w-full sm:w-48 min-w-0">
+                              <input
+                                type="text"
+                                inputMode={
+                                  promoBannerDiscountType === 'fixed' &&
+                                  promoBannerDiscountInputCurrency === 'USD'
+                                    ? 'decimal'
+                                    : 'numeric'
+                                }
+                                value={promoBannerDiscountInput}
+                                onChange={(e) => handlePromoDiscountInputChange(e.target.value)}
+                                placeholder={
+                                  promoBannerDiscountType === 'percent'
+                                    ? 'e.g. 50'
+                                    : promoBannerDiscountInputCurrency === 'LBP'
+                                    ? 'e.g. 445000'
+                                    : 'e.g. 5'
+                                }
+                                className="w-full min-w-0 bg-surface-container-low border border-outline/40 rounded-xl px-3.5 py-2 text-base sm:text-sm text-on-surface font-mono tabular-nums focus:outline-none focus:border-primary pr-14"
+                              />
+                              <span className="absolute right-3 text-xs font-mono font-bold text-primary pointer-events-none">
+                                {promoBannerDiscountType === 'percent'
+                                  ? '% OFF'
+                                  : promoBannerDiscountInputCurrency === 'LBP'
+                                  ? 'L.L.'
+                                  : '$'}
+                              </span>
+                            </div>
+
+                            <span className="text-[11px] text-on-surface-variant">
+                              Applies to:{' '}
+                              <strong className="text-primary">
+                                {getReadableDestinationLabel(promoBannerTargetUrl)}
+                              </strong>
+                            </span>
+                          </div>
+
+                          {/* Live Preview of Discount Tag & Slashed Price */}
+                          {promoBannerDiscountValue > 0 && (
+                            <div className="bg-surface-container-lowest/80 border border-outline-variant/30 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs min-w-0">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-[11px] text-on-surface-variant shrink-0">
+                                  Live Tag:
+                                </span>
+                                <span className="bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs shrink-0">
+                                  {formatDiscountBadgeText(
+                                    promoBannerDiscountType,
+                                    promoBannerDiscountValue,
+                                    storeCurrency,
+                                    exchangeRate || DEFAULT_LBP_RATE
+                                  )}
+                                </span>
+                              </div>
+                              {(() => {
+                                const rate = exchangeRate || DEFAULT_LBP_RATE;
+                                const cleanTarget = (promoBannerTargetUrl || '/menu').trim();
+                                const parts = cleanTarget.replace(/^\/+/, '').split('/').filter(Boolean);
+                                let sampleItem: MenuItem | undefined;
+                                if (parts[0] === 'menu' && parts.length >= 3) {
+                                  sampleItem = items.find(
+                                    (it) => sanitizeSlug(it.title) === parts[2]
+                                  );
+                                } else if (parts[0] === 'menu' && parts.length === 2) {
+                                  const cat = categories.find(
+                                    (c) => sanitizeSlug(c.name) === parts[1]
+                                  );
+                                  sampleItem = items.find(
+                                    (it) =>
+                                      cat &&
+                                      (it.category || '').toLowerCase() === cat.name.toLowerCase()
+                                  );
+                                } else {
+                                  sampleItem = items[0];
+                                }
+                                const origPrice = sampleItem ? sampleItem.price : '10';
+                                const origFmt = formatStorePrice(origPrice, storeCurrency, rate);
+                                const discUsd = computeDiscountedUsdPriceString(
+                                  origPrice,
+                                  promoBannerDiscountType,
+                                  promoBannerDiscountValue
+                                );
+                                const discFmt = formatStorePrice(discUsd, storeCurrency, rate);
+                                return (
+                                  <div className="flex items-center gap-2 font-mono text-[11px] min-w-0">
+                                    <span className="text-on-surface-variant truncate max-w-[130px]">
+                                      {sampleItem ? sampleItem.title : 'Example'}:
+                                    </span>
+                                    <span className="line-through text-on-surface-variant/75">
+                                      {origFmt}
+                                    </span>
+                                    <span className="text-primary font-bold">{discFmt}</span>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end min-w-0">
                       <button
                         type="button"
                         disabled={savingBannerSettings || uploadingBannerPhoto}
@@ -3361,9 +3829,9 @@ const Admin = () => {
                 </div>
 
                 {/* Save Banners History Library (Up to 15 Saved Banners) */}
-                <div className="pt-5 border-t border-outline-variant/30 space-y-3.5">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
+                <div className="pt-5 border-t border-outline-variant/30 space-y-3.5 min-w-0 max-w-full overflow-hidden">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-w-0">
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="text-sm font-semibold text-on-surface">
                           Save Banners
@@ -3383,18 +3851,23 @@ const Admin = () => {
                       No saved banners yet. Upload a banner above and click Save Banner to store up to 15 reusable banners here.
                     </div>
                   ) : (
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 min-w-0 max-w-full">
                       {savedPromoBanners.map((banner, idx) => {
                         const isBannerOn = activePromoBannerId === banner.id;
                         const isCurrentlyLive = promoBannerEnabled && isBannerOn;
                         const isSelectedInEditor =
                           !hasUnsavedBannerDraft && editingBannerId === banner.id;
                         const destLabel = getReadableDestinationLabel(banner.targetUrl);
+                        const hasBannerDiscount = Boolean(
+                          banner.discountEnabled &&
+                            typeof banner.discountValue === 'number' &&
+                            banner.discountValue > 0
+                        );
 
                         return (
                           <div
                             key={banner.id}
-                            className={`rounded-xl p-3 border transition-all flex flex-col justify-between gap-3 ${
+                            className={`rounded-xl p-3 border transition-all flex flex-col justify-between gap-3 min-w-0 max-w-full overflow-hidden ${
                               isBannerOn
                                 ? 'bg-primary/10 border-primary/60 shadow-md'
                                 : isSelectedInEditor
@@ -3410,7 +3883,7 @@ const Admin = () => {
                                 className="w-16 h-16 rounded-lg object-cover border border-outline-variant/40 bg-surface-container-low shrink-0 cursor-pointer"
                               />
                               <div className="min-w-0 flex-1 space-y-1">
-                                <div className="flex items-center justify-between gap-1.5">
+                                <div className="flex items-center justify-between gap-1.5 min-w-0">
                                   <div className="flex items-center gap-1.5 min-w-0">
                                     <span className="text-xs font-bold text-on-surface truncate">
                                       Banner #{idx + 1}
@@ -3449,11 +3922,21 @@ const Admin = () => {
                                   <span className="bg-surface-container-low px-1.5 py-0.5 rounded border border-outline-variant/30">
                                     {banner.maxPerDay === 0 ? 'Every visit' : `${banner.maxPerDay}x/day`}
                                   </span>
+                                  {hasBannerDiscount && (
+                                    <span className="bg-error text-on-error font-sans font-bold px-1.5 py-0.5 rounded-full uppercase">
+                                      {formatDiscountBadgeText(
+                                        banner.discountType === 'fixed' ? 'fixed' : 'percent',
+                                        banner.discountValue || 0,
+                                        storeCurrency,
+                                        exchangeRate || DEFAULT_LBP_RATE
+                                      )}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between gap-2 pt-2 border-t border-outline-variant/25">
+                            <div className="flex items-center justify-between gap-2 pt-2 border-t border-outline-variant/25 min-w-0">
                               {/* Solely ON / OFF Toggle Switch for this Banner */}
                               <button
                                 type="button"
@@ -3524,9 +4007,9 @@ const Admin = () => {
               </div>
 
               {/* 2. Store Currency Card (Second) */}
-              <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-5 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
+              <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-4 sm:p-6 min-w-0 max-w-full overflow-hidden">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0">
+                  <div className="min-w-0">
                     <h2 className="text-base sm:text-lg font-semibold text-on-surface">
                       Menu Currency ($ / L.L.)
                     </h2>
@@ -3564,9 +4047,9 @@ const Admin = () => {
               </div>
 
               {/* 3. Admin Access Manager Card (Third) */}
-              <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-5 sm:p-6">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                  <div>
+              <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-4 sm:p-6 min-w-0 max-w-full overflow-hidden">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 min-w-0">
+                  <div className="min-w-0">
                     <h2 className="text-base sm:text-lg font-semibold text-on-surface">
                       Admin Access Manager (Authorized Gmails)
                     </h2>
@@ -3577,7 +4060,7 @@ const Admin = () => {
 
                   <form
                     onSubmit={handleAddAdminEmail}
-                    className="flex flex-col sm:flex-row gap-2.5 shrink-0"
+                    className="flex flex-col sm:flex-row gap-2.5 shrink-0 min-w-0 w-full sm:w-auto"
                   >
                     <input
                       type="email"
@@ -3585,7 +4068,7 @@ const Admin = () => {
                       value={newAdminEmail}
                       onChange={(e) => setNewAdminEmail(e.target.value)}
                       placeholder="newadmin@gmail.com"
-                      className="bg-surface-container border border-outline/40 rounded-xl px-3.5 py-2.5 text-base sm:text-sm text-on-surface min-w-[240px] focus:outline-none focus:border-primary"
+                      className="bg-surface-container border border-outline/40 rounded-xl px-3.5 py-2.5 text-base sm:text-sm text-on-surface w-full sm:w-auto sm:min-w-[240px] min-w-0 max-w-full focus:outline-none focus:border-primary"
                     />
                     <button
                       type="submit"
@@ -3600,17 +4083,17 @@ const Admin = () => {
                   <div className="mt-3 text-xs text-primary font-medium">{adminStatusMsg}</div>
                 )}
 
-                <div className="mt-5 pt-5 border-t border-outline-variant/30 flex flex-wrap items-center gap-2.5 text-xs">
+                <div className="mt-5 pt-5 border-t border-outline-variant/30 flex flex-wrap items-center gap-2.5 text-xs min-w-0">
                   {ROOT_ADMIN_EMAILS.map((rootEmail) => (
                     <div
                       key={rootEmail}
-                      className="bg-surface-container px-3.5 py-2 rounded-xl border border-primary/50 flex items-center gap-2"
+                      className="bg-surface-container px-3.5 py-2 rounded-xl border border-primary/50 flex items-center gap-2 min-w-0 max-w-full"
                     >
-                      <span className="font-mono text-on-surface font-semibold">{rootEmail}</span>
-                      <span aria-hidden="true" className="text-on-surface-variant">
+                      <span className="font-mono text-on-surface font-semibold truncate">{rootEmail}</span>
+                      <span aria-hidden="true" className="text-on-surface-variant shrink-0">
                         ·
                       </span>
-                      <span className="text-primary font-semibold">Root Admin</span>
+                      <span className="text-primary font-semibold shrink-0">Root Admin</span>
                     </div>
                   ))}
 
@@ -3619,10 +4102,10 @@ const Admin = () => {
                     .map((adminDoc) => (
                       <div
                         key={adminDoc.id}
-                        className="bg-surface-container px-3.5 py-2 rounded-xl border border-outline-variant/40 flex items-center gap-2"
+                        className="bg-surface-container px-3.5 py-2 rounded-xl border border-outline-variant/40 flex items-center gap-2 min-w-0 max-w-full"
                       >
-                        <span className="font-mono text-on-surface">{adminDoc.email}</span>
-                        <span aria-hidden="true" className="text-on-surface-variant">
+                        <span className="font-mono text-on-surface truncate">{adminDoc.email}</span>
+                        <span aria-hidden="true" className="text-on-surface-variant shrink-0">
                           ·
                         </span>
                         <button
@@ -3634,7 +4117,7 @@ const Admin = () => {
                               label: adminDoc.email,
                             })
                           }
-                          className="text-error hover:underline font-semibold"
+                          className="text-error hover:underline font-semibold shrink-0"
                         >
                           Remove
                         </button>

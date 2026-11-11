@@ -213,7 +213,7 @@
       "addons": [
         "Make it combo (Fries & Drink) $2.81"
       ],
-      "isNew": true,
+      "isNew": false,
       "order": 1,
       "title": "Truffle Burger",
       "img": "https://images.restocorano.com/items/burgers-truffle-burger-truffle-burger.webp",

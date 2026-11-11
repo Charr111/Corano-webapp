@@ -196,6 +196,15 @@ function normalizeStoreData(raw: any): any {
         typeof raw.settings?.promoBannerTargetUrl === 'string' && raw.settings.promoBannerTargetUrl.trim().length > 0
           ? raw.settings.promoBannerTargetUrl.trim()
           : '/menu',
+      promoBannerDiscountEnabled: raw.settings?.promoBannerDiscountEnabled === true,
+      promoBannerDiscountType:
+        raw.settings?.promoBannerDiscountType === 'fixed' ? 'fixed' : 'percent',
+      promoBannerDiscountValue:
+        typeof raw.settings?.promoBannerDiscountValue === 'number' &&
+        Number.isFinite(raw.settings.promoBannerDiscountValue) &&
+        raw.settings.promoBannerDiscountValue >= 0
+          ? Math.round(raw.settings.promoBannerDiscountValue * 100) / 100
+          : 0,
       activePromoBannerId:
         typeof raw.settings?.activePromoBannerId === 'string'
           ? raw.settings.activePromoBannerId.trim()
@@ -221,6 +230,14 @@ function normalizeStoreData(raw: any): any {
                 typeof b.targetUrl === 'string' && b.targetUrl.trim().length > 0
                   ? b.targetUrl.trim()
                   : '/menu',
+              discountEnabled: b.discountEnabled === true,
+              discountType: b.discountType === 'fixed' ? 'fixed' : 'percent',
+              discountValue:
+                typeof b.discountValue === 'number' &&
+                Number.isFinite(b.discountValue) &&
+                b.discountValue >= 0
+                  ? Math.round(b.discountValue * 100) / 100
+                  : 0,
               sizeBadge: typeof b.sizeBadge === 'string' ? stripHtmlTags(b.sizeBadge).slice(0, 60) : '',
               createdAt:
                 typeof b.createdAt === 'string' && b.createdAt.trim()
@@ -230,7 +247,14 @@ function normalizeStoreData(raw: any): any {
         : [],
     },
     categories: Array.isArray(raw.categories) ? raw.categories : fallback.categories || [],
-    items: Array.isArray(raw.items) ? raw.items : fallback.items || [],
+    items: (Array.isArray(raw.items) ? raw.items : fallback.items || []).map((it: any) => {
+      const idLower = String(it?.id || '').toLowerCase().trim();
+      const titleLower = String(it?.title || '').toLowerCase().trim();
+      if (idLower === 'truffle-burger' || titleLower === 'truffle burger') {
+        return { ...it, isNew: false };
+      }
+      return it;
+    }),
     reviews: Array.isArray(raw.reviews) ? raw.reviews : fallback.reviews || [],
     removedAdmins: Array.isArray(raw.removedAdmins) ? raw.removedAdmins : [],
     admins: (() => {
@@ -266,7 +290,7 @@ function sanitizePublicStoreData(storeData: any): any {
 
 let cachedEdgeStoreData: any = null;
 let cachedEdgeStoreDataAt = 0;
-const EDGE_STORE_CACHE_TTL_MS = 30_000;
+const EDGE_STORE_CACHE_TTL_MS = 5_000;
 
 async function readStoreDataFromEnv(env: any, forceFresh = false): Promise<any> {
   if (
@@ -854,6 +878,24 @@ export const onRequestPost = async (context: any) => {
         typeof body.promoBannerTargetUrl === 'string' && body.promoBannerTargetUrl.trim().length > 0
           ? body.promoBannerTargetUrl.trim()
           : storeData.settings?.promoBannerTargetUrl || '/menu';
+      const promoBannerDiscountEnabled =
+        typeof body.promoBannerDiscountEnabled === 'boolean'
+          ? body.promoBannerDiscountEnabled
+          : storeData.settings?.promoBannerDiscountEnabled === true;
+      const promoBannerDiscountType =
+        body.promoBannerDiscountType === 'fixed' || body.promoBannerDiscountType === 'percent'
+          ? body.promoBannerDiscountType
+          : storeData.settings?.promoBannerDiscountType === 'fixed'
+          ? 'fixed'
+          : 'percent';
+      const promoBannerDiscountValue =
+        typeof body.promoBannerDiscountValue === 'number' &&
+        Number.isFinite(body.promoBannerDiscountValue) &&
+        body.promoBannerDiscountValue >= 0
+          ? Math.round(body.promoBannerDiscountValue * 100) / 100
+          : typeof storeData.settings?.promoBannerDiscountValue === 'number'
+          ? storeData.settings.promoBannerDiscountValue
+          : 0;
       const activePromoBannerId =
         typeof body.activePromoBannerId === 'string'
           ? body.activePromoBannerId.trim()
@@ -879,6 +921,14 @@ export const onRequestPost = async (context: any) => {
                 typeof b.targetUrl === 'string' && b.targetUrl.trim().length > 0
                   ? b.targetUrl.trim()
                   : '/menu',
+              discountEnabled: b.discountEnabled === true,
+              discountType: b.discountType === 'fixed' ? 'fixed' : 'percent',
+              discountValue:
+                typeof b.discountValue === 'number' &&
+                Number.isFinite(b.discountValue) &&
+                b.discountValue >= 0
+                  ? Math.round(b.discountValue * 100) / 100
+                  : 0,
               sizeBadge: typeof b.sizeBadge === 'string' ? stripHtmlTags(b.sizeBadge).slice(0, 60) : '',
               createdAt:
                 typeof b.createdAt === 'string' && b.createdAt.trim()
@@ -899,6 +949,9 @@ export const onRequestPost = async (context: any) => {
         promoBannerMaxPerDay,
         promoBannerClickToMenu,
         promoBannerTargetUrl,
+        promoBannerDiscountEnabled,
+        promoBannerDiscountType,
+        promoBannerDiscountValue,
         activePromoBannerId,
         savedPromoBanners,
       };

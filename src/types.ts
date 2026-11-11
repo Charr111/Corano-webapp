@@ -35,6 +35,8 @@ export type AdminUser = {
   createdAt?: string;
 };
 
+export type PromoDiscountType = 'percent' | 'fixed';
+
 export type SavedPromoBanner = {
   id: string;
   label?: string;
@@ -43,6 +45,9 @@ export type SavedPromoBanner = {
   maxPerDay: number;
   clickToMenu: boolean;
   targetUrl: string;
+  discountEnabled?: boolean;
+  discountType?: PromoDiscountType;
+  discountValue?: number;
   sizeBadge?: string;
   createdAt: string;
 };
@@ -58,6 +63,9 @@ export type StoreSettings = {
   promoBannerMaxPerDay?: number;
   promoBannerClickToMenu?: boolean;
   promoBannerTargetUrl?: string;
+  promoBannerDiscountEnabled?: boolean;
+  promoBannerDiscountType?: PromoDiscountType;
+  promoBannerDiscountValue?: number;
   activePromoBannerId?: string;
   savedPromoBanners?: SavedPromoBanner[];
 };

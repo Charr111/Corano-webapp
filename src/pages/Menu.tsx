@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { MenuItem, MenuCategory, StoreDataPayload } from '../types';
+import { MenuItem, MenuCategory, StoreDataPayload, StoreSettings } from '../types';
 import BackToTop from '../components/BackToTop';
-import { DEFAULT_LBP_RATE, formatStorePrice, StoreCurrency } from '../utils/currency';
+import {
+  DEFAULT_LBP_RATE,
+  formatStorePrice,
+  getActiveItemPromoDiscount,
+  StoreCurrency,
+} from '../utils/currency';
 import { fetchLiveStoreData, getCachedStoreData } from '../utils/r2DataClient';
 import { sanitizeSlug } from '../utils/imageCompressor';
 
@@ -39,6 +44,9 @@ const Menu = () => {
 
   const [categories, setCategories] = useState<MenuCategory[]>(sortedInitialCats);
   const [allItems, setAllItems] = useState<MenuItem[]>(initialStore.items || []);
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>(
+    initialStore.settings || { currency: 'USD', exchangeRate: DEFAULT_LBP_RATE }
+  );
   const [activeCategory, setActiveCategory] = useState<string>(
     initialCategoryFromSlug
       ? initialCategoryFromSlug.name.toLowerCase()
@@ -62,6 +70,9 @@ const Menu = () => {
     const cats = [...(store.categories || [])].sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
     setCategories(cats);
     setAllItems(store.items || []);
+    if (store.settings) {
+      setStoreSettings(store.settings);
+    }
     setStoreCurrency(store.settings?.currency === 'LBP' ? 'LBP' : 'USD');
     setExchangeRate(
       typeof store.settings?.exchangeRate === 'number' && store.settings.exchangeRate > 0
@@ -95,20 +106,40 @@ const Menu = () => {
 
   useEffect(() => {
     let mounted = true;
-    fetchLiveStoreData()
-      .then((liveStore) => {
-        if (!mounted) return;
-        applyStorePayload(liveStore);
-      })
-      .catch((err) => {
-        console.error('Error refreshing live R2 menu data:', err);
-      })
-      .finally(() => {
-        if (mounted) setLoadingCats(false);
-      });
+    const refreshFromR2 = () => {
+      fetchLiveStoreData()
+        .then((liveStore) => {
+          if (!mounted) return;
+          applyStorePayload(liveStore);
+        })
+        .catch((err) => {
+          console.error('Error refreshing live R2 menu data:', err);
+        })
+        .finally(() => {
+          if (mounted) setLoadingCats(false);
+        });
+    };
 
+    refreshFromR2();
+
+    const handleStoreEvent = (e: Event) => {
+      const custom = e as CustomEvent<StoreDataPayload>;
+      if (custom.detail && mounted) {
+        applyStorePayload(custom.detail);
+      }
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshFromR2();
+      }
+    };
+
+    window.addEventListener('corano-store-updated', handleStoreEvent);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
       mounted = false;
+      window.removeEventListener('corano-store-updated', handleStoreEvent);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
@@ -231,6 +262,17 @@ const Menu = () => {
     );
   }
 
+  const selectedPromoDiscount =
+    selectedItem && selectedItem.available !== false
+      ? getActiveItemPromoDiscount(
+          selectedItem,
+          categories,
+          storeSettings,
+          storeCurrency,
+          exchangeRate
+        )
+      : null;
+
   return (
     <div className="relative min-h-full py-8 px-4 sm:px-6 lg:px-8 bg-background">
       <div className="relative z-10 max-w-7xl mx-auto">
@@ -307,67 +349,101 @@ const Menu = () => {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
           <AnimatePresence mode="popLayout">
-            {activeItems.map((item) => (
-              <motion.div
-                layout
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-                key={item.id}
-                onClick={() => handleItemClick(item)}
-                className="bg-surface-container-low rounded-2xl overflow-hidden border border-outline-variant/20 cursor-pointer hover:border-primary/50 transition-colors flex md:flex-col"
-              >
-                <div className="w-32 h-32 md:w-full md:h-48 shrink-0 bg-surface-container relative">
-                  {item.available !== false && item.popular && (
-                    <div className="absolute top-3 left-3 bg-[#101010]/90 text-[#E4CD86] border border-[#E4CD86]/50 font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full z-10 shadow-md">
-                      ★ Popular
-                    </div>
-                  )}
-                  {item.available === false ? (
-                    <div className="absolute top-2 right-2 bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full z-10 shadow-md">
-                      Out of Stock
-                    </div>
-                  ) : item.isNew ? (
-                    <div className="absolute top-2 right-2 bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full z-10 shadow-md">
-                      New Item
-                    </div>
-                  ) : null}
-                  {item.img ? (
-                    <img 
-                      src={item.img} 
-                      alt={item.title} 
-                      className={`w-full h-full object-cover md:group-hover:scale-105 transition-transform duration-500 ${item.available === false ? 'opacity-50 grayscale-[40%]' : ''}`}
-                      loading={activeCategory === categories[0]?.name.toLowerCase() ? "eager" : "lazy"}
-                      fetchPriority={activeCategory === categories[0]?.name.toLowerCase() ? "high" : "auto"}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <svg className="w-10 h-10 fill-current text-outline-variant/50 shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
-                        <path d="M292-120v-334q-50-11-83-52t-33-98v-236h60v236q0 28 19 47t47 19q28 0 47-19t19-47v-236h60v236q0 57-33 98t-83 52v334h-60Zm364 0v-320H548v-284q0-69 48.5-112.5T716-880v760h-60Z" />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <div className="p-4 flex flex-col flex-grow justify-center">
-                  <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2">
-                    <h3 className="font-headline text-lg md:text-xl text-on-surface leading-tight mb-1 md:mb-0 pr-2">{item.title}</h3>
-                    <span className="font-bold text-primary whitespace-nowrap">
-                      {formatStorePrice(item.price, storeCurrency, exchangeRate)}
-                    </span>
+            {activeItems.map((item) => {
+              const itemPromoDiscount =
+                item.available !== false
+                  ? getActiveItemPromoDiscount(
+                      item,
+                      categories,
+                      storeSettings,
+                      storeCurrency,
+                      exchangeRate
+                    )
+                  : null;
+
+              return (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  key={item.id}
+                  onClick={() => handleItemClick(item)}
+                  className="bg-surface-container-low rounded-2xl overflow-hidden border border-outline-variant/20 cursor-pointer hover:border-primary/50 transition-colors flex md:flex-col"
+                >
+                  <div className="w-32 h-32 md:w-full md:h-48 shrink-0 bg-surface-container relative">
+                    {/* Left Image Discount Tag (Same styling as New Item badge, placed on top-left) */}
+                    {itemPromoDiscount && (
+                      <div className="absolute top-2 left-2 bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full z-10 shadow-md">
+                        {itemPromoDiscount.badgeText}
+                      </div>
+                    )}
+                    {item.available !== false && item.popular && (
+                      <div
+                        className={`absolute ${
+                          itemPromoDiscount ? 'bottom-2 left-2' : 'top-3 left-3'
+                        } bg-[#101010]/90 text-[#E4CD86] border border-[#E4CD86]/50 font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full z-10 shadow-md`}
+                      >
+                        ★ Popular
+                      </div>
+                    )}
+                    {item.available === false ? (
+                      <div className="absolute top-2 right-2 bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full z-10 shadow-md">
+                        Out of Stock
+                      </div>
+                    ) : item.isNew ? (
+                      <div className="absolute top-2 right-2 bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full z-10 shadow-md">
+                        New Item
+                      </div>
+                    ) : null}
+                    {item.img ? (
+                      <img 
+                        src={item.img} 
+                        alt={item.title} 
+                        className={`w-full h-full object-cover md:group-hover:scale-105 transition-transform duration-500 ${item.available === false ? 'opacity-50 grayscale-[40%]' : ''}`}
+                        loading={activeCategory === categories[0]?.name.toLowerCase() ? "eager" : "lazy"}
+                        fetchPriority={activeCategory === categories[0]?.name.toLowerCase() ? "high" : "auto"}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <svg className="w-10 h-10 fill-current text-outline-variant/50 shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+                          <path d="M292-120v-334q-50-11-83-52t-33-98v-236h60v236q0 28 19 47t47 19q28 0 47-19t19-47v-236h60v236q0 57-33 98t-83 52v334h-60Zm364 0v-320H548v-284q0-69 48.5-112.5T716-880v760h-60Z" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
-                  {item.available === false ? (
-                    <p className="text-xs text-error font-bold mt-1">
-                      Out of Stock
-                    </p>
-                  ) : (item.desc || (item.addons && item.addons.length > 0)) ? (
-                    <p className="text-sm text-primary italic font-semibold mt-1">
-                      View Ingredients
-                    </p>
-                  ) : null}
-                </div>
-              </motion.div>
-            ))}
+                  <div className="p-4 flex flex-col flex-grow justify-center min-w-0">
+                    <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2">
+                      <h3 className="font-headline text-lg md:text-xl text-on-surface leading-tight mb-1 md:mb-0 pr-2">{item.title}</h3>
+                      {itemPromoDiscount ? (
+                        <div className="flex flex-col md:items-end leading-tight shrink-0">
+                          <span className="text-xs text-on-surface-variant/80 line-through whitespace-nowrap">
+                            {itemPromoDiscount.originalFormatted}
+                          </span>
+                          <span className="font-bold text-primary whitespace-nowrap mt-0.5">
+                            {itemPromoDiscount.discountedFormatted}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="font-bold text-primary whitespace-nowrap">
+                          {formatStorePrice(item.price, storeCurrency, exchangeRate)}
+                        </span>
+                      )}
+                    </div>
+                    {item.available === false ? (
+                      <p className="text-xs text-error font-bold mt-1">
+                        Out of Stock
+                      </p>
+                    ) : (item.desc || (item.addons && item.addons.length > 0)) ? (
+                      <p className="text-sm text-primary italic font-semibold mt-1">
+                        View Ingredients
+                      </p>
+                    ) : null}
+                  </div>
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         </motion.div>
         
@@ -412,8 +488,17 @@ const Menu = () => {
                     </svg>
                   </div>
                 )}
+                {selectedPromoDiscount && (
+                  <div className="absolute top-3 left-3 bg-error text-on-error font-bold text-xs uppercase tracking-wider px-3 py-1 rounded-full z-10 shadow-md">
+                    {selectedPromoDiscount.badgeText}
+                  </div>
+                )}
                 {selectedItem.available !== false && selectedItem.popular && (
-                  <div className="absolute top-3 left-3 bg-[#101010]/90 text-[#E4CD86] border border-[#E4CD86]/50 font-bold text-xs uppercase tracking-wider px-3 py-1 rounded-full shadow-md">
+                  <div
+                    className={`absolute ${
+                      selectedPromoDiscount ? 'bottom-3 left-3' : 'top-3 left-3'
+                    } bg-[#101010]/90 text-[#E4CD86] border border-[#E4CD86]/50 font-bold text-xs uppercase tracking-wider px-3 py-1 rounded-full shadow-md`}
+                  >
                     ★ Popular
                   </div>
                 )}
@@ -428,11 +513,22 @@ const Menu = () => {
                 </button>
               </div>
               <div className="p-6 md:p-8 flex flex-col overflow-y-auto hide-scrollbar pb-safe">
-                <div className="flex justify-between items-start mb-4">
-                  <h2 className="font-headline text-2xl md:text-3xl text-on-surface pr-4">{selectedItem.title}</h2>
-                  <span className="text-2xl font-bold text-primary whitespace-nowrap">
-                    {formatStorePrice(selectedItem.price, storeCurrency, exchangeRate)}
-                  </span>
+                <div className="flex justify-between items-start gap-3 mb-4">
+                  <h2 className="font-headline text-2xl md:text-3xl text-on-surface pr-2">{selectedItem.title}</h2>
+                  {selectedPromoDiscount ? (
+                    <div className="flex flex-col items-end leading-tight shrink-0">
+                      <span className="text-sm md:text-base text-on-surface-variant/80 line-through whitespace-nowrap font-semibold">
+                        {selectedPromoDiscount.originalFormatted}
+                      </span>
+                      <span className="text-2xl font-bold text-primary whitespace-nowrap mt-0.5">
+                        {selectedPromoDiscount.discountedFormatted}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-2xl font-bold text-primary whitespace-nowrap">
+                      {formatStorePrice(selectedItem.price, storeCurrency, exchangeRate)}
+                    </span>
+                  )}
                 </div>
                 <p className="font-headline text-on-surface-variant leading-relaxed text-lg mb-4 whitespace-pre-wrap">
                   {selectedItem.desc}

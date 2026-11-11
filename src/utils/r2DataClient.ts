@@ -43,6 +43,15 @@ function normalizePayload(raw: any): StoreDataPayload {
         typeof raw.settings?.promoBannerTargetUrl === 'string' && raw.settings.promoBannerTargetUrl.trim().length > 0
           ? raw.settings.promoBannerTargetUrl.trim()
           : '/menu',
+      promoBannerDiscountEnabled: Boolean(raw.settings?.promoBannerDiscountEnabled),
+      promoBannerDiscountType:
+        raw.settings?.promoBannerDiscountType === 'fixed' ? 'fixed' : 'percent',
+      promoBannerDiscountValue:
+        typeof raw.settings?.promoBannerDiscountValue === 'number' &&
+        Number.isFinite(raw.settings.promoBannerDiscountValue) &&
+        raw.settings.promoBannerDiscountValue >= 0
+          ? Math.round(raw.settings.promoBannerDiscountValue * 100) / 100
+          : 0,
       activePromoBannerId:
         typeof raw.settings?.activePromoBannerId === 'string'
           ? raw.settings.activePromoBannerId.trim()
@@ -68,6 +77,14 @@ function normalizePayload(raw: any): StoreDataPayload {
                 typeof b.targetUrl === 'string' && b.targetUrl.trim().length > 0
                   ? b.targetUrl.trim()
                   : '/menu',
+              discountEnabled: Boolean(b.discountEnabled),
+              discountType: b.discountType === 'fixed' ? 'fixed' : 'percent',
+              discountValue:
+                typeof b.discountValue === 'number' &&
+                Number.isFinite(b.discountValue) &&
+                b.discountValue >= 0
+                  ? Math.round(b.discountValue * 100) / 100
+                  : 0,
               sizeBadge: typeof b.sizeBadge === 'string' ? b.sizeBadge.trim().slice(0, 60) : '',
               createdAt:
                 typeof b.createdAt === 'string' && b.createdAt.trim()
@@ -77,7 +94,14 @@ function normalizePayload(raw: any): StoreDataPayload {
         : [],
     },
     categories: Array.isArray(raw.categories) ? raw.categories : seed.categories || [],
-    items: Array.isArray(raw.items) ? raw.items : seed.items || [],
+    items: (Array.isArray(raw.items) ? raw.items : seed.items || []).map((it: any) => {
+      const idLower = String(it?.id || '').toLowerCase().trim();
+      const titleLower = String(it?.title || '').toLowerCase().trim();
+      if (idLower === 'truffle-burger' || titleLower === 'truffle burger') {
+        return { ...it, isNew: false };
+      }
+      return it;
+    }),
     reviews: Array.isArray(raw.reviews) ? raw.reviews : seed.reviews || [],
     admins: Array.isArray(raw.admins) ? raw.admins : [],
     clientIpHash: typeof raw.clientIpHash === 'string' ? raw.clientIpHash : undefined,
@@ -124,7 +148,7 @@ export function saveCachedStoreData(data: StoreDataPayload): void {
 let inFlightPublicFetch: Promise<StoreDataPayload> | null = null;
 let lastPublicFetchAt = 0;
 let lastPublicPayload: StoreDataPayload | null = null;
-const PUBLIC_FETCH_DEDUPE_MS = 15000;
+const PUBLIC_FETCH_DEDUPE_MS = 2000;
 
 export async function fetchLiveStoreData(
   includeAdminAuth: boolean = false
