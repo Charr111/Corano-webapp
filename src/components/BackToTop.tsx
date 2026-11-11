@@ -14,7 +14,7 @@ const BackToTop = () => {
       }
     };
 
-    window.addEventListener('scroll', toggleVisibility);
+    window.addEventListener('scroll', toggleVisibility, { passive: true });
     // Initial check in case the page loads already scrolled
     toggleVisibility();
 
@@ -28,6 +28,14 @@ const BackToTop = () => {
     });
   };
 
+  const isIosMobile =
+    typeof navigator !== 'undefined' &&
+    (/iPhone|iPod|iPad/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+
+  const isAndroidMobile =
+    typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+
   return (
     <AnimatePresence>
       {isVisible && (
@@ -37,11 +45,21 @@ const BackToTop = () => {
           exit={{ opacity: 0, scale: 0.8 }}
           transition={{ duration: 0.2 }}
           onClick={scrollToTop}
-          // Placed cleanly above the Corano AI floating bubble on both mobile and desktop
-          className="fixed bottom-40 md:bottom-40 right-4 md:right-6 z-[45] p-3.5 bg-[#E4CD86] text-black rounded-full shadow-2xl hover:bg-[#E4CD86]/90 transition-colors active:scale-95 flex items-center justify-center"
+          // Placed on the left side at the same size & bottom clearance as the AI Waiter circle
+          className={`fixed ${
+            isIosMobile
+              ? 'bottom-[calc(5.35rem+env(safe-area-inset-bottom))] left-3'
+              : 'bottom-[calc(4.35rem+env(safe-area-inset-bottom))] left-2.5'
+          } sm:bottom-20 sm:left-6 z-[45] w-11 h-11 sm:w-13 sm:h-13 bg-[#E4CD86] text-black rounded-full shadow-2xl hover:bg-[#E4CD86]/90 transition-colors active:scale-95 flex items-center justify-center ${
+            isAndroidMobile ? 'scale-[0.95] origin-bottom-left' : ''
+          }`}
           aria-label="Back to top"
         >
-          <svg className="w-6 h-6 fill-current shrink-0" viewBox="0 -960 960 960" aria-hidden="true">
+          <svg
+            className="w-[21px] h-[21px] sm:w-[25px] sm:h-[25px] fill-current shrink-0"
+            viewBox="0 -960 960 960"
+            aria-hidden="true"
+          >
             <path d="M440-160v-487L216-423l-56-57 320-320 320 320-56 57-224-224v487h-80Z" />
           </svg>
         </motion.button>

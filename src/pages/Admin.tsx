@@ -34,6 +34,7 @@ import {
   getCachedStoreData,
   mutateR2StoreData,
 } from '../utils/r2DataClient';
+import AdminSvgIcon from '../components/AdminSvgIcon';
 
 export const ROOT_ADMIN_EMAILS = ['apolokor@gmail.com'];
 
@@ -1441,9 +1442,7 @@ const Admin = () => {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center p-6 bg-background text-center text-on-surface">
         <div className="bg-surface-container-low border border-outline-variant/40 p-8 rounded-3xl max-w-md w-full shadow-2xl">
-          <span className="material-symbols-outlined text-6xl text-primary mb-4">
-            admin_panel_settings
-          </span>
+          <AdminSvgIcon name="admin_panel_settings" className="text-6xl text-primary mb-4" />
           <h2 className="font-headline text-2xl font-bold mb-3">Corano Admin Access</h2>
           <p className="mb-8 text-sm text-on-surface-variant">
             Sign in with your authorized Admin Google account to manage products, categories, reviews, and store settings.
@@ -1606,7 +1605,7 @@ const Admin = () => {
               onClick={() => setMobileSidebarOpen(false)}
               className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center text-on-surface-variant hover:text-on-surface -mr-2"
             >
-              <span className="material-symbols-outlined">close</span>
+              <AdminSvgIcon name="close" className="text-[24px]" />
             </button>
           </div>
 
@@ -1651,13 +1650,12 @@ const Admin = () => {
                   }`}
                 >
                   <div className="flex items-center gap-3.5">
-                    <span
-                      className={`material-symbols-outlined text-[20px] ${
+                    <AdminSvgIcon
+                      name={navItem.icon}
+                      className={`text-[20px] ${
                         isActive ? 'text-primary' : 'text-primary/80'
                       }`}
-                    >
-                      {navItem.icon}
-                    </span>
+                    />
                     <span className="whitespace-nowrap">{navItem.label}</span>
                   </div>
 
@@ -1682,7 +1680,7 @@ const Admin = () => {
             to="/menu"
             className="flex items-center gap-3 text-xs text-on-surface-variant hover:text-primary transition-colors py-1"
           >
-            <span className="material-symbols-outlined text-[18px]">visibility</span>
+            <AdminSvgIcon name="visibility" className="text-[18px]" />
             <span>View Public Menu</span>
           </Link>
           <button
@@ -1690,7 +1688,7 @@ const Admin = () => {
             onClick={logout}
             className="w-full flex items-center gap-3 text-sm text-on-surface-variant hover:text-on-surface transition-colors pt-1"
           >
-            <span className="material-symbols-outlined text-[20px]">logout</span>
+            <AdminSvgIcon name="logout" className="text-[20px]" />
             <span>Logout</span>
           </button>
         </div>
@@ -1707,7 +1705,7 @@ const Admin = () => {
               aria-label="Open menu"
               className="lg:hidden min-w-[40px] min-h-[40px] rounded-xl bg-surface-container-low border border-outline-variant/40 flex items-center justify-center text-on-surface active:scale-95 transition-transform"
             >
-              <span className="material-symbols-outlined text-[20px]">menu</span>
+              <AdminSvgIcon name="menu" className="text-[20px]" />
             </button>
 
             <div className="min-w-0">
@@ -1725,9 +1723,10 @@ const Admin = () => {
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             {/* Desktop Search Input */}
             <div className="relative hidden md:block w-60 lg:w-72">
-              <span className="material-symbols-outlined text-[18px] text-on-surface-variant absolute left-3.5 top-1/2 -translate-y-1/2">
-                search
-              </span>
+              <AdminSvgIcon
+                name="search"
+                className="text-[18px] text-on-surface-variant absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+              />
               <input
                 type="text"
                 value={searchTerm}
@@ -1781,13 +1780,12 @@ const Admin = () => {
                 <div className="hidden xl:block text-left">
                   <div className="text-xs font-medium text-on-surface flex items-center gap-1 whitespace-nowrap">
                     <span>Admin (Main)</span>
-                    <span
-                      className={`material-symbols-outlined text-[14px] text-on-surface-variant transition-transform ${
+                    <AdminSvgIcon
+                      name="expand_more"
+                      className={`text-[14px] text-on-surface-variant transition-transform ${
                         showAdminMenu ? 'rotate-180' : ''
                       }`}
-                    >
-                      expand_more
-                    </span>
+                    />
                   </div>
                 </div>
               </button>
@@ -1813,7 +1811,7 @@ const Admin = () => {
                       }}
                       className="w-full px-4 py-2.5 text-left text-xs font-semibold text-error hover:bg-surface-container-high flex items-center gap-2.5 transition-colors cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-[18px]">logout</span>
+                      <AdminSvgIcon name="logout" className="text-[18px]" />
                       <span>Log out</span>
                     </button>
                   </div>
@@ -1861,7 +1859,7 @@ const Admin = () => {
                   onClick={openNewProductSheet}
                   className="bg-primary hover:bg-primary/90 active:scale-[0.98] text-on-primary font-bold px-4 py-3 sm:py-2.5 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all whitespace-nowrap shadow-md"
                 >
-                  <span className="material-symbols-outlined text-[18px]">add</span>
+                  <AdminSvgIcon name="add" className="text-[18px]" />
                   <span>Add Product</span>
                 </button>
                 <button
@@ -1869,7 +1867,7 @@ const Admin = () => {
                   onClick={openNewCategorySheet}
                   className="bg-surface-container-low hover:bg-surface-container active:scale-[0.98] text-primary border border-primary/60 font-semibold px-4 py-3 sm:py-2.5 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all whitespace-nowrap"
                 >
-                  <span className="material-symbols-outlined text-[18px]">add</span>
+                  <AdminSvgIcon name="add" className="text-[18px]" />
                   <span>Add Category</span>
                 </button>
               </div>
@@ -1880,9 +1878,10 @@ const Admin = () => {
           {(activeSection === 'dashboard' || activeSection === 'products') && (
             <div className="md:hidden">
               <div className="relative">
-                <span className="material-symbols-outlined text-[18px] text-on-surface-variant absolute left-3.5 top-1/2 -translate-y-1/2">
-                  search
-                </span>
+                <AdminSvgIcon
+                  name="search"
+                  className="text-[18px] text-on-surface-variant absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                />
                 <input
                   type="text"
                   value={searchTerm}
@@ -1896,7 +1895,7 @@ const Admin = () => {
                     onClick={() => setSearchTerm('')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface"
                   >
-                    <span className="material-symbols-outlined text-[18px]">close</span>
+                    <AdminSvgIcon name="close" className="text-[18px]" />
                   </button>
                 )}
               </div>
@@ -1941,9 +1940,10 @@ const Admin = () => {
                             : 'bg-surface-container-low border-outline-variant/40 text-on-surface hover:border-outline'
                         }`}
                       >
-                        <span className="material-symbols-outlined text-[19px] text-primary">
-                          {getCategoryIconName(cat.name)}
-                        </span>
+                        <AdminSvgIcon
+                          name={getCategoryIconName(cat.name)}
+                          className="text-[19px] text-primary"
+                        />
                         <span className="text-xs sm:text-sm font-medium whitespace-nowrap">
                           {cat.name}
                         </span>
@@ -1960,7 +1960,7 @@ const Admin = () => {
                     title="Add Category"
                     className="w-10 h-10 rounded-full bg-surface-container-low border border-outline-variant/40 hover:border-primary flex items-center justify-center text-on-surface-variant hover:text-primary shrink-0 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-[18px]">add</span>
+                    <AdminSvgIcon name="add" className="text-[18px]" />
                   </button>
                 </div>
               </div>
@@ -2047,9 +2047,7 @@ const Admin = () => {
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center text-on-surface-variant">
-                                    <span className="material-symbols-outlined text-[20px]">
-                                      restaurant
-                                    </span>
+                                    <AdminSvgIcon name="restaurant" className="text-[20px]" />
                                   </div>
                                 )}
                               </div>
@@ -2168,14 +2166,11 @@ const Admin = () => {
                                       : 'text-on-surface-variant hover:text-primary'
                                   }`}
                                 >
-                                  <span
-                                    className="material-symbols-outlined text-[20px]"
-                                    style={{
-                                      fontVariationSettings: item.popular ? "'FILL' 1" : "'FILL' 0",
-                                    }}
-                                  >
-                                    star
-                                  </span>
+                                  <AdminSvgIcon
+                                    name="star"
+                                    filled={Boolean(item.popular)}
+                                    className="text-[20px]"
+                                  />
                                 </button>
 
                                 <button
@@ -2184,9 +2179,7 @@ const Admin = () => {
                                   title="Edit Product"
                                   className="min-w-[40px] min-h-[40px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center text-on-surface-variant hover:text-primary rounded-xl hover:bg-surface-container active:scale-95 transition-all"
                                 >
-                                  <span className="material-symbols-outlined text-[20px]">
-                                    edit
-                                  </span>
+                                  <AdminSvgIcon name="edit" className="text-[20px]" />
                                 </button>
 
                                 <button
@@ -2201,9 +2194,7 @@ const Admin = () => {
                                   title="Delete Product"
                                   className="min-w-[40px] min-h-[40px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center text-on-surface-variant hover:text-error rounded-xl hover:bg-surface-container active:scale-95 transition-all"
                                 >
-                                  <span className="material-symbols-outlined text-[20px]">
-                                    delete
-                                  </span>
+                                  <AdminSvgIcon name="delete" className="text-[20px]" />
                                 </button>
                               </div>
                             </div>
@@ -2255,16 +2246,12 @@ const Admin = () => {
                             </div>
                             <div className="flex items-center gap-0.5 text-primary">
                               {[1, 2, 3, 4, 5].map((star) => (
-                                <span
+                                <AdminSvgIcon
                                   key={star}
-                                  className="material-symbols-outlined text-[15px]"
-                                  style={{
-                                    fontVariationSettings:
-                                      star <= (rev.rating || 5) ? "'FILL' 1" : "'FILL' 0",
-                                  }}
-                                >
-                                  star
-                                </span>
+                                  name="star"
+                                  filled={star <= (rev.rating || 5)}
+                                  className="text-[15px]"
+                                />
                               ))}
                             </div>
                             <p className="text-xs text-on-surface-variant leading-relaxed line-clamp-3">
@@ -2388,7 +2375,7 @@ const Admin = () => {
                           title="Edit category"
                           className="min-w-[44px] min-h-[44px] flex items-center justify-center text-on-surface-variant hover:text-primary rounded-xl hover:bg-surface-container transition-colors"
                         >
-                          <span className="material-symbols-outlined text-[20px]">edit</span>
+                          <AdminSvgIcon name="edit" className="text-[20px]" />
                         </button>
                         <button
                           type="button"
@@ -2402,7 +2389,7 @@ const Admin = () => {
                           title="Delete category"
                           className="min-w-[44px] min-h-[44px] flex items-center justify-center text-on-surface-variant hover:text-error rounded-xl hover:bg-surface-container transition-colors"
                         >
-                          <span className="material-symbols-outlined text-[20px]">delete</span>
+                          <AdminSvgIcon name="delete" className="text-[20px]" />
                         </button>
                       </div>
                     </div>
@@ -2522,9 +2509,10 @@ const Admin = () => {
                 <div className="flex items-center justify-between gap-2.5 min-w-0">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 sm:gap-2">
-                      <span className="material-symbols-outlined text-primary text-[20px] sm:text-[22px] shrink-0">
-                        auto_awesome
-                      </span>
+                      <AdminSvgIcon
+                        name="auto_awesome"
+                        className="text-primary text-[20px] sm:text-[22px] shrink-0"
+                      />
                       <h2 className="text-sm sm:text-lg font-semibold text-on-surface truncate">
                         AI Insights & Guest Logs
                       </h2>
@@ -2598,13 +2586,12 @@ const Admin = () => {
                       onClick={loadAiConversations}
                       className="min-w-0 px-2 sm:px-3.5 py-2 rounded-xl bg-surface-container border border-outline-variant/40 text-xs font-semibold text-on-surface hover:border-primary flex items-center justify-center gap-1 transition-colors cursor-pointer"
                     >
-                      <span
-                        className={`material-symbols-outlined text-[15px] text-primary shrink-0 ${
+                      <AdminSvgIcon
+                        name="refresh"
+                        className={`text-[15px] text-primary shrink-0 ${
                           loadingAiLogs ? 'animate-spin' : ''
                         }`}
-                      >
-                        refresh
-                      </span>
+                      />
                       <span className="truncate">Refresh</span>
                     </button>
 
@@ -2614,9 +2601,7 @@ const Admin = () => {
                       onClick={handleExportAiChats}
                       className="min-w-0 px-2 sm:px-3.5 py-2 rounded-xl bg-surface-container border border-primary/40 text-xs font-semibold text-primary hover:bg-primary/10 disabled:opacity-40 flex items-center justify-center gap-1 transition-colors cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-[15px] shrink-0">
-                        download
-                      </span>
+                      <AdminSvgIcon name="download" className="text-[15px] shrink-0" />
                       <span className="truncate">Export</span>
                     </button>
 
@@ -2632,9 +2617,7 @@ const Admin = () => {
                       }
                       className="min-w-0 px-2 sm:px-3.5 py-2 rounded-xl bg-surface-container border border-error/40 text-xs font-semibold text-error hover:bg-error/10 disabled:opacity-40 flex items-center justify-center gap-1 transition-colors cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-[15px] shrink-0">
-                        delete_sweep
-                      </span>
+                      <AdminSvgIcon name="delete_sweep" className="text-[15px] shrink-0" />
                       <span className="truncate">Delete All</span>
                     </button>
                   </div>
@@ -2647,9 +2630,7 @@ const Admin = () => {
                 className="bg-surface-container-low border border-outline-variant/30 rounded-2xl px-3.5 py-2.5 sm:px-5 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="material-symbols-outlined text-primary text-[18px] shrink-0">
-                    label
-                  </span>
+                  <AdminSvgIcon name="label" className="text-primary text-[18px] shrink-0" />
                   <div className="min-w-0">
                     <span className="text-xs font-semibold text-on-surface block truncate">
                       Corano ai name
@@ -2770,9 +2751,7 @@ const Admin = () => {
                   </div>
                 ) : aiConversations.length === 0 ? (
                   <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-10 text-center space-y-2">
-                    <span className="material-symbols-outlined text-4xl text-primary/70">
-                      forum
-                    </span>
+                    <AdminSvgIcon name="forum" className="text-4xl text-primary/70" />
                     <div className="text-sm font-semibold text-on-surface">
                       No AI waiter conversations yet
                     </div>
@@ -2800,9 +2779,7 @@ const Admin = () => {
                           {/* Guest Name Header Bar Over Each Chat */}
                           <div className="px-4 sm:px-6 py-2.5 bg-[#141413] border-b border-outline-variant/25 flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
-                              <span className="material-symbols-outlined text-[17px] text-primary">
-                                person
-                              </span>
+                              <AdminSvgIcon name="person" className="text-[17px] text-primary" />
                               <span className="text-xs sm:text-sm font-bold text-primary tracking-wide">
                                 {session.guestName?.trim() || 'Guest'}
                               </span>
@@ -2842,9 +2819,7 @@ const Admin = () => {
                                 title="Delete conversation"
                                 className="min-w-[32px] min-h-[32px] rounded-lg flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-surface-container-high transition-colors cursor-pointer"
                               >
-                                <span className="material-symbols-outlined text-[18px]">
-                                  delete
-                                </span>
+                                <AdminSvgIcon name="delete" className="text-[18px]" />
                               </button>
                             </div>
                           </div>
@@ -2881,9 +2856,10 @@ const Admin = () => {
                                           key={dish.id}
                                           className="inline-flex items-center gap-1.5 text-[11px] bg-surface-container-low border border-outline-variant/40 text-on-surface px-2.5 py-1 rounded-lg"
                                         >
-                                          <span className="material-symbols-outlined text-[13px] text-primary">
-                                            restaurant
-                                          </span>
+                                          <AdminSvgIcon
+                                            name="restaurant"
+                                            className="text-[13px] text-primary"
+                                          />
                                           <span className="font-medium">{dish.title}</span>
                                           <span className="font-mono text-primary">
                                             {formatStorePrice(
@@ -2920,9 +2896,7 @@ const Admin = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="material-symbols-outlined text-primary text-[22px]">
-                        campaign
-                      </span>
+                      <AdminSvgIcon name="campaign" className="text-primary text-[22px]" />
                       <h2 className="text-base sm:text-lg font-semibold text-on-surface">
                         Homepage Promotional Banner Pop-Up
                       </h2>
@@ -3036,9 +3010,10 @@ const Admin = () => {
                       </div>
                     ) : (
                       <div className="text-center py-6 px-3">
-                        <span className="material-symbols-outlined text-4xl text-primary/70 mb-2">
-                          add_photo_alternate
-                        </span>
+                        <AdminSvgIcon
+                          name="add_photo_alternate"
+                          className="text-4xl text-primary/70 mb-2"
+                        />
                         <p className="text-xs text-on-surface font-medium mb-3">
                           No Promotional Banner Uploaded
                         </p>
@@ -3700,12 +3675,7 @@ const Admin = () => {
                   isActive ? 'text-primary' : 'text-on-surface-variant'
                 }`}
               >
-                <span
-                  className="material-symbols-outlined text-[20px]"
-                  style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
-                >
-                  {tab.icon}
-                </span>
+                <AdminSvgIcon name={tab.icon} filled={isActive} className="text-[20px]" />
                 <span className="text-[9px] font-medium mt-1 tracking-tight">{tab.label}</span>
                 {'badge' in tab && typeof tab.badge === 'number' && tab.badge > 0 && (
                   <span className="absolute top-2 right-1/4 w-2 h-2 rounded-full bg-primary" />
@@ -3734,7 +3704,7 @@ const Admin = () => {
                 onClick={() => setShowAddProductModal(false)}
                 className="min-w-[36px] min-h-[36px] flex items-center justify-center text-on-surface-variant hover:text-on-surface"
               >
-                <span className="material-symbols-outlined">close</span>
+                <AdminSvgIcon name="close" className="text-[24px]" />
               </button>
             </div>
             <form onSubmit={handleAddItem} className="space-y-4">
@@ -3954,7 +3924,7 @@ const Admin = () => {
                 onClick={() => setShowAddCategoryModal(false)}
                 className="min-w-[36px] min-h-[36px] flex items-center justify-center text-on-surface-variant hover:text-on-surface"
               >
-                <span className="material-symbols-outlined">close</span>
+                <AdminSvgIcon name="close" className="text-[24px]" />
               </button>
             </div>
             <form onSubmit={handleAddCategory} className="space-y-4">
@@ -4019,7 +3989,7 @@ const Admin = () => {
                 onClick={() => setEditingCategory(null)}
                 className="min-w-[36px] min-h-[36px] flex items-center justify-center text-on-surface-variant hover:text-on-surface"
               >
-                <span className="material-symbols-outlined">close</span>
+                <AdminSvgIcon name="close" className="text-[24px]" />
               </button>
             </div>
             <form onSubmit={handleUpdateCategory} className="space-y-4">
@@ -4092,7 +4062,7 @@ const Admin = () => {
                 }}
                 className="min-w-[36px] min-h-[36px] flex items-center justify-center text-on-surface-variant hover:text-on-surface"
               >
-                <span className="material-symbols-outlined">close</span>
+                <AdminSvgIcon name="close" className="text-[24px]" />
               </button>
             </div>
             <form onSubmit={handleUpdateItem} className="space-y-4">
@@ -4309,7 +4279,7 @@ const Admin = () => {
           >
             <div className="w-10 h-1.5 bg-outline-variant rounded-full mx-auto mb-4 sm:hidden" />
             <div className="w-12 h-12 rounded-full bg-error/15 text-error flex items-center justify-center mx-auto mb-4">
-              <span className="material-symbols-outlined text-[26px]">warning</span>
+              <AdminSvgIcon name="warning" className="text-[26px]" />
             </div>
             <h3 className="font-semibold text-lg mb-2">
               {deleteConfirm.type === 'admin_email'

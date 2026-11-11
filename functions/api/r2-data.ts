@@ -264,14 +264,29 @@ function sanitizePublicStoreData(storeData: any): any {
   };
 }
 
-async function readStoreDataFromEnv(env: any): Promise<any> {
+let cachedEdgeStoreData: any = null;
+let cachedEdgeStoreDataAt = 0;
+const EDGE_STORE_CACHE_TTL_MS = 30_000;
+
+async function readStoreDataFromEnv(env: any, forceFresh = false): Promise<any> {
+  if (
+    !forceFresh &&
+    cachedEdgeStoreData &&
+    Date.now() - cachedEdgeStoreDataAt < EDGE_STORE_CACHE_TTL_MS
+  ) {
+    return cachedEdgeStoreData;
+  }
+
   const r2Bucket = getBoundR2Bucket(env);
   if (r2Bucket && typeof r2Bucket.get === 'function') {
     const obj = await r2Bucket.get(STORE_DATA_KEY);
     if (obj) {
       const text = await obj.text();
       if (text) {
-        return normalizeStoreData(JSON.parse(text));
+        const normalized = normalizeStoreData(JSON.parse(text));
+        cachedEdgeStoreData = normalized;
+        cachedEdgeStoreDataAt = Date.now();
+        return normalized;
       }
     } else if (typeof r2Bucket.put === 'function') {
       const seed = normalizeStoreData(initialSeedData);
@@ -281,6 +296,8 @@ async function readStoreDataFromEnv(env: any): Promise<any> {
           cacheControl: 'no-cache, must-revalidate',
         },
       });
+      cachedEdgeStoreData = seed;
+      cachedEdgeStoreDataAt = Date.now();
       return seed;
     }
   }
@@ -301,7 +318,10 @@ async function readStoreDataFromEnv(env: any): Promise<any> {
     });
     if (getRes.ok) {
       const text = await getRes.text();
-      return normalizeStoreData(JSON.parse(text));
+      const normalized = normalizeStoreData(JSON.parse(text));
+      cachedEdgeStoreData = normalized;
+      cachedEdgeStoreDataAt = Date.now();
+      return normalized;
     }
   }
 
@@ -314,7 +334,10 @@ async function readStoreDataFromEnv(env: any): Promise<any> {
       headers: { 'Cache-Control': 'no-cache' },
     });
     if (pubRes.ok) {
-      return normalizeStoreData(await pubRes.json());
+      const normalized = normalizeStoreData(await pubRes.json());
+      cachedEdgeStoreData = normalized;
+      cachedEdgeStoreDataAt = Date.now();
+      return normalized;
     }
   } catch {
     // ignore
@@ -337,6 +360,8 @@ async function writeStoreDataToEnv(env: any, storeData: any): Promise<any> {
         cacheControl: 'no-cache, must-revalidate',
       },
     });
+    cachedEdgeStoreData = normalized;
+    cachedEdgeStoreDataAt = Date.now();
     return normalized;
   }
 
@@ -369,6 +394,8 @@ async function writeStoreDataToEnv(env: any, storeData: any): Promise<any> {
     throw new Error(`R2 store-data PUT failed (${putRes.status}): ${errText}`);
   }
 
+  cachedEdgeStoreData = normalized;
+  cachedEdgeStoreDataAt = Date.now();
   return normalized;
 }
 
@@ -478,9 +505,9 @@ function computeClientIpHash(request: Request): string {
 
 export const onRequestGet = async (context: any) => {
   try {
-    const storeData = await readStoreDataFromEnv(context.env || {});
-    const clientIpHash = computeClientIpHash(context.request);
     const authHeader = context.request.headers.get('Authorization');
+    const storeData = await readStoreDataFromEnv(context.env || {}, Boolean(authHeader));
+    const clientIpHash = computeClientIpHash(context.request);
     if (authHeader) {
       const authCheck = await verifyAdminAuthorization(authHeader, storeData);
       if (authCheck.ok) {
@@ -535,7 +562,7 @@ export const onRequestPost = async (context: any) => {
       });
     }
 
-    const storeData = await readStoreDataFromEnv(env);
+    const storeData = await readStoreDataFromEnv(env, true);
 
     // 1. Public Action: Submit Customer Review (Strict XSS & 50-pending-review spam cap)
     if (action === 'submitPublicReview') {

@@ -3,8 +3,12 @@ import firebaseConfig from '../../firebase-applet-config.json';
 
 const STORE_DATA_KEY = 'data/store-data.json';
 const AI_CONVERSATIONS_KEY = 'data/ai-conversations.json';
-const MAX_AI_CONVERSATIONS = 200;
+const MAX_AI_CONVERSATIONS = 30;
 const ROOT_ADMIN_EMAILS = ['apolokor@gmail.com'];
+
+let cachedAiStoreData: any = null;
+let cachedAiStoreDataAt = 0;
+const AI_STORE_CACHE_TTL_MS = 30_000;
 
 const R2_CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -150,12 +154,21 @@ async function signedR2Request(params: {
 }
 
 async function readStoreDataFromEnv(env: any): Promise<any> {
+  if (cachedAiStoreData && Date.now() - cachedAiStoreDataAt < AI_STORE_CACHE_TTL_MS) {
+    return cachedAiStoreData;
+  }
+
   const r2Bucket = getBoundR2Bucket(env);
   if (r2Bucket && typeof r2Bucket.get === 'function') {
     const obj = await r2Bucket.get(STORE_DATA_KEY);
     if (obj) {
       const text = await obj.text();
-      if (text) return JSON.parse(text);
+      if (text) {
+        const parsed = JSON.parse(text);
+        cachedAiStoreData = parsed;
+        cachedAiStoreDataAt = Date.now();
+        return parsed;
+      }
     }
   }
 
@@ -175,7 +188,10 @@ async function readStoreDataFromEnv(env: any): Promise<any> {
     });
     if (getRes.ok) {
       const text = await getRes.text();
-      return JSON.parse(text);
+      const parsed = JSON.parse(text);
+      cachedAiStoreData = parsed;
+      cachedAiStoreDataAt = Date.now();
+      return parsed;
     }
   }
 
@@ -188,7 +204,10 @@ async function readStoreDataFromEnv(env: any): Promise<any> {
       headers: { 'Cache-Control': 'no-cache' },
     });
     if (pubRes.ok) {
-      return await pubRes.json();
+      const parsed = await pubRes.json();
+      cachedAiStoreData = parsed;
+      cachedAiStoreDataAt = Date.now();
+      return parsed;
     }
   } catch {
     // ignore

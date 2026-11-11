@@ -40,11 +40,6 @@ body {
   color: var(--color-on-background);
 }
 
-.material-symbols-outlined {
-  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
-  vertical-align: middle;
-}
-
 .editorial-shadow {
   box-shadow: 0 30px 60px -12px rgba(28, 28, 25, 0.05);
 }
