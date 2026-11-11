@@ -116,13 +116,6 @@ function normalizeStoreData(raw: any): any {
         typeof raw.settings?.aiBubbleLabel === 'string' && raw.settings.aiBubbleLabel.trim()
           ? stripHtmlTags(raw.settings.aiBubbleLabel).slice(0, 28)
           : 'Corano AI',
-      aiTextBubbleEnabled: raw.settings?.aiTextBubbleEnabled !== false,
-      aiTextBubbleSeconds:
-        typeof raw.settings?.aiTextBubbleSeconds === 'number' &&
-        raw.settings.aiTextBubbleSeconds >= 1 &&
-        raw.settings.aiTextBubbleSeconds <= 600
-          ? Math.round(raw.settings.aiTextBubbleSeconds)
-          : 40,
       promoBannerEnabled: raw.settings?.promoBannerEnabled === true,
       promoBannerUrl:
         typeof raw.settings?.promoBannerUrl === 'string' ? raw.settings.promoBannerUrl.trim() : '',
@@ -3157,18 +3150,6 @@ async function startServer() {
           typeof body.aiBubbleLabel === 'string' && stripHtmlTags(body.aiBubbleLabel)
             ? stripHtmlTags(body.aiBubbleLabel).slice(0, 28)
             : storeData.settings?.aiBubbleLabel || 'Corano AI';
-        const aiTextBubbleEnabled =
-          typeof body.aiTextBubbleEnabled === 'boolean'
-            ? body.aiTextBubbleEnabled
-            : storeData.settings?.aiTextBubbleEnabled !== false;
-        const aiTextBubbleSeconds =
-          typeof body.aiTextBubbleSeconds === 'number' &&
-          body.aiTextBubbleSeconds >= 1 &&
-          body.aiTextBubbleSeconds <= 600
-            ? Math.round(body.aiTextBubbleSeconds)
-            : typeof storeData.settings?.aiTextBubbleSeconds === 'number'
-            ? storeData.settings.aiTextBubbleSeconds
-            : 40;
         const promoBannerEnabled =
           typeof body.promoBannerEnabled === 'boolean'
             ? body.promoBannerEnabled
@@ -3240,8 +3221,6 @@ async function startServer() {
           exchangeRate,
           aiEnabled,
           aiBubbleLabel,
-          aiTextBubbleEnabled,
-          aiTextBubbleSeconds,
           promoBannerEnabled,
           promoBannerUrl,
           promoBannerDelaySeconds,

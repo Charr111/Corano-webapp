@@ -52,8 +52,6 @@ export type StoreSettings = {
   exchangeRate: number;
   aiEnabled?: boolean;
   aiBubbleLabel?: string;
-  aiTextBubbleEnabled?: boolean;
-  aiTextBubbleSeconds?: number;
   promoBannerEnabled?: boolean;
   promoBannerUrl?: string;
   promoBannerDelaySeconds?: number;

@@ -25,12 +25,6 @@ function normalizePayload(raw: any): StoreDataPayload {
         typeof raw.settings?.aiBubbleLabel === 'string' && raw.settings.aiBubbleLabel.trim()
           ? raw.settings.aiBubbleLabel.trim().slice(0, 28)
           : 'Corano AI',
-      aiTextBubbleEnabled: raw.settings?.aiTextBubbleEnabled !== false,
-      aiTextBubbleSeconds:
-        typeof raw.settings?.aiTextBubbleSeconds === 'number' &&
-        Number.isFinite(raw.settings.aiTextBubbleSeconds)
-          ? Math.max(1, Math.min(600, Math.round(raw.settings.aiTextBubbleSeconds)))
-          : 40,
       promoBannerEnabled: Boolean(raw.settings?.promoBannerEnabled),
       promoBannerUrl:
         typeof raw.settings?.promoBannerUrl === 'string' ? raw.settings.promoBannerUrl.trim() : '',
@@ -127,54 +121,92 @@ export function saveCachedStoreData(data: StoreDataPayload): void {
   }
 }
 
+let inFlightPublicFetch: Promise<StoreDataPayload> | null = null;
+let lastPublicFetchAt = 0;
+let lastPublicPayload: StoreDataPayload | null = null;
+const PUBLIC_FETCH_DEDUPE_MS = 15000;
+
 export async function fetchLiveStoreData(
   includeAdminAuth: boolean = false
 ): Promise<StoreDataPayload> {
-  const headers: Record<string, string> = {
-    Accept: 'application/json',
-    'Cache-Control': 'no-cache',
+  if (!includeAdminAuth) {
+    if (
+      lastPublicPayload &&
+      Date.now() - lastPublicFetchAt < PUBLIC_FETCH_DEDUPE_MS
+    ) {
+      return lastPublicPayload;
+    }
+    if (inFlightPublicFetch) {
+      return inFlightPublicFetch;
+    }
+  }
+
+  const performFetch = async (): Promise<StoreDataPayload> => {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'Cache-Control': 'no-cache',
+    };
+
+    if (includeAdminAuth && auth.currentUser) {
+      try {
+        const idToken = await auth.currentUser.getIdToken();
+        headers['Authorization'] = `Bearer ${idToken}`;
+      } catch {
+        // continue without token if token fetch fails
+      }
+    }
+
+    // 1. Primary: Fetch from /api/r2-data (no-cache live R2 read)
+    try {
+      const res = await fetch(`/api/r2-data?t=${Date.now()}`, {
+        method: 'GET',
+        headers,
+      });
+      if (res.ok) {
+        const data = normalizePayload(await res.json());
+        saveCachedStoreData(data);
+        const result = includeAdminAuth ? data : sanitizeForPublicCache(data);
+        if (!includeAdminAuth) {
+          lastPublicPayload = result;
+          lastPublicFetchAt = Date.now();
+        }
+        return result;
+      }
+    } catch {
+      // fallback to public R2 domain below
+    }
+
+    // 2. Fallback: Direct public R2 CDN fetch with cache-buster (sanitized for public use)
+    try {
+      const pubRes = await fetch(`${R2_PUBLIC_DATA_URL}?t=${Date.now()}`, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      });
+      if (pubRes.ok) {
+        const data = normalizePayload(await pubRes.json());
+        saveCachedStoreData(data);
+        const result = includeAdminAuth ? data : sanitizeForPublicCache(data);
+        if (!includeAdminAuth) {
+          lastPublicPayload = result;
+          lastPublicFetchAt = Date.now();
+        }
+        return result;
+      }
+    } catch {
+      // fallback to cached data
+    }
+
+    return getCachedStoreData();
   };
 
-  if (includeAdminAuth && auth.currentUser) {
-    try {
-      const idToken = await auth.currentUser.getIdToken();
-      headers['Authorization'] = `Bearer ${idToken}`;
-    } catch {
-      // continue without token if token fetch fails
-    }
-  }
-
-  // 1. Primary: Fetch from /api/r2-data (no-cache live R2 read)
-  try {
-    const res = await fetch(`/api/r2-data?t=${Date.now()}`, {
-      method: 'GET',
-      headers,
+  if (!includeAdminAuth) {
+    inFlightPublicFetch = performFetch().finally(() => {
+      inFlightPublicFetch = null;
     });
-    if (res.ok) {
-      const data = normalizePayload(await res.json());
-      saveCachedStoreData(data);
-      return includeAdminAuth ? data : sanitizeForPublicCache(data);
-    }
-  } catch {
-    // fallback to public R2 domain below
+    return inFlightPublicFetch;
   }
 
-  // 2. Fallback: Direct public R2 CDN fetch with cache-buster (sanitized for public use)
-  try {
-    const pubRes = await fetch(`${R2_PUBLIC_DATA_URL}?t=${Date.now()}`, {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-    });
-    if (pubRes.ok) {
-      const data = normalizePayload(await pubRes.json());
-      saveCachedStoreData(data);
-      return includeAdminAuth ? data : sanitizeForPublicCache(data);
-    }
-  } catch {
-    // fallback to cached data
-  }
-
-  return getCachedStoreData();
+  return performFetch();
 }
 
 export async function mutateR2StoreData(
@@ -209,6 +241,8 @@ export async function mutateR2StoreData(
   }
 
   const updatedStore = normalizePayload(data.storeData || data);
+  lastPublicPayload = sanitizeForPublicCache(updatedStore);
+  lastPublicFetchAt = Date.now();
   saveCachedStoreData(updatedStore);
   return updatedStore;
 }
