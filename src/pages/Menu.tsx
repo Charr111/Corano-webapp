@@ -417,11 +417,11 @@ const Menu = () => {
                     <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2">
                       <h3 className="font-headline text-lg md:text-xl text-on-surface leading-tight mb-1 md:mb-0 pr-2">{item.title}</h3>
                       {itemPromoDiscount ? (
-                        <div className="flex flex-col md:items-end leading-tight shrink-0">
-                          <span className="text-xs text-on-surface-variant/80 line-through whitespace-nowrap">
+                        <div className="flex flex-col items-start md:items-end leading-none shrink-0 mt-0.5 md:-mt-2.5">
+                          <span className="text-[11px] text-on-surface-variant/75 line-through whitespace-nowrap font-medium leading-none mb-1">
                             {itemPromoDiscount.originalFormatted}
                           </span>
-                          <span className="font-bold text-primary whitespace-nowrap mt-0.5">
+                          <span className="text-sm md:text-[15px] font-bold text-primary whitespace-nowrap leading-none">
                             {itemPromoDiscount.discountedFormatted}
                           </span>
                         </div>
@@ -514,13 +514,15 @@ const Menu = () => {
               </div>
               <div className="p-6 md:p-8 flex flex-col overflow-y-auto hide-scrollbar pb-safe">
                 <div className="flex justify-between items-start gap-3 mb-4">
-                  <h2 className="font-headline text-2xl md:text-3xl text-on-surface pr-2">{selectedItem.title}</h2>
+                  <h2 className="font-headline text-2xl md:text-3xl text-on-surface leading-tight pr-2">
+                    {selectedItem.title}
+                  </h2>
                   {selectedPromoDiscount ? (
-                    <div className="flex flex-col items-end leading-tight shrink-0">
-                      <span className="text-sm md:text-base text-on-surface-variant/80 line-through whitespace-nowrap font-semibold">
+                    <div className="flex flex-col items-end leading-none shrink-0 -mt-2.5 sm:-mt-3">
+                      <span className="text-xs sm:text-[13px] text-on-surface-variant/75 line-through whitespace-nowrap font-medium leading-none mb-1">
                         {selectedPromoDiscount.originalFormatted}
                       </span>
-                      <span className="text-2xl font-bold text-primary whitespace-nowrap mt-0.5">
+                      <span className="text-lg sm:text-xl font-bold text-primary whitespace-nowrap leading-tight">
                         {selectedPromoDiscount.discountedFormatted}
                       </span>
                     </div>
