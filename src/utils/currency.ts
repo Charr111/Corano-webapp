@@ -166,12 +166,21 @@ export function computeDiscountedUsdPriceString(
 }
 
 /**
- * Dynamically checks if the currently active Promo Banner has a live discount
- * that applies to the given menu item (single item, whole category, or whole menu).
- * Returns null immediately when the banner or discount is turned OFF/Hidden.
+ * Dynamically checks if the given menu item has an active product-level discount
+ * OR if the currently active Promo Banner has a live discount that applies to it
+ * (single item, whole category, or whole menu).
+ * Returns null immediately when neither discount is active.
  */
 export function getActiveItemPromoDiscount(
-  item: { id?: string; title?: string; category?: string; price?: string | number },
+  item: {
+    id?: string;
+    title?: string;
+    category?: string;
+    price?: string | number;
+    discountEnabled?: boolean;
+    discountType?: 'percent' | 'fixed';
+    discountValue?: number;
+  },
   categories: Array<{ id: string; name: string }>,
   settings: {
     promoBannerEnabled?: boolean;
@@ -185,7 +194,34 @@ export function getActiveItemPromoDiscount(
   currency: StoreCurrency = 'USD',
   rate: number = DEFAULT_LBP_RATE
 ): ActivePromoDiscountInfo | null {
-  if (!settings || !item) return null;
+  if (!item) return null;
+
+  // 1. Check item-level discount first (works independently without needing a Promo Banner)
+  const itemDiscVal = Number(item.discountValue);
+  if (item.discountEnabled && Number.isFinite(itemDiscVal) && itemDiscVal > 0) {
+    const itemDiscType: 'percent' | 'fixed' =
+      item.discountType === 'fixed' ? 'fixed' : 'percent';
+    const originalFormatted = formatStorePrice(item.price, currency, rate);
+    const discountedUsdStr = computeDiscountedUsdPriceString(
+      item.price,
+      itemDiscType,
+      itemDiscVal
+    );
+    const discountedFormatted = formatStorePrice(discountedUsdStr, currency, rate);
+
+    if (originalFormatted !== discountedFormatted) {
+      return {
+        badgeText: formatDiscountBadgeText(itemDiscType, itemDiscVal, currency, rate),
+        originalFormatted,
+        discountedFormatted,
+        discountType: itemDiscType,
+        discountValue: itemDiscVal,
+      };
+    }
+  }
+
+  // 2. Otherwise check if an active Promo Banner applies a discount to this item
+  if (!settings) return null;
   if (!settings.promoBannerEnabled) return null;
   if (!settings.promoBannerUrl && !settings.activePromoBannerId) return null;
   if (!settings.promoBannerDiscountEnabled) return null;

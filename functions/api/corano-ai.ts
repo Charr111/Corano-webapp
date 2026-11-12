@@ -468,10 +468,37 @@ function expandLebaneseFrancoToken(word: string): string[] {
       v === 'sandwiches' ||
       v === 'sando' ||
       v === 'sandos' ||
+      v === 'pita' ||
+      v === '3arabi' ||
+      v === 'aarabi' ||
       v === 'سندويش' ||
-      v === 'ساندويش'
+      v === 'ساندويش' ||
+      v === 'عربي'
     ) {
       variants.add('sandwich');
+    } else if (
+      v === 'baguette' ||
+      v === 'franje' ||
+      v === 'frenji' ||
+      v === 'sub' ||
+      v === 'subs' ||
+      v === 'باجيت' ||
+      v === 'افرنجي' ||
+      v === 'ساب'
+    ) {
+      variants.add('sub');
+    } else if (
+      v === 'sajj' ||
+      v === 'saj' ||
+      v === 'markouk' ||
+      v === 'mar2ouk' ||
+      v === 'صاج' ||
+      v === 'مرقوق'
+    ) {
+      variants.add('sajj');
+      variants.add('saj');
+    } else if (v === 'asmar' || v === '2asmar' || v === 'أسمر' || v === 'اسمر') {
+      variants.add('brown');
     } else if (v === 'mayo' || v === 'mayonnaise' || v === 'مايونيز' || v === 'مايو') {
       variants.add('mayo');
       variants.add('mayonnaise');
@@ -483,6 +510,273 @@ function expandLebaneseFrancoToken(word: string): string[] {
     } else if (v === 'kabis' || v === 'kabbis' || v === 'pickle' || v === 'pickles' || v === 'كبيس') {
       variants.add('kabis');
       variants.add('pickles');
+    } else if (
+      v === 'jou3an' ||
+      v === 'jouaan' ||
+      v === 'joo3an' ||
+      v === 'jou3ane' ||
+      v === 'ji3t' ||
+      v === 'yshabbe3' ||
+      v === 'yshabe3' ||
+      v === 'yshebbe3' ||
+      v === 'mshabbe3' ||
+      v === 't2il' ||
+      v === 't2ile' ||
+      v === 'tkil' ||
+      v === 'tkile' ||
+      v === 'dsem' ||
+      v === 'dasm' ||
+      v === 'mdebbas' ||
+      v === 'جوعان' ||
+      v === 'يشبع' ||
+      v === 'تقيلة' ||
+      v === 'دسم'
+    ) {
+      variants.add('filling');
+    } else if (
+      v === 'ghada' ||
+      v === '8ada' ||
+      v === 'sheghel' ||
+      v === 'shoghol' ||
+      v === 'talabiyye' ||
+      v === 'sari3' ||
+      v === 'mashshi' ||
+      v === 'lunch' ||
+      v === 'office' ||
+      v === 'غدا' ||
+      v === 'شغل' ||
+      v === 'طلبية' ||
+      v === 'عالسريع'
+    ) {
+      variants.add('lunch');
+    } else if (
+      v === '3asha' ||
+      v === 'aasha' ||
+      v === 'sahar' ||
+      v === 'sahseha' ||
+      v === 'عشا' ||
+      v === 'سهر'
+    ) {
+      variants.add('dinner');
+    } else if (
+      v === 'sfine' ||
+      v === 'sfinet' ||
+      v === 'sfineh' ||
+      v === 'سفينة'
+    ) {
+      variants.add('breast');
+      variants.add('charcoal');
+    } else if (
+      v === 'fahem' ||
+      v === 'fa7em' ||
+      v === 'fahm' ||
+      v === 'fa7m' ||
+      v === 'عالفحم' ||
+      v === 'فحم'
+    ) {
+      variants.add('charcoal');
+      variants.add('fahem');
+    } else if (
+      v === 'pane' ||
+      v === 'paneh' ||
+      v === 'بانيه'
+    ) {
+      variants.add('pane');
+      variants.add('crispy');
+    } else if (
+      v === 'm2armash' ||
+      v === 'ma2armash' ||
+      v === 'mkarmash' ||
+      v === 'ma2li' ||
+      v === 'makli' ||
+      v === 'crunchy' ||
+      v === 'مقرمش' ||
+      v === 'مقلي'
+    ) {
+      variants.add('crispy');
+    } else if (
+      v === 'say7a' ||
+      v === 'sayha' ||
+      v === 'سايحة'
+    ) {
+      variants.add('cheese');
+      variants.add('cheddar');
+      variants.add('mozzarella');
+    } else if (
+      v === 'dazzine' ||
+      v === 'dazine' ||
+      v === 'dozen' ||
+      v === 'دزينة'
+    ) {
+      variants.add('dozen');
+    } else if (
+      v === 'rkakat' ||
+      v === 'rakakat' ||
+      v === 'r2a2at' ||
+      v === 'رقاقات'
+    ) {
+      variants.add('cheese');
+      variants.add('rolls');
+      variants.add('dozen');
+    } else if (
+      v === 'mo3ajanet' ||
+      v === 'mouajanet' ||
+      v === 'mshakale' ||
+      v === 'mchakale' ||
+      v === 'معجنات'
+    ) {
+      variants.add('mouajanet');
+      variants.add('mchakale');
+    } else if (
+      v === 'wara2' ||
+      v === 'warak' ||
+      v === '3enab' ||
+      v === 'enab' ||
+      v === 'yalanji' ||
+      v === 'ورق' ||
+      v === 'عنب'
+    ) {
+      variants.add('wara2');
+      variants.add('3enab');
+    } else if (
+      v === 'sawda' ||
+      v === 'sawdet' ||
+      v === 'asabe' ||
+      v === 'liver' ||
+      v === 'سودة' ||
+      v === 'كبدة'
+    ) {
+      variants.add('liver');
+      variants.add('sawda');
+    } else if (
+      v === 'makanek' ||
+      v === 'ma2anek' ||
+      v === 'makanik' ||
+      v === 'مقانق'
+    ) {
+      variants.add('makanek');
+    } else if (
+      v === 'soujouk' ||
+      v === 'sujuk' ||
+      v === 'sojok' ||
+      v === 'سجق'
+    ) {
+      variants.add('soujouk');
+    } else if (
+      v === '8anam' ||
+      v === 'ghanam' ||
+      v === 'sheep' ||
+      v === 'lamb' ||
+      v === 'غنم'
+    ) {
+      variants.add('ghanam');
+      variants.add('sheep');
+      variants.add('lahme');
+    } else if (
+      v === 'tarator' ||
+      v === 'tahini' ||
+      v === 'طراطور' ||
+      v === 'طحينة'
+    ) {
+      variants.add('tarator');
+      variants.add('falafel');
+    } else if (
+      v === 'jarjir' ||
+      v === 'jarjeer' ||
+      v === 'rocca' ||
+      v === 'جرجير' ||
+      v === 'روكا'
+    ) {
+      variants.add('rocca');
+      variants.add('quinoa');
+    } else if (
+      v === 'shmandar' ||
+      v === 'beetroot' ||
+      v === 'شمندر'
+    ) {
+      variants.add('beetroot');
+      variants.add('quinoa');
+    } else if (
+      v === 'jawz' ||
+      v === 'walnut' ||
+      v === 'جوز'
+    ) {
+      variants.add('walnut');
+      variants.add('quinoa');
+    } else if (
+      v === 'ardishoke' ||
+      v === 'artichoke' ||
+      v === 'أرضي'
+    ) {
+      variants.add('artichoke');
+      variants.add('corano');
+    } else if (
+      v === 'asperges' ||
+      v === 'asparagus' ||
+      v === 'هليون'
+    ) {
+      variants.add('asperges');
+      variants.add('corano');
+    } else if (
+      v === 'habash' ||
+      v === '7abash' ||
+      v === 'turkey' ||
+      v === 'حبش'
+    ) {
+      variants.add('turkey');
+    } else if (
+      v === 'dura' ||
+      v === 'doura' ||
+      v === 'corn' ||
+      v === 'ذرة'
+    ) {
+      variants.add('corn');
+    } else if (
+      v === 'salameh' ||
+      v === 'salami' ||
+      v === 'jambon' ||
+      v === 'ham' ||
+      v === 'سلامي' ||
+      v === 'جامبون'
+    ) {
+      variants.add('salameh');
+      variants.add('ham');
+    } else if (
+      v === 'wled' ||
+      v === 'awled' ||
+      v === 'walad' ||
+      v === 'kids' ||
+      v === 'children' ||
+      v === 'أولاد' ||
+      v === 'ولاد'
+    ) {
+      variants.add('kids');
+    } else if (
+      v === '3ayran' ||
+      v === 'ayran' ||
+      v === 'aayran' ||
+      v === 'laban' ||
+      v === 'عيران' ||
+      v === 'لبن'
+    ) {
+      variants.add('ayran');
+      variants.add('laban');
+    } else if (
+      v === 'bira' ||
+      v === 'beer' ||
+      v === 'بيرة'
+    ) {
+      variants.add('beer');
+    } else if (
+      v === '3asir' ||
+      v === 'aasir' ||
+      v === 'laymoun' ||
+      v === 'orange' ||
+      v === 'عصير' ||
+      v === 'ليمون'
+    ) {
+      variants.add('orange');
+      variants.add('juice');
     } else if (
       v === 'lent' ||
       v === 'lenten' ||
@@ -575,7 +869,7 @@ function detectUserLanguage(msg: string): 'English' | 'Lebanese' | 'Arabic' {
   if (/[\u0600-\u06FF]/.test(msg)) return 'Arabic';
   const combined = `${msg} ${normalizeLebaneseFrancoText(msg)}`;
   if (
-    /\b(shu|chou|baddi|bade|badde|atyab|3andkon|andkon|3endkon|endkon|3endak|3enddak|aandak|andak|bala|bla|bela|bdoun|bidoun|toum|thoum|basal|5as|khas|akel|akl|akil|ate3|2ate3|aate3|kate3|qate3|ati3|2ati3|aati3|kati3|qati3|at3|siyam|syam|kabis|feter|banadoura|kifak|ahla|shi|fi|akid|tayeb|wajbe|7ar|har|shawarma|tawouk|kbeir|zghir|as3ar|asaar|se3er|seaer|7a2|ha2|la7me|lahme|djej|djeij|jebne|batata|7doud|hdoud|b7doud|bhdoud|ta7et|tahet|a2al|aqal|2arib|arib|ma3|ma33|maa|sa7en|sahen)\b/i.test(
+    /\b(shu|chou|baddi|bade|badde|atyab|3andkon|andkon|3endkon|endkon|3endak|3enddak|aandak|andak|bala|bla|bela|bdoun|bidoun|toum|thoum|basal|5as|khas|akel|akl|akil|ate3|2ate3|aate3|kate3|qate3|ati3|2ati3|aati3|kati3|qati3|at3|siyam|syam|kabis|feter|banadoura|kifak|ahla|shi|fi|akid|tayeb|wajbe|7ar|har|shawarma|tawouk|kbeir|kbir|zghir|sghir|wassat|wasat|as3ar|asaar|se3er|seaer|7a2|ha2|la7me|lahme|djej|djeij|jebne|batata|7doud|hdoud|b7doud|bhdoud|ta7et|tahet|a2al|aqal|2arib|arib|ma3|ma33|maa|sa7en|sahen|betnasahne|btensah|btensahne|btonsa7ne|jou3an|jouaan|jou3ane|ji3t|yshabbe3|yshabe3|mdebbas|ghada|8ada|3asha|aasha|sheghel|shoghol|talabiyye|sari3|mashshi|sahar|sahseha|fahem|fa7em|sfine|sfinet|farrouj|farouj|say7a|sayha|m2armash|dazzine|dazine|rkakat|rakakat|mo3ajanet|mouajanet|wara2|3enab|sawda|makanek|soujouk|8anam|ghanam|tarator|jarjir|shmandar|jawz|ardishoke|habash|dura|salameh|7asesiye|hassasiyeh|mashta2at|halib|wled|awled|khafif|5afif|3ayran|ayran|bira|3asir|laymoun|zyede|zyedeh|katter|jnab|m7ammas|fare2|farek|3ouroudat|fate7in|halla2|weyn|tekram|3youne)\b/i.test(
       combined
     ) ||
     /[235789][a-z]|[a-z][235789]/i.test(msg)
@@ -588,38 +882,38 @@ function detectUserLanguage(msg: string): 'English' | 'Lebanese' | 'Arabic' {
 function classifyTopicTag(msg: string): string {
   const q = `${msg} ${normalizeLebaneseFrancoText(msg)}`.toLowerCase();
   if (
-    /allerg|gluten|celiac|coeliac|dairy|lactose|nut|without|no |bala |bla |bela |bdoun |bidoun |lent|ate3|2ate3|aate3|kate3|qate3|ati3|2ati3|aati3|kati3|qati3|at3|siyam|syam|meatless|قاطع|صيامي|صيام|نباتي|حساسية|بدون|بلا/.test(
+    /allerg|7asesiye|hassasiyeh|gluten|celiac|coeliac|dairy|lactose|halib|mashta2at|nut|walnut|jawz|without|no |bala |bla |bela |bdoun |bidoun |fik tshil|shil |lent|ate3|2ate3|aate3|kate3|qate3|ati3|2ati3|aati3|kati3|qati3|at3|siyam|syam|meatless|قاطع|صيامي|صيام|نباتي|حساسية|بدون|بلا|مكسرات|جوز|حليب/.test(
       q
     )
   ) {
     return 'Ingredients & Allergies';
   }
-  if (/healthy|light|diet|calorie|fit|protein|gym|salad|quinoa|صحي|دايت|لايت|سلطة/.test(q)) {
+  if (/healthy|light|diet|calorie|fit|protein|gym|salad|quinoa|khafif|5afif|asmar|jarjir|shmandar|صحي|دايت|لايت|سلطة|خفيف|بروتين|أسمر/.test(q)) {
     return 'Healthy & Light';
   }
-  if (/spicy|hot|chili|har|7ar|harra|soujouk|حار|حد|حر/.test(q)) {
+  if (/spicy|hot|chili|har|7ar|harra|soujouk|reb 7ar|toum w 7ar|حار|حد|حر|سجق/.test(q)) {
     return 'Spicy Dishes';
   }
-  if (/burger|sub|fajita|philadelphia|crispy|crunchy|pane|برغر|ساب|كريسبي/.test(q)) {
+  if (/burger|sub|baguette|franje|frenji|fajita|philadelphia|philly|crispy|crunchy|pane|m2armash|thierry|corano|tweety|tandoori|submarine|برغر|ساب|كريسبي|بانيه|باجيت/.test(q)) {
     return 'Burgers & Subs';
   }
-  if (/pizza|pasta|penne|margherita|pepperoni|بيتزا|باستا/.test(q)) {
+  if (/pizza|pasta|penne|margherita|marguerita|pepperoni|بيتزا|باستا/.test(q)) {
     return 'Pizza & Pasta';
   }
-  if (/sandwich|sandwish|sando|tawouk|kafta|mashewe|mashawi|falafel|wrap|sajj|saj|ساندويش|طاووق|كفتة|مشاوي|فلافل|صاج/.test(q)) {
+  if (/sandwich|sandwish|sando|tawouk|kafta|kabab|mashewe|mashawi|farrouj|farouj|sfine|fahem|falafel|wrap|sajj|saj|markouk|makanek|sawda|ghanam|ساندويش|طاووق|كفتة|كباب|مشاوي|فروج|فلافل|صاج|مقانق|سودة/.test(q)) {
     return 'Sandwiches & Wraps';
   }
-  if (/price|cost|cheap|how much|ll|lbp|dollar|usd|se3er|seaer|as3ar|asaar|7doud|hdoud|ta7et|tahet|a2al|aqal|budget|combo|سعر|أسعار|بكم|قديش|تحت|حدود/.test(q)) {
+  if (/price|cost|cheap|how much|ll|lbp|dollar|usd|se3er|seaer|as3ar|asaar|7doud|hdoud|ta7et|tahet|a2al|aqal|budget|combo|promo|discount|offer|3ouroudat|سعر|أسعار|بكم|قديش|تحت|حدود|عروضات|خصم/.test(q)) {
     return 'Prices & Budget';
   }
-  if (/popular|best|top|special|signature|atyab|ashhar|أطيب|أشهر/.test(q)) {
+  if (/popular|best|top|special|signature|atyab|ashhar|betnasahne|btensah|moukheef|أطيب|أشهر|بتنصح/.test(q)) {
     return 'Popular & Best Sellers';
   }
   return 'General Inquiry';
 }
 
 const NEGATION_TRIGGER_REGEX =
-  /\b(without|no|free|not|avoid|allerg\w*|intoleran\w*|bala|bla|bela|bdoun|bidoun|bedoun|badoon|ma\s+bheb|ma\s+b7eb|mish|mesh)\b|بدون|بلا|من دون|حساسية|ما بحب/i;
+  /\b(without|no|free|not|avoid|allerg\w*|intoleran\w*|7asesiye|hassasiyeh|bala|bla|bela|bdoun|bidoun|bedoun|badoon|ma\s+bheb|ma\s+b7eb|mish|mesh|fik\s+tshil|shil)\b|بدون|بلا|من دون|حساسية|ما بحب|فيك تشيل|شيل/i;
 
 const INGREDIENT_EXCLUSION_GROUPS: Array<{
   labelEn: string;
@@ -646,8 +940,8 @@ const INGREDIENT_EXCLUSION_GROUPS: Array<{
     labelEn: 'onions',
     labelLb: 'basal (onions)',
     labelAr: 'بصل',
-    queryTriggers: /\b(onion|onions|basal|bassal)\b|بصل/i,
-    itemMatchTerms: ['onion', 'onions'],
+    queryTriggers: /\b(onion|onions|basal|bassal|biwas|biwaz)\b|بصل/i,
+    itemMatchTerms: ['onion', 'onions', 'biwas', 'biwaz'],
   },
   {
     labelEn: 'lettuce',
@@ -658,9 +952,9 @@ const INGREDIENT_EXCLUSION_GROUPS: Array<{
   },
   {
     labelEn: 'cheese / dairy',
-    labelLb: 'jebne (cheese)',
-    labelAr: 'جبنة',
-    queryTriggers: /\b(cheese|dairy|lactose|jebne|jebneh|jibne|cheddar|mozzarella|7alloum|halloum|halloumi)\b|جبن|جبنة|ألبان|حلوم/i,
+    labelLb: 'jebne / mashta2at 7alib (cheese & dairy)',
+    labelAr: 'جبنة / مشتقات الحليب',
+    queryTriggers: /\b(cheese|dairy|lactose|halib|7alib|mashta2at|jebne|jebneh|jibne|cheddar|mozzarella|7alloum|halloum|halloumi)\b|جبن|جبنة|ألبان|حليب|حلوم/i,
     itemMatchTerms: [
       'cheese',
       'cheddar',
@@ -675,6 +969,13 @@ const INGREDIENT_EXCLUSION_GROUPS: Array<{
     ],
   },
   {
+    labelEn: 'nuts / walnuts',
+    labelLb: 'jawz / mukassarat (nuts)',
+    labelAr: 'جوز / مكسرات',
+    queryTriggers: /\b(nut|nuts|walnut|walnuts|jawz|loz|peanuts?|almonds?)\b|جوز|لوز|فستق|مكسرات/i,
+    itemMatchTerms: ['walnut', 'walnuts', 'nut', 'nuts', 'almond', 'peanut', 'pecan', 'cashew'],
+  },
+  {
     labelEn: 'spicy ingredients',
     labelLb: '7ar (spicy)',
     labelAr: 'حر / حار',
@@ -683,9 +984,9 @@ const INGREDIENT_EXCLUSION_GROUPS: Array<{
   },
   {
     labelEn: 'mushrooms',
-    labelLb: 'feter (mushrooms)',
+    labelLb: 'feter / champignon (mushrooms)',
     labelAr: 'فطر',
-    queryTriggers: /\b(mushroom|mushrooms|feter|fotor)\b|فطر/i,
+    queryTriggers: /\b(mushroom|mushrooms|feter|fotor|champignon)\b|فطر/i,
     itemMatchTerms: ['mushroom', 'mushrooms'],
   },
   {
@@ -703,11 +1004,11 @@ const INGREDIENT_EXCLUSION_GROUPS: Array<{
     itemMatchTerms: ['tomato', 'tomatoes'],
   },
   {
-    labelEn: 'bacon',
-    labelLb: 'bacon',
-    labelAr: 'بيكون',
-    queryTriggers: /\b(bacon|pork)\b|بيكون/i,
-    itemMatchTerms: ['bacon', 'pork'],
+    labelEn: 'bacon / ham / salami',
+    labelLb: 'bacon / jambon / salameh',
+    labelAr: 'بيكون / جامبون / سلامي',
+    queryTriggers: /\b(bacon|pork|ham|jambon|salameh|salami)\b|بيكون|جامبون|سلامي/i,
+    itemMatchTerms: ['bacon', 'pork', 'ham', 'salameh', 'salami'],
   },
   {
     labelEn: 'avocado',
@@ -715,6 +1016,13 @@ const INGREDIENT_EXCLUSION_GROUPS: Array<{
     labelAr: 'أفوكادو',
     queryTriggers: /\b(avocado)\b|أفوكادو|افوكادو/i,
     itemMatchTerms: ['avocado'],
+  },
+  {
+    labelEn: 'corn',
+    labelLb: 'dura (corn)',
+    labelAr: 'ذرة',
+    queryTriggers: /\b(corn|dura|doura)\b|ذرة/i,
+    itemMatchTerms: ['corn'],
   },
   {
     labelEn: 'meat or chicken (Lent / Meatless)',
@@ -1470,8 +1778,11 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
 
   let score = 0;
   for (const w of words) {
-    if (w === 'crispy' || w === 'crunchy' || w === 'كريسبي' || w === 'مقرمش') {
-      if (titleLower.includes('crispy') && titleLower.includes('tenders')) {
+    if (w === 'crispy' || w === 'crunchy' || w === 'pane' || w === 'كريسبي' || w === 'مقرمش' || w === 'بانيه') {
+      if (w === 'pane' || w === 'بانيه') {
+        if (titleLower.includes('pane')) score += 45;
+        else if (titleLower.includes('crispy') || titleLower.includes('sticks')) score += 24;
+      } else if (titleLower.includes('crispy') && titleLower.includes('tenders')) {
         score += 54;
       } else if (titleLower.includes('crispy') || titleLower.includes('pane')) {
         score += 26;
@@ -1515,6 +1826,98 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
         score += 23;
       } else if (hasCheeseInTitle || hasCheeseInDesc) {
         score += 15;
+      }
+      continue;
+    }
+    if (w === 'filling') {
+      if (
+        titleLower.includes('platter') ||
+        titleLower.includes('corano') ||
+        titleLower.includes('thierry') ||
+        titleLower.includes('truffle') ||
+        titleLower.includes('cheddar pane') ||
+        titleLower.includes('philly steak') ||
+        titleLower.includes('bbq burger') ||
+        titleLower.includes('charcoal tawouk') ||
+        titleLower.includes('mixed grill')
+      ) {
+        score += 38;
+      } else if (catLower.includes('burger') || catLower.includes('sub') || catLower.includes('mashewe')) {
+        score += 22;
+      }
+      continue;
+    }
+    if (w === 'lunch') {
+      if (catLower.includes('sub') || catLower.includes('burger') || catLower.includes('light') || catLower.includes('sandwich')) {
+        score += 28;
+      }
+      continue;
+    }
+    if (w === 'dinner') {
+      if (
+        catLower.includes('burger') ||
+        catLower.includes('sub') ||
+        catLower.includes('saj') ||
+        titleLower.includes('soujouk') ||
+        titleLower.includes('makanek') ||
+        titleLower.includes('falafel') ||
+        titleLower.includes('batata harra') ||
+        titleLower.includes('liver')
+      ) {
+        score += 28;
+      }
+      continue;
+    }
+    if (w === 'kids') {
+      if (
+        titleLower.includes('nuggets') ||
+        titleLower.includes('tenders') ||
+        titleLower.includes('french fries') ||
+        titleLower.includes('mozzarella sticks') ||
+        titleLower.includes('classic burger') ||
+        titleLower.includes('marguerita')
+      ) {
+        score += 44;
+      }
+      continue;
+    }
+    if (w === 'sajj' || w === 'saj' || w === 'صاج') {
+      if (catLower.includes('saj') || descLower.includes('saj')) {
+        score += 42;
+      }
+      continue;
+    }
+    if (w === 'brown') {
+      if (descLower.includes('brown bread') || descLower.includes('brown baguette') || catLower.includes('light')) {
+        score += 40;
+      }
+      continue;
+    }
+    if (w === 'charcoal' || w === 'fahem') {
+      if (titleLower.includes('charcoal') || descLower.includes('fahem')) {
+        score += 42;
+      } else if (catLower.includes('mashewe')) {
+        score += 32;
+      }
+      continue;
+    }
+    if (w === 'breast') {
+      if (titleLower.includes('breast') || descLower.includes('sfinet')) {
+        score += 42;
+      } else if (descLower.includes('chicken breast')) {
+        score += 24;
+      }
+      continue;
+    }
+    if (w === 'dozen') {
+      if (titleLower.includes('dozen') || titleLower.includes('mouajanet')) {
+        score += 44;
+      }
+      continue;
+    }
+    if (w === 'liver' || w === 'sawda') {
+      if (titleLower.includes('liver') || descLower.includes('sawda')) {
+        score += 46;
       }
       continue;
     }
@@ -1571,7 +1974,7 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
       continue;
     }
     if (w === 'farrouj' || w === 'farouj' || w === 'فروج') {
-      if (titleLower.includes('farrouj') || titleLower.includes('farouj')) score += 28;
+      if (titleLower.includes('farrouj') || titleLower.includes('farouj')) score += 32;
       continue;
     }
     if (w === 'tawouk' || w === 'tawook' || w === 'taouk' || w === 'طاووق') {
@@ -1596,13 +1999,14 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
       w === 'lamb' ||
       w === 'ghanam' ||
       w === '8anam' ||
+      w === 'sheep' ||
       w === 'لحمة' ||
       w === 'غنم'
     ) {
       if (titleLower.includes('lahme') || titleLower.includes('sheep') || titleLower.includes('ghanam')) {
-        score += catLower.includes('mashewe') ? 28 : 24;
-      } else if (descLower.includes('lahme') || descLower.includes('skewers')) {
-        score += 16;
+        score += catLower.includes('mashewe') ? 28 : 26;
+      } else if (descLower.includes('lahme') || descLower.includes('sheep') || descLower.includes('skewers')) {
+        score += 18;
       }
       continue;
     }
@@ -1632,7 +2036,8 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
         titleLower.includes('harra') ||
         titleLower.includes('soujouk') ||
         titleLower.includes('tandoori') ||
-        titleLower.includes('mexican')
+        titleLower.includes('mexican') ||
+        titleLower.includes('7ar')
       ) {
         score += 22;
       } else if (
@@ -1645,13 +2050,13 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
       }
       continue;
     }
-    if (w === 'healthy' || w === 'light' || w === 'diet' || w === 'صحي' || w === 'لايت' || w === 'دايت') {
+    if (w === 'healthy' || w === 'light' || w === 'diet' || w === 'protein' || w === 'gym' || w === 'صحي' || w === 'لايت' || w === 'دايت' || w === 'بروتين') {
       if (catLower.includes('light') || catLower.includes('healthy')) {
         score += 36;
       } else if (catLower.includes('salad')) {
         score += 22;
-      } else if (titleLower.includes('light') || titleLower.includes('salad') || titleLower.includes('quinoa')) {
-        score += 16;
+      } else if (titleLower.includes('light') || titleLower.includes('salad') || titleLower.includes('quinoa') || titleLower.includes('breast')) {
+        score += 18;
       }
       continue;
     }
@@ -1713,22 +2118,22 @@ function computePositiveKeywordScore(item: any, words: string[]): number {
       if (catLower.includes('salad') || titleLower.includes('salad')) score += 20;
       continue;
     }
-    if (titleLower.includes(w)) score += 20;
+    if (titleLower.includes(w)) score += 22;
     else if (catLower.includes(w)) score += 16;
-    else if (descLower.includes(w)) score += 12;
+    else if (descLower.includes(w)) score += 14;
     else if (combined.includes(w)) score += 8;
   }
   return score;
 }
 
 const DISH_CARRIER_REGEX =
-  /\b(sandwich|sandwiches|sandwish|sandwiche|sando|sandos|sub|subs|burger|burgers|wrap|wraps|saj|sajj|platter|platters|sa7en|sahen|wajbe|wajbet|meal|meals|salad|salads|pizza|pasta|سندويش|ساندويش|ساب|برغر|صاج|صحن|وجبة|سلطة|بيتزا|باستا)\b/i;
+  /\b(sandwich|sandwiches|sandwish|sandwiche|sando|sandos|sub|subs|baguette|franje|frenji|burger|burgers|wrap|wraps|saj|sajj|markouk|platter|platters|sa7en|sahen|wajbe|wajbet|meal|meals|salad|salads|pizza|pasta|سندويش|ساندويش|ساب|باجيت|برغر|صاج|مرقوق|صحن|وجبة|سلطة|بيتزا|باستا)\b/i;
 
 const INSIDE_DISH_PHRASE_REGEX =
   /\b(b\s*alba|b\s*2alba|balba|b2alba|fiha|fiya|fia|with\s+[\w\s]{1,25}\s+in\b|فيها|بقلبها)\b/i;
 
 const STANDALONE_SAUCE_OR_MEZZA_REGEX =
-  /\b(sauce|sauces|dip|dips|hommos|7ommos|homos|7omos|hummus|7ummus|humus|toum|thoum|garlic|aioli|bbq|barbecue|caesar|cheddar\s+sauce|cocktail|mayo|mayonnaise|mustard|debes|debs|remen|remmen|balsamic|kabis|reb\s+7ar|reb\s+har|steak\s+sauce|thiery|burger\s+sauce|صوص|حمص|ثوم|توم|مايونيز|خردل|كبيس|دبس)\b/i;
+  /\b(sauce|sauces|dip|dips|hommos|7ommos|homos|7omos|hummus|7ummus|humus|toum|thoum|garlic|aioli|bbq|barbecue|caesar|cheddar\s+sauce|cocktail|mayo|mayonnaise|mustard|debes|debs|remen|remmen|balsamic|kabis|reb\s+7ar|reb\s+har|toum\s+w\s+7ar|toum\s+w\s+har|steak\s+sauce|thiery\s+sauce|burger\s+sauce|صوص|حمص|ثوم|توم|مايونيز|خردل|كبيس|دبس|رب\s+حر)\b/i;
 
 const CARRIER_WORD_SET = new Set([
   'sandwich',
@@ -1782,7 +2187,9 @@ function getStrictPositiveMatchedItems(
   const isAskingForDrinkOrSauce =
     !budgetSpec.wantsCombo &&
     !wantsDishWithIngredient &&
-    (/\b(drink|drinks|pepsi|7up|mirinda|water|juice|مشروب|عصير|مياه)\b/i.test(qCombined) ||
+    (/\b(drink|drinks|pepsi|7up|mirinda|water|juice|3asir|laymoun|orange|ayran|3ayran|laban|beer|bira|perrier|h2o|ice\s+tea|مشروب|عصير|مياه|عيران|لبن|بيرة)\b/i.test(
+      qCombined
+    ) ||
       mentionsSauceOrMezza);
 
   const allSafeItems = (storeData.items || []).filter(
@@ -1826,6 +2233,11 @@ function getStrictPositiveMatchedItems(
   const wantsFullKilo = /\b(1\s*kg|1\s*kilo|kilo\s+mashewe|mashewe\s+bil\s+kilo|بالكيلو)\b/i.test(
     qCombined
   );
+  const wantsDineIn = /\b(dine\s*in|bil\s*ma7al|bl\s*ma7al|bil\s*mahal|bl\s*mahal|بالمحل|بالصالة)\b/i.test(qCombined);
+  const wantsDelivery = /\b(delivery|deliv|take\s*away|takeaway|ديليفري|دليفري)\b/i.test(qCombined);
+  const wantsSmallSize = /\b(sghir|zghir|small|صغير)\b/i.test(qCombined);
+  const wantsMediumSize = /\b(wassat|wasat|medium|وسط)\b/i.test(qCombined);
+  const wantsLargeSize = /\b(kbir|kbeir|large|xl|1\.25|كبير)\b/i.test(qCombined);
 
   let matched = pool
     .map((item: any) => {
@@ -1839,6 +2251,16 @@ function getStrictPositiveMatchedItems(
         } else if (wantsFullKilo && !titleLower.includes('1/2')) {
           posScore += 24;
         }
+      }
+      if (titleLower.includes('farrouj')) {
+        if (wantsHalfKilo && titleLower.includes('1/2')) posScore += 26;
+        if (wantsDineIn && titleLower.includes('dine')) posScore += 24;
+        if (wantsDelivery && titleLower.includes('deliv')) posScore += 24;
+      }
+      if (posScore > 0) {
+        if (wantsSmallSize && (/\bs\.?\b|small/i.test(titleLower))) posScore += 18;
+        if (wantsMediumSize && (/\bm\.?\b|medium/i.test(titleLower))) posScore += 18;
+        if (wantsLargeSize && (/\bl\.?\b|\bxl\b|large|1\.25/i.test(titleLower))) posScore += 18;
       }
 
       const hasCarrierMatch =
@@ -2335,7 +2757,111 @@ function getTurnTargetItems(
 }
 
 const RESTAURANT_INFO_REGEX =
-  /\b(delivery|deliver|tawsil|tawseel|phone|number|telefon|telephone|whatsapp|contact|opening\s+hours|open\s+now|when\s+do\s+you\s+open|when\s+do\s+you\s+close|aya\s+se3a|se3a\s+btefta7o|btefta7o|btsakro|location|address|where\s+are\s+you|google\s+map|maw2a3|mawka3|3enwen|aenwen|توصيل|دليفري|ديليفري|رقم|تلفون|هاتف|واتساب|ساعات\s+العمل|بتفتحوا|بتسكروا|موقعكم|عنوانكم|وين\s+موقعكم)\b/i;
+  /\b(delivery|deliver|tawsil|tawseel|phone|number|telefon|telephone|whatsapp|contact|opening\s+hours|open\s+now|fate7in|fat7in|halla2|when\s+do\s+you\s+open|when\s+do\s+you\s+close|aya\s+se3a|ayya\s+se3a|se3a\s+btefta7o|btefta7o|btsakro|betsakro|location|address|where\s+are\s+you|weyn|google\s+map|maw2a3|mawka3|3enwen|aenwen|kif\s+betlob|kif\s+b2dar\s+etlob|توصيل|دليفري|ديليفري|رقم|تلفون|هاتف|واتساب|ساعات\s+العمل|فاتحين|بتفتحوا|بتسكروا|موقعكم|عنوانكم|وين\s+موقعكم)\b/i;
+
+const PROMO_OFFERS_QUERY_REGEX =
+  /\b(promo|promotion|promotions|discount|discounts|offer|offers|deal|deals|3ouroudat|aouroudat|3ared|aared|7asem|hasem|عروضات|عروض|عرض|خصم|حسم)\b/i;
+
+const COMPARISON_OR_CUSTOMIZATION_QUERY_REGEX =
+  /\b(shu\s+l\s+fare2|chou\s+l\s+farek|fare2\s+bayn|farek\s+bayn|difference\s+between|compare|fiha|fiya|shu\s+b\s*alba|chou\s+b\s*alba|what\s+is\s+in|what's\s+in|ingredients?\s+of|fini\s+otlob|fik\s+tshil|zyede|zyedeh|katter|3a\s+jnab|on\s+the\s+side|m7ammas|toasted|شو\s+الفرق|الفرق\s+بين|فيا|فيها|شو\s+مكونات|زيادة|كتّر|عجنب|محمّص)\b/i;
+
+function getActivePromoDetailsForAi(storeData: any): {
+  active: boolean;
+  badgeText: string;
+  targetName: string;
+  promoItems: any[];
+  summaryEn: string;
+  summaryLb: string;
+  summaryAr: string;
+} {
+  const settings = storeData?.settings || {};
+  const enabled = settings.promoBannerEnabled !== false && Boolean(settings.promoBannerUrl);
+  const discType = settings.promoDiscountType;
+  const discVal = Number(settings.promoDiscountValue || 0);
+  if (!enabled || (discType !== 'percentage' && discType !== 'fixed') || discVal <= 0) {
+    return {
+      active: false,
+      badgeText: '',
+      targetName: '',
+      promoItems: [],
+      summaryEn: '',
+      summaryLb: '',
+      summaryAr: '',
+    };
+  }
+
+  const currency: 'USD' | 'LBP' = settings.currency === 'LBP' ? 'LBP' : 'USD';
+  const rate = Number(settings.exchangeRate || 89000);
+  const badgeText =
+    discType === 'percentage'
+      ? `${Math.round(discVal)}% OFF`
+      : `-${formatItemPriceForAi(discVal, currency, rate)}`;
+
+  const linkType = settings.promoBannerLinkType || 'none';
+  const targetVal = String(settings.promoBannerLinkValue || '').trim().toLowerCase();
+  const availableItems = (storeData?.items || []).filter((i: any) => i.available !== false);
+
+  let promoItems: any[] = [];
+  let targetName = 'selected menu items';
+
+  if (linkType === 'item' && targetVal) {
+    promoItems = availableItems.filter(
+      (i: any) =>
+        String(i.id || '').toLowerCase() === targetVal ||
+        String(i.title || '').toLowerCase() === targetVal
+    );
+    if (promoItems[0]) targetName = promoItems[0].title;
+  } else if (linkType === 'category' && targetVal) {
+    promoItems = availableItems.filter((i: any) => {
+      const itemCat = String(i.category || '').toLowerCase();
+      if (itemCat === targetVal) return true;
+      const catObj = (storeData?.categories || []).find(
+        (c: any) => String(c.id || '').toLowerCase() === targetVal
+      );
+      return catObj ? itemCat === String(catObj.name || '').toLowerCase() : false;
+    });
+    targetName = targetVal.charAt(0).toUpperCase() + targetVal.slice(1);
+  }
+
+  if (promoItems.length === 0) {
+    return {
+      active: false,
+      badgeText: '',
+      targetName: '',
+      promoItems: [],
+      summaryEn: '',
+      summaryLb: '',
+      summaryAr: '',
+    };
+  }
+
+  const computeDiscountedUsd = (rawUsd: number): number => {
+    if (discType === 'percentage') {
+      return Math.max(0, Number((rawUsd * (1 - discVal / 100)).toFixed(2)));
+    }
+    return Math.max(0, Number((rawUsd - discVal).toFixed(2)));
+  };
+
+  const sampleList = promoItems
+    .slice(0, 3)
+    .map((i: any) => {
+      const origPrice = formatItemPriceForAi(i.price, currency, rate);
+      const newUsd = computeDiscountedUsd(Number(i.price || 0));
+      const newPrice = formatItemPriceForAi(newUsd, currency, rate);
+      return `${i.title} (now ${newPrice} instead of ${origPrice})`;
+    })
+    .join(', ');
+
+  return {
+    active: true,
+    badgeText,
+    targetName,
+    promoItems: promoItems.slice(0, 4),
+    summaryEn: `Today's active promo is ${badgeText} on ${targetName}: ${sampleList}!`,
+    summaryLb: `3anna 3ared khas el youm (${badgeText}) 3ala ${targetName}: ${sampleList}!`,
+    summaryAr: `لدينا عرض خاص اليوم (${badgeText}) على ${targetName}: ${sampleList}!`,
+  };
+}
 
 function shouldUseInstantDeterministicFastPath(
   message: string,
@@ -2343,15 +2869,19 @@ function shouldUseInstantDeterministicFastPath(
   budgetSpec: BudgetAndComboSpec,
   strictMatches: any[]
 ): boolean {
+  const q = `${message} ${normalizeLebaneseFrancoText(message)}`.toLowerCase();
+  if (COMPARISON_OR_CUSTOMIZATION_QUERY_REGEX.test(q) && exclusions.excludedTerms.length === 0) {
+    return false;
+  }
+  if (PROMO_OFFERS_QUERY_REGEX.test(q)) return true;
   if (exclusions.excludedTerms.length > 0) return true;
   if (isLentOrMeatlessQuery(message)) return true;
   if (isLightHealthyDietRegimeQuery(message)) return true;
   if (budgetSpec.maxBudgetUsd !== null || budgetSpec.wantsCombo) return true;
   if (strictMatches.length > 0) return true;
-  const q = `${message} ${normalizeLebaneseFrancoText(message)}`.toLowerCase();
   if (RESTAURANT_INFO_REGEX.test(q)) return true;
   if (
-    /\b(popular|best|top|recommend|favorite|special|atyab|ashhar|healthy|light|diet|regime|rejim|rjim|so77e|so7e|sa77e|sa7e|lent|lenten|ate3|2ate3|aate3|kate3|qate3|siyam|syam|vegetarian|vegan|nebate|nabati|sharing|family|group|3ayle|aayle|jem3a|jam3a|crispy|cheesy|mashewe|mashawi|burger|sub|sandwich|sandwish|salad|pizza|pasta|أطيب|أشهر|صحي|دايت|لايت|ريجيم|رجيم|قاطع|صيامي|نباتي|عيلة|عائلة|جمعة|مشاوي)\b/i.test(
+    /\b(popular|best|top|recommend|favorite|special|atyab|ashhar|betnasahne|btensah|moukheef|healthy|light|diet|regime|rejim|rjim|so77e|so7e|sa77e|sa7e|khafif|5afif|lent|lenten|ate3|2ate3|aate3|kate3|qate3|siyam|syam|vegetarian|vegan|nebate|nabati|sharing|family|group|3ayle|aayle|jem3a|jam3a|sahra|jou3an|yshabbe3|ghada|3asha|sahar|wled|kids|crispy|pane|cheesy|mashewe|mashawi|farrouj|sfine|fahem|burger|sub|sandwich|sandwish|sajj|saj|salad|pizza|pasta|أطيب|أشهر|صحي|دايت|لايت|ريجيم|رجيم|قاطع|صيامي|نباتي|عيلة|عائلة|جمعة|مشاوي|جوعان|غدا|عشا|صاج)\b/i.test(
       q
     )
   ) {
@@ -2377,6 +2907,25 @@ function runDeterministicMenuMatcher(
   const rate = storeData.settings?.exchangeRate || 89000;
   const exclusions = extractExclusionsFromMessage(message);
   const budgetSpec = extractBudgetAndComboSpec(message, rate);
+  const q = `${message} ${normalizeLebaneseFrancoText(message)}`.toLowerCase();
+  const promoDetails = getActivePromoDetailsForAi(storeData);
+
+  if (PROMO_OFFERS_QUERY_REGEX.test(q) && promoDetails.active) {
+    const promoPicks = promoDetails.promoItems;
+    const reply =
+      lang === 'Arabic'
+        ? `أهلاً وسهلاً بك! ${promoDetails.summaryAr} تصفح الأصناف بالأسفل للطلب مباشرة.`
+        : lang === 'Lebanese'
+        ? `Ahla w sahla! Tekram 3aynak — ${promoDetails.summaryLb} Choufon ta7et بالصورة!`
+        : `Welcome to Corano! ${promoDetails.summaryEn} Tap any card below to view details.`;
+    return {
+      reply,
+      recommendedItemIds: promoPicks.map((p: any) => String(p.id)),
+      summary: `Guest asked about active promos; highlighted ${promoDetails.badgeText} on ${promoDetails.targetName}.`,
+      topicTag: 'Prices & Budget',
+      language: lang,
+    };
+  }
 
   const {
     turnItems: topPicks,
@@ -2385,16 +2934,17 @@ function runDeterministicMenuMatcher(
     healthyStage,
   } = getTurnTargetItems(message, storeData, exclusions.excludedTerms, history, budgetSpec);
 
+  const wantsDetailedIngredients = COMPARISON_OR_CUSTOMIZATION_QUERY_REGEX.test(q);
   const pickNames = topPicks
-    .map(
-      (p) =>
-        `${p.title} (${formatItemPriceWithComboBreakdown(p, currency, rate, budgetSpec)}${
-          p.desc ? ` — ${p.desc}` : ''
-        })`
-    )
+    .map((p) => {
+      const priceText = formatItemPriceWithComboBreakdown(p, currency, rate, budgetSpec);
+      if (wantsDetailedIngredients && p.desc) {
+        return `${p.title} (${priceText} — ${p.desc})`;
+      }
+      return `${p.title} (${priceText})`;
+    })
     .join(', ');
 
-  const q = `${message} ${normalizeLebaneseFrancoText(message)}`.toLowerCase();
   const isMasheweQuery =
     /\b(mashewe|mashawi|mashawe|meshwe|mechwe|grill|grilled|مشاوي|مشوي)\b/i.test(q);
   const isInfoQuery = RESTAURANT_INFO_REGEX.test(q);
@@ -2408,71 +2958,71 @@ function runDeterministicMenuMatcher(
     budgetSpec.maxBudgetUsd === null
   ) {
     if (lang === 'Arabic') {
-      reply = `أهلاً وسهلاً بك في مطعم كورانو! نفتح يومياً طوال أيام الأسبوع من الساعة 11:00 صباحاً حتى 12:00 منتصف الليل. للطلب أو الاستفسار عن التوصيل (Delivery)، يسعدنا اتصالك بنا مباشرة على الرقم 03 220 810 (+961 3 220 810)، كما يمكنك عرض موقعنا على خرائط Google في صفحة Visit Us. ونرشح لك أيضاً تجربة: ${pickNames}!`;
+      reply = `أهلاً وسهلاً! نفتح يومياً من 11:00 صباحاً حتى 12:00 منتصف الليل، وللتوصيل تواصل معنا على 03220810 أو عبر واتساب. إليك أيضاً أشهر أطباقنا: ${pickNames}!`;
     } else if (lang === 'Lebanese') {
-      reply = `Ahla w sahla fik bi Corano! Nehna maftou7in kel youm (Monday – Sunday) men el 11:00 AM lal 12:00 AM (nos lel). Lal talab aw el delivery, fik te7kina moubashara 3ala 03 220 810 (+961 3 220 810), w maw2a3na mawjoud bi saf7et Visit Us 3al Google Maps. W hayde kamen men atyab el asnaf 3anna: ${pickNames}!`;
+      reply = `Ahla w sahla! Maftou7in kel youm 11:00 AM – 12:00 AM, w lal delivery e7kina 3ala 03 220 810 aw WhatsApp. W hayde men atyab asnafna: ${pickNames}!`;
     } else {
-      reply = `Welcome to Corano Restaurant! We are open daily (Monday – Sunday) from 11:00 AM until 12:00 AM (Midnight). To place an order or inquire about delivery, please call us directly at +961 3 220 810 (03 220 810), and you can view our exact Google Maps location anytime in the Visit Us tab. Here are also some of our top dishes to try: ${pickNames}!`;
+      reply = `Welcome to Corano! We're open daily 11:00 AM – 12:00 AM; call or WhatsApp +961 3 220 810 for delivery. Here are also top picks to try: ${pickNames}!`;
     }
   } else if (exclusions.excludedTerms.includes('__LENT_OR_MEATLESS__') || isLentOrMeatlessQuery(message)) {
     if (lang === 'Arabic') {
       const arLentTemplates = [
-        `أهلاً وسهلاً بك في كورانو! بالتأكيد، لدينا تشكيلة مميزة من الأكل القاطع / الصيامي المحضر بدون لحم أو دجاج (بما في ذلك الفلافل، التونا، الكراب، برغر الموزاريلا بانيه، أصابع الحلوم والموزاريلا، بيتزا مارغريتا وخضار، حمص، متبل، وبطاطا حرة). نرشح لك تجربة: ${pickNames}!`,
-        `بكل سرور! إليك المزيد من خيارات الأكل القاطع الخالية تماماً من اللحم والدجاج لدينا: ${pickNames}. اضغط على أي صنف بالأسفل لعرض التفاصيل!`,
-        `أهلاً بك مجدداً! نرشح لك أيضاً هذه الأصناف الشهية بدون لحم أو دجاج: ${pickNames}!`,
+        `تكرم عينك! إليك أطيب خيارات الأكل القاطع / الصيامي المحضرة بدون لحم أو دجاج لدينا: ${pickNames}. شوف الأصناف بالأسفل!`,
+        `بكل سرور! إليك تشكيلة ثانية من الأكل القاطع الخالي تماماً من اللحم والدجاج: ${pickNames}.`,
+        `أهلاً بك! نرشح لك أيضاً هذه الأصناف الشهية من الأكل القاطع: ${pickNames}!`,
       ];
       reply = arLentTemplates[variantIdx];
     } else if (lang === 'Lebanese') {
       const lbLentTemplates = [
-        `Ahla w sahla fik bi Corano! Akid tekram, 3anna تشكيلة taybe ktir men el akel el ate3 (bala la7me w bala djej) metel el Falafel, Tuna Sub & Pasta, Crab Sub & Salad, Mozzarella Pane Burger, Halloumi & Mozzarella Sticks, Marguerita & Vegetarian Pizza, Hummus, Motabal, w Batata Harra. Bansa7ak tjareb: ${pickNames}!`,
-        `Tekram 3aynak! Hayde kamen تشكيلة tenye men atyab el akel el ate3 (bala la7me w bala djej) 3anna: ${pickNames}. Ekbus 3ala ayya wajbe ta7et la tshouf el tafasil!`,
-        `Miyet ahla! Jareb kamen hal kheyarat el taybe men el Lent / akel ate3 بلا لحمة وبلا دجاج: ${pickNames}!`,
+        `Ahla w sahla! Tekram 3aynak, hayde atyab kheyarat el akel el ate3 (bala la7me w bala djej): ${pickNames}. Choufon ta7et!`,
+        `Min 3youne! Hayde تشكيلة tenye men atyab el akel el ate3 3anna: ${pickNames}.`,
+        `Miyet ahla! Jareb kamen hal asnaf el taybe men el akel el ate3: ${pickNames}!`,
       ];
       reply = lbLentTemplates[variantIdx];
     } else {
       const enLentTemplates = [
-        `Welcome to Corano! Here are our top Lent & meatless options prepared completely without meat or chicken — including our Falafel, Tuna Sub & Pasta, Crab Sub & Salad, Mozzarella Pane Burger, Halloumi & Mozzarella Sticks, Marguerita & Vegetarian Pizzas, Hummus, Motabal, and Batata Harra: ${pickNames}. Tap any dish below for full details!`,
-        `Here are more delicious Lent & meatless dishes from our kitchen made without any meat or chicken: ${pickNames}. Tap any card below to explore!`,
-        `Happy to share more Lent & meatless favorites! You can also enjoy these fresh picks prepared without meat or chicken: ${pickNames}!`,
+        `Welcome to Corano! Here are our top Lent & meatless dishes prepared completely without meat or chicken: ${pickNames}.`,
+        `Here are more delicious Lent & meatless favorites from our kitchen: ${pickNames}!`,
+        `Happy to help! You can also enjoy these fresh meatless picks: ${pickNames}.`,
       ];
       reply = enLentTemplates[variantIdx];
     }
   } else if (healthyStage === 'light_first') {
     if (lang === 'Arabic') {
-      reply = `أهلاً وسهلاً بك في كورانو! للنظام الصحي والريجيم (Light & Healthy)، ننصحك أولاً بتشكيلتنا الخاصة من قسم اللايت والصحي المحضرة بمكونات خفيفة وصحية: ${pickNames}. اضغط على أي صنف بالأسفل لعرض التفاصيل!`;
+      reply = `أهلاً وسهلاً! للأكل الصحي والدايت، ننصحك أولاً بتشكيلة قسم Light & Healthy الخفيفة والغنية بالبروتين: ${pickNames}.`;
     } else if (lang === 'Lebanese') {
-      reply = `Ahla w sahla fik bi Corano! Kirmel el regime w el akel el so77e (Light & Healthy), bansa7ak awwal shi tjareb تشكيلة قسم الـ Light & Healthy 3anna: ${pickNames}. Ekbus 3ala ayya wajbe ta7et la tshouf kel el moukawinet!`;
+      reply = `Ahla w sahla! Lal diet w el akel el so77e, jarreb awwal shi تشكيلة el Light & Healthy 3anna: ${pickNames}!`;
     } else {
-      reply = `Welcome to Corano! For a light, healthy, or diet-friendly meal, here are our top picks from our dedicated Light & Healthy section: ${pickNames}. Tap any dish card below to view its full ingredients!`;
+      reply = `Welcome to Corano! For a clean, diet-friendly meal, try these favorites from our Light & Healthy menu: ${pickNames}.`;
     }
   } else if (healthyStage === 'salads_followup') {
     if (lang === 'Arabic') {
-      reply = `بكل سرور! بالإضافة إلى قسم اللايت، إليك أشهى السلطات الطازجة والصحية من قسم السلطات (Salads) لدينا والمثالية للريجيم: ${pickNames}. اضغط على أي سلطة بالأسفل لعرض مكوناتها!`;
+      reply = `تكرم عينك! بالإضافة لقسم اللايت، إليك أشهى السلطات الطازجة والصحية لدينا: ${pickNames}.`;
     } else if (lang === 'Lebanese') {
-      reply = `Tekram 3aynak! Bil idafe la qesem el Light & Healthy, hayde atyab el Salads el fresh w el so77iye 3anna yalli bteneseb el regime: ${pickNames}. Ekbus 3ala ayya salad ta7et la tshouf el tafasil!`;
+      reply = `Tekram 3aynak! Bil idafe lal Light & Healthy, hayde atyab el Salads el fresh 3anna: ${pickNames}!`;
     } else {
-      reply = `Happy to share more healthy options! From our fresh Salads section, here are delicious light salads that are perfect for your diet: ${pickNames}. Tap any card below for full details!`;
+      reply = `Here are our fresh, nutrient-packed salads from our Salads section that are great for your diet: ${pickNames}!`;
     }
   } else if (exclusions.excludedTerms.length > 0) {
     if (lang === 'Arabic') {
       const arTemplates = [
-        `أهلاً وسهلاً بك في كورانو! بالتأكيد، هذه الأطباق الشهية لدينا محضرة بدون ${exclusions.labelsAr.join(' أو ')}: ${pickNames}. كما يمكنك دائماً إبلاغ النادل عند الطلب لتحضير وجبتك كما تفضل!`,
-        `بكل سرور! إليك تشكيلة أخرى من أطباقنا الطازجة الخالية من ${exclusions.labelsAr.join(' أو ')}: ${pickNames}. اضغط على أي طبق بالأسفل لتصفح مكوناته الكاملة!`,
-        `أهلاً بك مجدداً! نرشح لك أيضاً هذه الخيارات المميزة المحضرة بدون ${exclusions.labelsAr.join(' أو ')}: ${pickNames}.`,
+        `من عيوني! هذه الأطباق محضرة بدون ${exclusions.labelsAr.join(' أو ')}: ${pickNames}. ويمكنك طلب أي تعديل إضافي عند الطلب!`,
+        `تكرم عينك! إليك خيارات أخرى شهية خالية من ${exclusions.labelsAr.join(' أو ')}: ${pickNames}.`,
+        `أهلاً بك! نرشح لك أيضاً هذه الأصناف بدون ${exclusions.labelsAr.join(' أو ')}: ${pickNames}.`,
       ];
       reply = arTemplates[variantIdx];
     } else if (lang === 'Lebanese') {
       const lbTemplates = [
-        `Ahla w sahla fik bi Corano! Akid, hayde atyab el asnaf 3anna yalli ma fiha ${exclusions.labelsLb.join(' aw ')} abadan: ${pickNames}. W akid fik t2oul lal waiter wa2t el talab eza baddak t3addel ayya moukawen!`,
-        `Tekram 3aynak! Hayde kamen kheyarat tenye taybe ktir 3anna bala ${exclusions.labelsLb.join(' aw ')}: ${pickNames}. Ekbus 3ala ayya wajbe ta7et la tshouf kel el moukawinet!`,
-        `Miyet ahla! Jareb kamen hal asnaf el fresh men matbakhna yalli bala ${exclusions.labelsLb.join(' aw ')}: ${pickNames}!`,
+        `Min 3youne! Hayde atyab el asnaf 3anna bala ${exclusions.labelsLb.join(' aw ')}: ${pickNames}. W fik totlob ayya ta3dil 3al WhatsApp!`,
+        `Tekram 3aynak! Hayde kamen kheyarat tenye taybe bala ${exclusions.labelsLb.join(' aw ')}: ${pickNames}.`,
+        `Miyet ahla! Jareb kamen hal asnaf el fresh bala ${exclusions.labelsLb.join(' aw ')}: ${pickNames}!`,
       ];
       reply = lbTemplates[variantIdx];
     } else {
       const enTemplates = [
-        `Welcome to Corano! Absolutely — here are great freshly prepared options from our menu that do not contain ${exclusions.labelsEn.join(' or ')}: ${pickNames}. Tap any dish below to check its full ingredients!`,
-        `Here are more delicious options from our kitchen prepared without ${exclusions.labelsEn.join(' or ')}: ${pickNames}. Feel free to tap any card below for full details!`,
-        `Happy to share more choices! You can also enjoy these fresh dishes made without ${exclusions.labelsEn.join(' or ')}: ${pickNames}!`,
+        `Certainly! Here are delicious options prepared without ${exclusions.labelsEn.join(' or ')}: ${pickNames}.`,
+        `Here are more fresh options from our kitchen made without ${exclusions.labelsEn.join(' or ')}: ${pickNames}!`,
+        `Happy to help! You can also enjoy these dishes prepared without ${exclusions.labelsEn.join(' or ')}: ${pickNames}.`,
       ];
       reply = enTemplates[variantIdx];
     }
@@ -2483,67 +3033,67 @@ function runDeterministicMenuMatcher(
         : '';
     if (lang === 'Arabic') {
       reply = budgetLabel
-        ? `أهلاً وسهلاً بك في كورانو! بالتأكيد، إليك أشهى الخيارات مع كومبو (بطاطا ومشروب بيبسي) ضمن ميزانية ${budgetLabel}: ${pickNames}. اضغط على أي وجبة بالأسفل لعرض التفاصيل!`
-        : `أهلاً وسهلاً بك في كورانو! إليك أشهى الخيارات مع كومبو (بطاطا ومشروب بيبسي): ${pickNames}. اضغط على أي وجبة بالأسفل لعرض التفاصيل!`;
+        ? `تكرم عينك! إليك أطيب الخيارات مع كومبو (بطاطا وبيبسي) ضمن ميزانية ${budgetLabel}: ${pickNames}.`
+        : `أهلاً وسهلاً! إليك أطيب الخيارات مع كومبو (بطاطا وبيبسي): ${pickNames}.`;
     } else if (lang === 'Lebanese') {
       reply = budgetLabel
-        ? `Ahla w sahla fik bi Corano! Akid tekram, hayde atyab el asnaf ma3 Combo (Batata w Pepsi) b 7doud / ta7et el ${budgetLabel}: ${pickNames}. Ekbus 3ala ayya wajbe ta7et la tshouf kel el tafasil!`
-        : `Ahla w sahla fik bi Corano! Akid tekram, hayde atyab el asnaf ma3 Combo (Batata w Pepsi): ${pickNames}. Ekbus 3ala ayya wajbe ta7et la tshouf kel el tafasil!`;
+        ? `Tekram 3aynak! Hayde atyab el asnaf ma3 Combo (Batata w Pepsi) b 7doud el ${budgetLabel}: ${pickNames}!`
+        : `Ahla w sahla! Hayde atyab el asnaf ma3 Combo (Batata w Pepsi): ${pickNames}!`;
     } else {
       reply = budgetLabel
-        ? `Welcome to Corano! Here are our top freshly prepared picks with the full Combo (Fries & Drink) all within ${budgetLabel}: ${pickNames}. Tap any dish card below for full details!`
-        : `Welcome to Corano! Here are our top freshly prepared picks with the full Combo (Fries & Drink): ${pickNames}. Tap any dish card below for full details!`;
+        ? `Here are our top picks with the Combo (Fries & Drink) within your ${budgetLabel} budget: ${pickNames}!`
+        : `Here are our top picks available with the full Combo (Fries & Drink): ${pickNames}!`;
     }
   } else if (isMasheweQuery) {
     if (lang === 'Arabic') {
       const arMashewe = [
-        `أهلاً بك في كورانو! نقدم تشكيلة واسعة من المشاوي على الفحم تشمل صحن لحمة شقف، طاووق على الفحم، فروج مشوي أو نصف فروج، كفتة، كباب، مشاوي مشكل، بالإضافة إلى المشاوي بالكيلو أو نصف كيلو. ننصحك بتجربة: ${pickNames}!`,
-        `إليك المزيد من خيارات المشاوي الشهية على الفحم لدينا: ${pickNames}! كما يتوفر لدينا المشاوي المشكلة وبالوزن (نصف كيلو وكيلو).`,
-        `من ركن المشاوي على الفحم في كورانو، نرشح لك أيضاً تجربة: ${pickNames}. اضغط على أي طبق بالأسفل لعرض التفاصيل!`,
+        `أهلاً وسهلاً! لدينا مشاوي عالفحم (لحمة، طاووق، فروج، كفتة، كباب، مشكل، وبالكيلو/نصف كيلو). ننصحك بـ: ${pickNames}!`,
+        `تكرم عينك! إليك المزيد من أشهى أطباق المشاوي على الفحم لدينا: ${pickNames}.`,
+        `من ركن المشاوي على الفحم في كورانو، نرشح لك أيضاً: ${pickNames}!`,
       ];
       reply = arMashewe[variantIdx];
     } else if (lang === 'Lebanese') {
       const lbMashewe = [
-        `Ahla w sahla fik bi Corano! 3anna تشكيلة mashewe 3al fahem bteshmal Lahme Platter, Charcoal Tawouk, Farrouj aw 1/2 Farrouj Meshwe, Kafta, Kabab, w Mixed Grill, bil idafe lal mashewe bil kilo aw nos kilo. Bansa7ak tjareb: ${pickNames}!`,
-        `Tekram! Hayde kamen تشكيلة tenye men el mashewe 3al fahem 3anna: ${pickNames}. Ekbus 3ala ayya sahan ta7et la tshouf el moukawinet!`,
+        `Ahla w sahla! 3anna mashewe 3al fahem (Lahme, Tawouk, Farrouj, Kafta, Kabab, Mixed Grill, w bil kilo/nos kilo). Jarreb: ${pickNames}!`,
+        `Tekram 3aynak! Hayde تشكيلة tenye men atyab el mashewe 3al fahem 3anna: ${pickNames}.`,
         `Men atyab el mashewe 3al fahem bi Corano kamen fik tjareb: ${pickNames}!`,
       ];
       reply = lbMashewe[variantIdx];
     } else {
       const enMashewe = [
-        `Welcome to Corano! Our charcoal Mashewe selection includes our signature Lahme Platter (Lamb Meat), Charcoal Tawouk Platter, Whole or 1/2 Farrouj Meshwe, Kafta, Kabab, Mixed Grill, and 1/2 kg or 1 kg platters by weight. Here are top picks to start with: ${pickNames}!`,
-        `Here are more delicious charcoal-grilled Mashewe platters from our grill: ${pickNames}! Tap any dish card below to see all included sides and ingredients.`,
-        `Looking for more from our charcoal grill? We also highly recommend trying: ${pickNames}!`,
+        `Welcome to Corano! We serve charcoal Lahme, Tawouk, Farrouj, Kafta, Kabab, Mixed Grill, plus 1/2 kg & 1 kg platters. Try: ${pickNames}!`,
+        `Here are more delicious charcoal-grilled Mashewe picks from our grill: ${pickNames}!`,
+        `From our charcoal grill, we also highly recommend trying: ${pickNames}.`,
       ];
       reply = enMashewe[variantIdx];
     }
   } else if (isSignatureBestQuery) {
     if (lang === 'Arabic') {
-      reply = `أهلاً وسهلاً بك في مطعم كورانو! أطيب وأشهر 4 أصناف لدينا هي ساب الدجاج بالباربكيو الشهير (Famous Barbecue Chicken Sub / Famous Crispy BBQ)، ساب تشيكن كورانو (Chicken Corano Sub)، الفروج المشوي على الفحم (Farrouj)، والطاووق (Tawouk): ${pickNames}. اضغط على أي صنف بالأسفل لعرض كافة المكونات والتفاصيل!`;
+      reply = `أهلاً وسهلاً! أشهر 4 أصناف لدينا هي Famous Crispy BBQ Sub، Chicken Corano Sub، الفروج المشوي، والطاووق: ${pickNames}!`;
     } else if (lang === 'Lebanese') {
-      reply = `Ahla w sahla fik bi Corano! Atyab w ashhar 4 asnaf 3anna henni el Famous Barbecue Chicken Sub (Famous Crispy BBQ), Chicken Corano Sub, el Farrouj 3al fahem, w el Tawouk: ${pickNames}. Fik tekbus 3ala ayya wajbe ta7et la tshouf kel el moukawinet!`;
+      reply = `Ahla w sahla! Ashhar 4 asnaf 3anna henni Famous Crispy BBQ Sub, Chicken Corano Sub, Farrouj 3al fahem, w Tawouk: ${pickNames}!`;
     } else {
-      reply = `Welcome to Corano! Our 4 signature best-selling dishes are our Famous Barbecue Chicken Sub (Famous Crispy BBQ), Chicken Corano Sub, Charcoal Farrouj, and Tawouk: ${pickNames}. Tap any dish card below to view its full ingredients and details!`;
+      reply = `Welcome to Corano! Our 4 signature best-sellers are Famous Crispy BBQ Sub, Chicken Corano Sub, Charcoal Farrouj, and Tawouk: ${pickNames}!`;
     }
   } else if (lang === 'Arabic') {
     const arGeneral = [
-      `أهلاً وسهلاً بك في مطعم كورانو! بناءً على طلبك، أنصحك بتجربة هذه الأطباق المميزة والمحضرة طازجة لدينا: ${pickNames}. يمكنك الضغط على أي طبق بالأسفل لعرض كافة المكونات والتفاصيل!`,
-      `بكل سرور! إليك مجموعة أخرى من الأطباق الشهية التي تناسب طلبك: ${pickNames}. اضغط على أي طبق بالأسفل لتصفح المكونات!`,
-      `نرشح لك أيضاً هذه الخيارات الرائعة والمحضرة طازجة في كورانو: ${pickNames}!`,
+      `أهلاً وسهلاً بك في كورانو! تكرم عينك، ننصحك بتجربة هذه الأصناف الشهية: ${pickNames}. تصفحها بالأسفل!`,
+      `من عيوني! إليك تشكيلة ثانية مميزة تناسب طلبك: ${pickNames}.`,
+      `صحتين سلف! نرشح لك أيضاً تجربة هذه الأصناف الطازجة: ${pickNames}!`,
     ];
     reply = arGeneral[variantIdx];
   } else if (lang === 'Lebanese') {
     const lbGeneral = [
-      `Ahla w sahla fik bi Corano! Kirmel talabak, bansa7ak tjareb hal asnaf el taybe w el fresh 3anna: ${pickNames}. Fik tekbus 3ala ayya wajbe ta7et la tshouf kel el moukawinet!`,
-      `Tekram 3aynak! Hayde kamen تشكيلة tenye men atyab el asnaf yalli bteneseb talabak: ${pickNames}. Ekbus 3ala ayya wajbe ta7et la tshouf el tafasil!`,
-      `Miyet ahla! Jareb kamen hal kheyarat el taybe ktir men matbakh Corano: ${pickNames}!`,
+      `Ahla w sahla! Tekram 3aynak, bansa7ak tjareb hal asnaf el taybe 3anna: ${pickNames}. Choufon ta7et!`,
+      `Min 3youne! Hayde تشكيلة tenye taybe ktir bteneseb talabak: ${pickNames}.`,
+      `Sa7tein salaf! Jareb kamen hal kheyarat el fresh men matbakh Corano: ${pickNames}!`,
     ];
     reply = lbGeneral[variantIdx];
   } else {
     const enGeneral = [
-      `Welcome to Corano! Based on what you're looking for, I highly recommend trying these fresh favorites from our kitchen: ${pickNames}. Tap any dish card below to view its full ingredients and details!`,
-      `Here is another delicious mix of options from our menu that match what you're looking for: ${pickNames}. Tap any dish card below to explore its ingredients!`,
-      `Happy to recommend more! You'll also love these freshly prepared picks from our kitchen: ${pickNames}!`,
+      `Welcome to Corano! Based on your craving, we recommend trying: ${pickNames}. Tap any card below for details!`,
+      `Here is another delicious selection from our kitchen that matches your request: ${pickNames}.`,
+      `Happy to recommend more! You'll also love these freshly prepared picks: ${pickNames}!`,
     ];
     reply = enGeneral[variantIdx];
   }
@@ -2569,6 +3119,7 @@ function buildCoranoMenuSystemPrompt(
 ): string {
   const currency: 'USD' | 'LBP' = storeData.settings?.currency === 'LBP' ? 'LBP' : 'USD';
   const rate = storeData.settings?.exchangeRate || 89000;
+  const promoDetails = getActivePromoDetailsForAi(storeData);
 
   const outOfStockTitles: string[] = [];
   const safeAvailableItems: any[] = [];
@@ -2606,6 +3157,10 @@ function buildCoranoMenuSystemPrompt(
     return `ID:${item.id} | Name: ${item.title} | Category: ${item.category} | Price: ${priceStr}${popFlag}${descStr}`;
   });
 
+  const promoRuleBlock = promoDetails.active
+    ? `\nACTIVE PROMO DISCOUNT TODAY:\n- ${promoDetails.summaryEn}\n- Mention this promo if the guest asks about offers, discounts, promos ("3ouroudat"), or the discounted item/category!\n`
+    : '';
+
   const budgetAndComboRuleBlock =
     budgetSpec.wantsCombo || budgetSpec.maxBudgetUsd !== null
       ? `\nBUDGET & COMBO ("MA3 PEPSI W BATATA") RULE ACTIVE FOR THIS QUESTION:\n- The guest asked for ${
@@ -2641,29 +3196,41 @@ function buildCoranoMenuSystemPrompt(
       ? `\nFOLLOW-UP / REPEAT QUESTION VARIETY RULE (Turn #${previousAssistantTurns + 1} in this chat):\n- Do NOT repeat your exact wording or opening sentence from earlier messages in this chat.\n- Vary your tone naturally and introduce the newly selected dishes listed in SELECTED DISHES FOR THIS TURN above!\n`
       : '';
 
-  return `You are "Corano AI", the warm, knowledgeable AI Waiter at Corano Restaurant in Lebanon (Open daily 11:00 AM - 12:00 AM).
-Your job is to help guests choose dishes, answer ingredient or allergy questions accurately, and recommend 1 to 4 dishes from our LIVE AVAILABLE MENU below.
+  return `You are "Corano AI", the warm, hospitable Lebanese AI Waiter at Corano Restaurant in Lebanon (Open daily 11:00 AM - 12:00 AM, Phone/WhatsApp: 03 220 810).
+Your job is to help guests choose dishes, compare items, answer ingredient or allergy questions accurately, and recommend 1 to 4 dishes from our LIVE AVAILABLE MENU below.
 
 STRICT RULES:
-1. LANGUAGE MIRRORING:
+1. LANGUAGE MIRRORING & LEBANESE HOSPITALITY:
    - If the guest writes in English -> reply in warm, appetizing English (set language="English").
-   - If the guest writes in Lebanese Franco / Arabizi (e.g. "shu atyab burger", "baddi akel bala toum", "bade sandwish aw sub ma3 pepsi w batata fries b 7doud l 10$") -> reply naturally in warm Lebanese Franco / Arabizi (e.g. "Ahla w sahla! Akid...") (set language="Lebanese").
+   - If the guest writes in Lebanese Franco / Arabizi -> reply naturally in warm Lebanese Franco / Arabizi using authentic phrases like "Ahla w sahla!", "Tekram 3aynak!", "Min 3youne!", "Sa7tein!" (set language="Lebanese").
    - If the guest writes in Arabic script (العربية) -> reply in natural Lebanese/Arabic script (set language="Arabic").
 2. RELY ON ITEM NAME, CATEGORY, AND INGREDIENTS:
-   - Always check the item's Name, Category, AND Ingredients for every question.
-3. STRICT INGREDIENT EXCLUSION ("WITHOUT" / "BALA" / "BLA" / "NO" / "بدون" / "بلا"):
-   - When a guest asks for food WITHOUT an ingredient (e.g. "without garlic", "bala toum", "no mayo", "bla basal", "بدون ثوم"), NEVER recommend any dish whose Name or Ingredients contains that ingredient.
+   - Always check the item's Name, Category, AND Ingredients for every question (including "fiha...", "shu l fare2 bayn...", or customization questions like "zyede toum", "bala basal", "sauce 3a jnab", "m7ammas").
+3. STRICT INGREDIENT & ALLERGY EXCLUSION ("WITHOUT" / "BALA" / "3ANDE 7ASESIYE" / "بدون" / "بلا"):
+   - When a guest asks for food WITHOUT an ingredient or mentions an allergy (e.g. "without garlic", "bala toum", "no mayo", "bla basal", "nut allergy / jawz", "dairy / mashta2at 7alib"), NEVER recommend any dish whose Name or Ingredients contains that ingredient.
 4. USE THE SELECTED DISHES FOR THIS TURN:
-   - Use the exact IDs listed in "SELECTED DISHES FOR THIS TURN" for your recommendedItemIds array and naturally talk about those specific dishes in your reply.
-   - For Mashewe inquiries, also briefly mention our full charcoal Mashewe variety (Lahme platter, Charcoal Tawouk platter, Whole & 1/2 Farrouj Meshwe, Kafta, Kabab, Mixed Grill, plus 1/2 kg & 1 kg Mashewe by weight).
+   - Use the exact IDs listed in "SELECTED DISHES FOR THIS TURN" for your recommendedItemIds array and naturally mention those dishes in your reply.
 5. ONLY RECOMMEND IN-STOCK ITEMS:
    - Never recommend out-of-stock items (${outOfStockTitles.length > 0 ? outOfStockTitles.join(', ') : 'none currently out of stock'}).
-6. EXACT PRICES & INGREDIENTS:
+6. EXACT PRICES:
    - Quote the exact prices shown in the menu below (${currency === 'LBP' ? 'in L.L.' : 'in $ USD'}).
-7. Keep your reply concise (2 to 4 sentences max) because visual dish cards for your recommendedItemIds will automatically appear right below your text!
+7. KEEP REPLIES SHORT & CRISP (2 TO 2.5 LINES / 1 TO 2 SENTENCES MAX):
+   - Because interactive Dish Cards with photos, titles, and prices appear right below your text bubble, keep your reply super concise (around 2 to 2.5 lines max)! Only list full ingredients in text when the guest specifically asks what is inside a dish or asks for the difference ("shu l fare2") between dishes.
 8. Set topicTag to one of: "Popular & Best Sellers", "Burgers & Subs", "Healthy & Light", "Ingredients & Allergies", "Spicy Dishes", "Prices & Budget", "Sandwiches & Wraps", "Pizza & Pasta", "General Inquiry".
 9. Set summary to a 1-sentence English summary for the restaurant owner.
-${budgetAndComboRuleBlock}${priorityHighlightBlock}${repeatVarietyBlock}
+
+FEW-SHOT STYLE EXAMPLES (2 TO 2.5 LINES MAX):
+- Guest (Lebanese Franco - Craving): "shu betnasahne baddi shi tayeb w yshabbe3 lal ghada?"
+  Reply: "Ahla w sahla! Tekram 3aynak — eza jou3an jarreb el Chicken Corano aw Chicken Thierry bl Subs, aw el Truffle Burger w Charcoal Tawouk. Choufon ta7et!"
+- Guest (Lebanese Franco - Ingredients & Customization): "fiha toum l chicken sub? w fini otloba zyede toum w bala basal?"
+  Reply: "Min 3youne! El Chicken Sub fiha chicken breast, khas, banadoura, kabis, mixed cheese w aioli sauce, w akid fik totloba zyede toum aw bala basal بس تحكينا عالواتساب!"
+- Guest (Lebanese Franco - Comparison): "shu l fare2 bayn chicken corano w chicken thierry?"
+  Reply: "Ahla fik! El Chicken Corano fiha chicken breast, jebne, basal, sweet pepper w special sauce, baynama el Chicken Thierry fiha marinated chicken ma3 fries, salameh, jebne w honey mustard!"
+- Guest (English - Gym / High Protein): "What do you recommend for a clean high-protein meal after the gym?"
+  Reply: "Welcome to Corano! Try our Chicken Breast Platter with grilled potatoes, our Light Chicken or Chicken Avocado in 24cm brown bread, or our Quinoa Salad."
+- Guest (Arabic - Gathering / Sahra): "نحنا سهرانين ٤ اشخاص شو عندكن مشاوي ومقبلات للمشاركة؟"
+  Reply: "أهلا وسهلا فيكن! للسهرة بنصحكن بصحن المشاوي المشكل أو كيلو مشاوي عالفحم، ومعهن حمص، بطاطا حرة ودزينة رقاقات جبنة أو سمبوسك. صحتين سلف!"
+${promoRuleBlock}${budgetAndComboRuleBlock}${priorityHighlightBlock}${repeatVarietyBlock}
 TOP RELEVANT CORANO MENU DISHES (${availableLines.length} dishes):
 ${availableLines.join('\n')}`;
 }

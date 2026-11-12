@@ -149,10 +149,22 @@ const Admin = () => {
   });
   const [newItemInputCurrency, setNewItemInputCurrency] = useState<StoreCurrency>('USD');
   const [newItemRawPriceInput, setNewItemRawPriceInput] = useState<string>('');
+  const [newItemDiscountEnabled, setNewItemDiscountEnabled] = useState<boolean>(false);
+  const [newItemDiscountType, setNewItemDiscountType] = useState<PromoDiscountType>('percent');
+  const [newItemDiscountInputCurrency, setNewItemDiscountInputCurrency] =
+    useState<StoreCurrency>('USD');
+  const [newItemDiscountValue, setNewItemDiscountValue] = useState<number>(0);
+  const [newItemDiscountInput, setNewItemDiscountInput] = useState<string>('');
 
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [editItemInputCurrency, setEditItemInputCurrency] = useState<StoreCurrency>('USD');
   const [editItemRawPriceInput, setEditItemRawPriceInput] = useState<string>('');
+  const [editItemDiscountEnabled, setEditItemDiscountEnabled] = useState<boolean>(false);
+  const [editItemDiscountType, setEditItemDiscountType] = useState<PromoDiscountType>('percent');
+  const [editItemDiscountInputCurrency, setEditItemDiscountInputCurrency] =
+    useState<StoreCurrency>('USD');
+  const [editItemDiscountValue, setEditItemDiscountValue] = useState<number>(0);
+  const [editItemDiscountInput, setEditItemDiscountInput] = useState<string>('');
 
   const [newCat, setNewCat] = useState<Partial<MenuCategory>>({ name: '', order: 1 });
   const [newCatOrderInput, setNewCatOrderInput] = useState<string>('1');
@@ -733,7 +745,23 @@ const Admin = () => {
         skipDeleteOld: otherItemsSharingUrl.length > 0,
       });
 
-      const updatedItem: MenuItem = { ...editingItem, img: uploaded.url };
+      const finalDiscVal =
+        editItemDiscountEnabled &&
+        Number.isFinite(editItemDiscountValue) &&
+        editItemDiscountValue > 0
+          ? editItemDiscountType === 'percent'
+            ? Math.min(99, Math.max(1, Math.round(editItemDiscountValue)))
+            : Math.round(editItemDiscountValue * 100) / 100
+          : 0;
+      const finalDiscEnabled = Boolean(editItemDiscountEnabled && finalDiscVal > 0);
+
+      const updatedItem: MenuItem = {
+        ...editingItem,
+        img: uploaded.url,
+        discountEnabled: finalDiscEnabled,
+        discountType: editItemDiscountType,
+        discountValue: finalDiscVal,
+      };
       setEditingItem(updatedItem);
 
       if (editingItem.id) {
@@ -760,6 +788,151 @@ const Admin = () => {
     setEditingItem(item);
     setEditItemInputCurrency('USD');
     setEditItemRawPriceInput(String(item.price || ''));
+
+    const dType: PromoDiscountType = item.discountType === 'fixed' ? 'fixed' : 'percent';
+    const dVal =
+      typeof item.discountValue === 'number' &&
+      Number.isFinite(item.discountValue) &&
+      item.discountValue > 0
+        ? item.discountValue
+        : 0;
+    const dEnabled = Boolean(item.discountEnabled && dVal > 0);
+    setEditItemDiscountEnabled(dEnabled);
+    setEditItemDiscountType(dType);
+    setEditItemDiscountInputCurrency('USD');
+    setEditItemDiscountValue(dVal);
+    if (dVal > 0) {
+      if (dType === 'percent') {
+        setEditItemDiscountInput(String(Math.round(dVal)));
+      } else {
+        const cleanUsd = Math.round(dVal * 100) / 100;
+        setEditItemDiscountInput(String(cleanUsd));
+      }
+    } else {
+      setEditItemDiscountInput('');
+    }
+  };
+
+  const parseZeroGlitchDiscountBox = (
+    rawVal: string,
+    discType: PromoDiscountType,
+    inputCurr: StoreCurrency
+  ): { inputStr: string; numericVal: number } => {
+    const rate = exchangeRate || DEFAULT_LBP_RATE;
+    if (discType === 'percent') {
+      const digitsOnly = rawVal.replace(/[^0-9]/g, '').replace(/^0+/, '');
+      if (digitsOnly === '') {
+        return { inputStr: '', numericVal: 0 };
+      }
+      const parsed = Math.min(99, Math.max(1, parseInt(digitsOnly, 10)));
+      return { inputStr: String(parsed), numericVal: parsed };
+    }
+
+    if (inputCurr === 'LBP') {
+      const digitsOnly = rawVal.replace(/[^0-9]/g, '').replace(/^0+/, '');
+      if (digitsOnly === '') {
+        return { inputStr: '', numericVal: 0 };
+      }
+      const usdStr = convertLbpInputToUsdString(digitsOnly, rate);
+      const usdVal = parseFloat(usdStr);
+      return {
+        inputStr: digitsOnly,
+        numericVal: Number.isFinite(usdVal) && usdVal > 0 ? usdVal : 0,
+      };
+    }
+
+    // USD mode: allow digits and at most one decimal point, preserving intermediate states like "0." or "5." while typing
+    let cleaned = rawVal.replace(/[^0-9.]/g, '');
+    const dotParts = cleaned.split('.');
+    if (dotParts.length > 2) {
+      cleaned = `${dotParts[0]}.${dotParts.slice(1).join('')}`;
+    }
+    if (cleaned.startsWith('.')) {
+      cleaned = `0${cleaned}`;
+    } else if (/^0+\d/.test(cleaned)) {
+      cleaned = cleaned.replace(/^0+/, '');
+    }
+    if (cleaned === '') {
+      return { inputStr: '', numericVal: 0 };
+    }
+    const parsedUsd = parseFloat(cleaned);
+    return {
+      inputStr: cleaned,
+      numericVal:
+        Number.isFinite(parsedUsd) && parsedUsd > 0 ? Math.round(parsedUsd * 100) / 100 : 0,
+    };
+  };
+
+  // Add Product Modal Discount Handlers
+  const handleNewItemDiscountInputChange = (rawVal: string) => {
+    const { inputStr, numericVal } = parseZeroGlitchDiscountBox(
+      rawVal,
+      newItemDiscountType,
+      newItemDiscountInputCurrency
+    );
+    setNewItemDiscountInput(inputStr);
+    setNewItemDiscountValue(numericVal);
+  };
+
+  const handleSwitchNewItemDiscountType = (nextType: PromoDiscountType) => {
+    if (nextType === newItemDiscountType) return;
+    setNewItemDiscountType(nextType);
+    setNewItemDiscountValue(0);
+    setNewItemDiscountInput('');
+  };
+
+  const handleSwitchNewItemDiscountInputCurrency = (nextCurr: StoreCurrency) => {
+    if (nextCurr === newItemDiscountInputCurrency) return;
+    const rate = exchangeRate || DEFAULT_LBP_RATE;
+    if (newItemDiscountValue > 0) {
+      if (nextCurr === 'LBP') {
+        setNewItemDiscountInput(
+          convertUsdStringToLbpInput(String(newItemDiscountValue), rate)
+        );
+      } else {
+        const cleanUsd = Math.round(newItemDiscountValue * 100) / 100;
+        setNewItemDiscountInput(String(cleanUsd));
+      }
+    } else {
+      setNewItemDiscountInput('');
+    }
+    setNewItemDiscountInputCurrency(nextCurr);
+  };
+
+  // Edit Product Modal Discount Handlers
+  const handleEditItemDiscountInputChange = (rawVal: string) => {
+    const { inputStr, numericVal } = parseZeroGlitchDiscountBox(
+      rawVal,
+      editItemDiscountType,
+      editItemDiscountInputCurrency
+    );
+    setEditItemDiscountInput(inputStr);
+    setEditItemDiscountValue(numericVal);
+  };
+
+  const handleSwitchEditItemDiscountType = (nextType: PromoDiscountType) => {
+    if (nextType === editItemDiscountType) return;
+    setEditItemDiscountType(nextType);
+    setEditItemDiscountValue(0);
+    setEditItemDiscountInput('');
+  };
+
+  const handleSwitchEditItemDiscountInputCurrency = (nextCurr: StoreCurrency) => {
+    if (nextCurr === editItemDiscountInputCurrency) return;
+    const rate = exchangeRate || DEFAULT_LBP_RATE;
+    if (editItemDiscountValue > 0) {
+      if (nextCurr === 'LBP') {
+        setEditItemDiscountInput(
+          convertUsdStringToLbpInput(String(editItemDiscountValue), rate)
+        );
+      } else {
+        const cleanUsd = Math.round(editItemDiscountValue * 100) / 100;
+        setEditItemDiscountInput(String(cleanUsd));
+      }
+    } else {
+      setEditItemDiscountInput('');
+    }
+    setEditItemDiscountInputCurrency(nextCurr);
   };
 
   const handleSwitchNewItemInputCurrency = (mode: StoreCurrency) => {
@@ -795,6 +968,16 @@ const Admin = () => {
           ? convertLbpInputToUsdString(newItemRawPriceInput, exchangeRate)
           : newItemRawPriceInput.replace(/^\$/, '').trim();
 
+      const finalDiscVal =
+        newItemDiscountEnabled &&
+        Number.isFinite(newItemDiscountValue) &&
+        newItemDiscountValue > 0
+          ? newItemDiscountType === 'percent'
+            ? Math.min(99, Math.max(1, Math.round(newItemDiscountValue)))
+            : Math.round(newItemDiscountValue * 100) / 100
+          : 0;
+      const finalDiscEnabled = Boolean(newItemDiscountEnabled && finalDiscVal > 0);
+
       const payload = sanitizeFirestorePayload({
         category: (newItem.category || categories[0]?.name.toLowerCase() || 'subs').toLowerCase(),
         title: newItem.title || '',
@@ -804,6 +987,9 @@ const Admin = () => {
         available: newItem.available !== false,
         popular: Boolean(newItem.popular),
         order: newItem.order ?? 99,
+        discountEnabled: finalDiscEnabled,
+        discountType: newItemDiscountType,
+        discountValue: finalDiscVal,
       });
 
       const updatedStore = await mutateR2StoreData('saveItem', {
@@ -822,6 +1008,11 @@ const Admin = () => {
         order: 99,
       });
       setNewItemRawPriceInput('');
+      setNewItemDiscountEnabled(false);
+      setNewItemDiscountType('percent');
+      setNewItemDiscountInputCurrency('USD');
+      setNewItemDiscountValue(0);
+      setNewItemDiscountInput('');
       setAddPhotoBadge(null);
       setShowAddProductModal(false);
       setStatusNotice('✓ Product added to menu.');
@@ -841,10 +1032,23 @@ const Admin = () => {
           ? convertLbpInputToUsdString(editItemRawPriceInput, exchangeRate)
           : editItemRawPriceInput.replace(/^\$/, '').trim();
 
+      const finalDiscVal =
+        editItemDiscountEnabled &&
+        Number.isFinite(editItemDiscountValue) &&
+        editItemDiscountValue > 0
+          ? editItemDiscountType === 'percent'
+            ? Math.min(99, Math.max(1, Math.round(editItemDiscountValue)))
+            : Math.round(editItemDiscountValue * 100) / 100
+          : 0;
+      const finalDiscEnabled = Boolean(editItemDiscountEnabled && finalDiscVal > 0);
+
       const itemPayload = {
         ...editingItem,
         price: finalUsdPrice || editingItem.price || '0',
         category: editingItem.category.toLowerCase(),
+        discountEnabled: finalDiscEnabled,
+        discountType: editItemDiscountType,
+        discountValue: finalDiscVal,
       };
       const updatedStore = await mutateR2StoreData('saveItem', {
         item: itemPayload,
@@ -1249,58 +1453,14 @@ const Admin = () => {
   };
 
   // Zero-glitch number input handler for Promo Banner Discount (% or $ / L.L.)
-  // Strips any leading zeros immediately so deleting and typing 50 always shows "50" (never "050")
   const handlePromoDiscountInputChange = (rawVal: string) => {
-    const rate = exchangeRate || DEFAULT_LBP_RATE;
-    if (promoBannerDiscountType === 'percent') {
-      const digitsOnly = rawVal.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
-      if (digitsOnly === '' || digitsOnly === '0') {
-        setPromoBannerDiscountInput('');
-        setPromoBannerDiscountValue(0);
-        return;
-      }
-      const parsed = Math.min(99, Math.max(1, parseInt(digitsOnly, 10)));
-      setPromoBannerDiscountInput(String(parsed));
-      setPromoBannerDiscountValue(parsed);
-      return;
-    }
-
-    // Fixed amount ($ USD or L.L.)
-    if (promoBannerDiscountInputCurrency === 'LBP') {
-      const digitsOnly = rawVal.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
-      if (digitsOnly === '' || digitsOnly === '0') {
-        setPromoBannerDiscountInput('');
-        setPromoBannerDiscountValue(0);
-        return;
-      }
-      setPromoBannerDiscountInput(digitsOnly);
-      const usdStr = convertLbpInputToUsdString(digitsOnly, rate);
-      const usdVal = parseFloat(usdStr);
-      setPromoBannerDiscountValue(Number.isFinite(usdVal) && usdVal > 0 ? usdVal : 0);
-      return;
-    }
-
-    // USD mode: allow digits and at most one decimal point, stripping leading zeros before integer digits
-    let cleaned = rawVal.replace(/[^0-9.]/g, '');
-    const dotParts = cleaned.split('.');
-    if (dotParts.length > 2) {
-      cleaned = `${dotParts[0]}.${dotParts.slice(1).join('')}`;
-    }
-    if (cleaned.startsWith('.')) {
-      cleaned = `0${cleaned}`;
-    } else {
-      cleaned = cleaned.replace(/^0+(?=\d)/, '');
-    }
-    if (cleaned === '' || cleaned === '0') {
-      setPromoBannerDiscountInput('');
-      setPromoBannerDiscountValue(0);
-      return;
-    }
-    setPromoBannerDiscountInput(cleaned);
-    const parsedUsd = parseFloat(cleaned);
-    setPromoBannerDiscountValue(
-      Number.isFinite(parsedUsd) && parsedUsd > 0 ? Math.round(parsedUsd * 100) / 100 : 0
+    const { inputStr, numericVal } = parseZeroGlitchDiscountBox(
+      rawVal,
+      promoBannerDiscountType,
+      promoBannerDiscountInputCurrency
     );
+    setPromoBannerDiscountInput(inputStr);
+    setPromoBannerDiscountValue(numericVal);
   };
 
   const handleSwitchPromoDiscountType = (nextType: PromoDiscountType) => {
@@ -1811,6 +1971,11 @@ const Admin = () => {
     });
     setNewItemInputCurrency(storeCurrency);
     setNewItemRawPriceInput('');
+    setNewItemDiscountEnabled(false);
+    setNewItemDiscountType('percent');
+    setNewItemDiscountInputCurrency(storeCurrency);
+    setNewItemDiscountValue(0);
+    setNewItemDiscountInput('');
     setShowAddProductModal(true);
   };
 
@@ -2274,6 +2439,26 @@ const Admin = () => {
                     ) : (
                       filteredItems.map((item) => {
                         const isAvailable = item.available !== false;
+                        const hasItemDiscount = Boolean(
+                          item.discountEnabled &&
+                            typeof item.discountValue === 'number' &&
+                            item.discountValue > 0
+                        );
+                        const itemDiscType: PromoDiscountType =
+                          item.discountType === 'fixed' ? 'fixed' : 'percent';
+                        const itemDiscVal =
+                          typeof item.discountValue === 'number' ? item.discountValue : 0;
+                        const itemDiscUsd = hasItemDiscount
+                          ? computeDiscountedUsdPriceString(item.price, itemDiscType, itemDiscVal)
+                          : item.price;
+                        const itemBadgeLabel = hasItemDiscount
+                          ? formatDiscountBadgeText(
+                              itemDiscType,
+                              itemDiscVal,
+                              storeCurrency,
+                              exchangeRate || DEFAULT_LBP_RATE
+                            )
+                          : '';
                         return (
                           <div
                             key={item.id}
@@ -2304,8 +2489,21 @@ const Admin = () => {
                                     {item.title}
                                   </div>
                                   {/* Price shown on top-right on phone for clean thumb-zone alignment */}
-                                  <div className="sm:hidden text-sm font-bold text-primary font-mono tabular-nums whitespace-nowrap shrink-0">
-                                    {formatStorePrice(item.price, storeCurrency, exchangeRate)}
+                                  <div className="sm:hidden flex flex-col items-end font-mono tabular-nums whitespace-nowrap shrink-0">
+                                    {hasItemDiscount ? (
+                                      <>
+                                        <span className="text-[10px] text-on-surface-variant/75 line-through leading-tight">
+                                          {formatStorePrice(item.price, storeCurrency, exchangeRate)}
+                                        </span>
+                                        <span className="text-sm font-bold text-primary leading-tight">
+                                          {formatStorePrice(itemDiscUsd, storeCurrency, exchangeRate)}
+                                        </span>
+                                      </>
+                                    ) : (
+                                      <span className="text-sm font-bold text-primary">
+                                        {formatStorePrice(item.price, storeCurrency, exchangeRate)}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="text-xs text-on-surface-variant capitalize flex flex-wrap items-center gap-1.5 mt-0.5">
@@ -2314,6 +2512,14 @@ const Admin = () => {
                                   <span className="font-mono tabular-nums">
                                     #{item.order ?? 99}
                                   </span>
+                                  {hasItemDiscount && (
+                                    <>
+                                      <span aria-hidden="true">·</span>
+                                      <span className="bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-full">
+                                        {itemBadgeLabel}
+                                      </span>
+                                    </>
+                                  )}
                                   {item.popular && (
                                     <>
                                       <span aria-hidden="true">·</span>
@@ -2355,8 +2561,21 @@ const Admin = () => {
                             </div>
 
                             {/* Desktop Center: Formatted Price ($ or L.L.) */}
-                            <div className="hidden sm:block text-base font-bold text-primary font-mono tabular-nums whitespace-nowrap">
-                              {formatStorePrice(item.price, storeCurrency, exchangeRate)}
+                            <div className="hidden sm:flex flex-col items-end font-mono tabular-nums whitespace-nowrap">
+                              {hasItemDiscount ? (
+                                <>
+                                  <span className="text-[11px] text-on-surface-variant/75 line-through leading-tight">
+                                    {formatStorePrice(item.price, storeCurrency, exchangeRate)}
+                                  </span>
+                                  <span className="text-base font-bold text-primary leading-tight">
+                                    {formatStorePrice(itemDiscUsd, storeCurrency, exchangeRate)}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-base font-bold text-primary">
+                                  {formatStorePrice(item.price, storeCurrency, exchangeRate)}
+                                </span>
+                              )}
                             </div>
 
                             {/* Bottom / Right: Stock Toggle Switch + Popular Star + Edit + Delete */}
@@ -4263,6 +4482,193 @@ const Admin = () => {
                 )}
               </div>
 
+              {/* Product Discount System (% or $ / L.L.) */}
+              <div className="bg-surface-container border border-outline/40 rounded-xl p-3.5 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-xs font-semibold text-on-surface">
+                      Product Discount (Slashed Price & Badge)
+                    </div>
+                    <p className="text-[11px] text-on-surface-variant mt-0.5">
+                      Discount this item directly on the menu without needing a Promo Banner.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={newItemDiscountEnabled}
+                    onClick={() => setNewItemDiscountEnabled((prev) => !prev)}
+                    className="flex items-center gap-2 shrink-0"
+                  >
+                    <span
+                      className={`w-10 h-5 rounded-full p-0.5 flex items-center transition-colors ${
+                        newItemDiscountEnabled
+                          ? 'bg-primary justify-end'
+                          : 'bg-surface-container-high justify-start'
+                      }`}
+                    >
+                      <span
+                        className={`w-4 h-4 rounded-full ${
+                          newItemDiscountEnabled ? 'bg-on-primary' : 'bg-on-surface-variant/60'
+                        }`}
+                      />
+                    </span>
+                    <span
+                      className={`text-xs font-bold ${
+                        newItemDiscountEnabled ? 'text-primary' : 'text-on-surface-variant'
+                      }`}
+                    >
+                      {newItemDiscountEnabled ? 'ON' : 'OFF'}
+                    </span>
+                  </button>
+                </div>
+
+                {newItemDiscountEnabled && (
+                  <div className="pt-3 border-t border-outline-variant/25 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      {/* Discount Type: % vs $ / L.L. */}
+                      <div className="grid grid-cols-2 bg-surface-container-low p-1 rounded-xl border border-outline-variant/40 w-full sm:w-auto">
+                        <button
+                          type="button"
+                          onClick={() => handleSwitchNewItemDiscountType('percent')}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
+                            newItemDiscountType === 'percent'
+                              ? 'bg-primary text-on-primary'
+                              : 'text-on-surface-variant hover:text-on-surface'
+                          }`}
+                        >
+                          % Percentage
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSwitchNewItemDiscountType('fixed')}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
+                            newItemDiscountType === 'fixed'
+                              ? 'bg-primary text-on-primary'
+                              : 'text-on-surface-variant hover:text-on-surface'
+                          }`}
+                        >
+                          $ / L.L. Amount
+                        </button>
+                      </div>
+
+                      {/* Currency Switcher when Fixed Amount is chosen */}
+                      {newItemDiscountType === 'fixed' && (
+                        <div className="grid grid-cols-2 bg-surface-container-low p-1 rounded-xl border border-outline-variant/40 w-full sm:w-auto shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleSwitchNewItemDiscountInputCurrency('USD')}
+                            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold font-mono transition-colors whitespace-nowrap ${
+                              newItemDiscountInputCurrency === 'USD'
+                                ? 'bg-primary text-on-primary'
+                                : 'text-on-surface-variant hover:text-on-surface'
+                            }`}
+                          >
+                            $ (USD)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSwitchNewItemDiscountInputCurrency('LBP')}
+                            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold font-mono transition-colors whitespace-nowrap ${
+                              newItemDiscountInputCurrency === 'LBP'
+                                ? 'bg-primary text-on-primary'
+                                : 'text-on-surface-variant hover:text-on-surface'
+                            }`}
+                          >
+                            L.L. (89,000)
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Zero-Glitch Discount Number Box */}
+                    <div className="relative flex items-center w-full">
+                      <input
+                        type="text"
+                        inputMode={
+                          newItemDiscountType === 'fixed' && newItemDiscountInputCurrency === 'USD'
+                            ? 'decimal'
+                            : 'numeric'
+                        }
+                        value={newItemDiscountInput}
+                        onChange={(e) => handleNewItemDiscountInputChange(e.target.value)}
+                        placeholder={
+                          newItemDiscountType === 'percent'
+                            ? 'e.g. 50'
+                            : newItemDiscountInputCurrency === 'LBP'
+                            ? 'e.g. 445000'
+                            : 'e.g. 5'
+                        }
+                        className="w-full bg-surface-container-low border border-outline/40 rounded-xl px-3.5 py-2.5 text-base sm:text-sm text-on-surface font-mono tabular-nums focus:outline-none focus:border-primary pr-20"
+                      />
+                      {newItemDiscountInput !== '' && (
+                        <button
+                          type="button"
+                          onClick={() => handleNewItemDiscountInputChange('')}
+                          title="Clear discount number"
+                          className="absolute right-12 w-6 h-6 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"
+                        >
+                          <AdminSvgIcon name="close" className="text-[14px]" />
+                        </button>
+                      )}
+                      <span className="absolute right-3.5 text-xs font-mono font-bold text-primary pointer-events-none">
+                        {newItemDiscountType === 'percent'
+                          ? '% OFF'
+                          : newItemDiscountInputCurrency === 'LBP'
+                          ? 'L.L.'
+                          : '$'}
+                      </span>
+                    </div>
+
+                    {/* Live Preview of Slashed Original Price + New Discounted Price */}
+                    {newItemDiscountValue > 0 && (
+                      <div className="bg-surface-container-lowest/80 border border-outline-variant/30 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-on-surface-variant">Badge:</span>
+                          <span className="bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full">
+                            {formatDiscountBadgeText(
+                              newItemDiscountType,
+                              newItemDiscountValue,
+                              storeCurrency,
+                              exchangeRate || DEFAULT_LBP_RATE
+                            )}
+                          </span>
+                        </div>
+                        {(() => {
+                          const rate = exchangeRate || DEFAULT_LBP_RATE;
+                          const rawBaseUsd =
+                            newItemInputCurrency === 'LBP'
+                              ? convertLbpInputToUsdString(newItemRawPriceInput || '0', rate)
+                              : (newItemRawPriceInput || '0').replace(/^\$/, '').trim();
+                          const basePriceForPreview =
+                            parseFloat(rawBaseUsd) > 0 ? rawBaseUsd : '10';
+                          const origFmt = formatStorePrice(
+                            basePriceForPreview,
+                            storeCurrency,
+                            rate
+                          );
+                          const discUsd = computeDiscountedUsdPriceString(
+                            basePriceForPreview,
+                            newItemDiscountType,
+                            newItemDiscountValue
+                          );
+                          const discFmt = formatStorePrice(discUsd, storeCurrency, rate);
+                          return (
+                            <div className="flex items-center gap-2 font-mono text-[11px]">
+                              <span className="text-on-surface-variant">Menu Price:</span>
+                              <span className="line-through text-on-surface-variant/75">
+                                {origFmt}
+                              </span>
+                              <span className="text-primary font-bold">{discFmt}</span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs mb-1 text-on-surface-variant">Description</label>
                 <textarea
@@ -4616,6 +5022,196 @@ const Admin = () => {
                     {editItemInputCurrency === 'LBP'
                       ? `≈ $${convertLbpInputToUsdString(editItemRawPriceInput, exchangeRate)} USD (at 89,000 L.L./$1)`
                       : `≈ ${formatStorePrice(editItemRawPriceInput, 'LBP', exchangeRate)} (at 89,000 L.L./$1)`}
+                  </div>
+                )}
+              </div>
+
+              {/* Product Discount System (% or $ / L.L.) */}
+              <div className="bg-surface-container border border-outline/40 rounded-xl p-3.5 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-xs font-semibold text-on-surface">
+                      Product Discount (Slashed Price & Badge)
+                    </div>
+                    <p className="text-[11px] text-on-surface-variant mt-0.5">
+                      Discount this item directly on the menu without needing a Promo Banner.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={editItemDiscountEnabled}
+                    onClick={() => setEditItemDiscountEnabled((prev) => !prev)}
+                    className="flex items-center gap-2 shrink-0"
+                  >
+                    <span
+                      className={`w-10 h-5 rounded-full p-0.5 flex items-center transition-colors ${
+                        editItemDiscountEnabled
+                          ? 'bg-primary justify-end'
+                          : 'bg-surface-container-high justify-start'
+                      }`}
+                    >
+                      <span
+                        className={`w-4 h-4 rounded-full ${
+                          editItemDiscountEnabled ? 'bg-on-primary' : 'bg-on-surface-variant/60'
+                        }`}
+                      />
+                    </span>
+                    <span
+                      className={`text-xs font-bold ${
+                        editItemDiscountEnabled ? 'text-primary' : 'text-on-surface-variant'
+                      }`}
+                    >
+                      {editItemDiscountEnabled ? 'ON' : 'OFF'}
+                    </span>
+                  </button>
+                </div>
+
+                {editItemDiscountEnabled && (
+                  <div className="pt-3 border-t border-outline-variant/25 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      {/* Discount Type: % vs $ / L.L. */}
+                      <div className="grid grid-cols-2 bg-surface-container-low p-1 rounded-xl border border-outline-variant/40 w-full sm:w-auto">
+                        <button
+                          type="button"
+                          onClick={() => handleSwitchEditItemDiscountType('percent')}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
+                            editItemDiscountType === 'percent'
+                              ? 'bg-primary text-on-primary'
+                              : 'text-on-surface-variant hover:text-on-surface'
+                          }`}
+                        >
+                          % Percentage
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSwitchEditItemDiscountType('fixed')}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
+                            editItemDiscountType === 'fixed'
+                              ? 'bg-primary text-on-primary'
+                              : 'text-on-surface-variant hover:text-on-surface'
+                          }`}
+                        >
+                          $ / L.L. Amount
+                        </button>
+                      </div>
+
+                      {/* Currency Switcher when Fixed Amount is chosen */}
+                      {editItemDiscountType === 'fixed' && (
+                        <div className="grid grid-cols-2 bg-surface-container-low p-1 rounded-xl border border-outline-variant/40 w-full sm:w-auto shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleSwitchEditItemDiscountInputCurrency('USD')}
+                            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold font-mono transition-colors whitespace-nowrap ${
+                              editItemDiscountInputCurrency === 'USD'
+                                ? 'bg-primary text-on-primary'
+                                : 'text-on-surface-variant hover:text-on-surface'
+                            }`}
+                          >
+                            $ (USD)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSwitchEditItemDiscountInputCurrency('LBP')}
+                            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold font-mono transition-colors whitespace-nowrap ${
+                              editItemDiscountInputCurrency === 'LBP'
+                                ? 'bg-primary text-on-primary'
+                                : 'text-on-surface-variant hover:text-on-surface'
+                            }`}
+                          >
+                            L.L. (89,000)
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Zero-Glitch Discount Number Box */}
+                    <div className="relative flex items-center w-full">
+                      <input
+                        type="text"
+                        inputMode={
+                          editItemDiscountType === 'fixed' &&
+                          editItemDiscountInputCurrency === 'USD'
+                            ? 'decimal'
+                            : 'numeric'
+                        }
+                        value={editItemDiscountInput}
+                        onChange={(e) => handleEditItemDiscountInputChange(e.target.value)}
+                        placeholder={
+                          editItemDiscountType === 'percent'
+                            ? 'e.g. 50'
+                            : editItemDiscountInputCurrency === 'LBP'
+                            ? 'e.g. 445000'
+                            : 'e.g. 5'
+                        }
+                        className="w-full bg-surface-container-low border border-outline/40 rounded-xl px-3.5 py-2.5 text-base sm:text-sm text-on-surface font-mono tabular-nums focus:outline-none focus:border-primary pr-20"
+                      />
+                      {editItemDiscountInput !== '' && (
+                        <button
+                          type="button"
+                          onClick={() => handleEditItemDiscountInputChange('')}
+                          title="Clear discount number"
+                          className="absolute right-12 w-6 h-6 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"
+                        >
+                          <AdminSvgIcon name="close" className="text-[14px]" />
+                        </button>
+                      )}
+                      <span className="absolute right-3.5 text-xs font-mono font-bold text-primary pointer-events-none">
+                        {editItemDiscountType === 'percent'
+                          ? '% OFF'
+                          : editItemDiscountInputCurrency === 'LBP'
+                          ? 'L.L.'
+                          : '$'}
+                      </span>
+                    </div>
+
+                    {/* Live Preview of Slashed Original Price + New Discounted Price */}
+                    {editItemDiscountValue > 0 && (
+                      <div className="bg-surface-container-lowest/80 border border-outline-variant/30 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-on-surface-variant">Badge:</span>
+                          <span className="bg-error text-on-error font-bold text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full">
+                            {formatDiscountBadgeText(
+                              editItemDiscountType,
+                              editItemDiscountValue,
+                              storeCurrency,
+                              exchangeRate || DEFAULT_LBP_RATE
+                            )}
+                          </span>
+                        </div>
+                        {(() => {
+                          const rate = exchangeRate || DEFAULT_LBP_RATE;
+                          const rawBaseUsd =
+                            editItemInputCurrency === 'LBP'
+                              ? convertLbpInputToUsdString(editItemRawPriceInput || '0', rate)
+                              : (editItemRawPriceInput || editingItem.price || '0')
+                                  .replace(/^\$/, '')
+                                  .trim();
+                          const basePriceForPreview =
+                            parseFloat(rawBaseUsd) > 0 ? rawBaseUsd : editingItem.price || '10';
+                          const origFmt = formatStorePrice(
+                            basePriceForPreview,
+                            storeCurrency,
+                            rate
+                          );
+                          const discUsd = computeDiscountedUsdPriceString(
+                            basePriceForPreview,
+                            editItemDiscountType,
+                            editItemDiscountValue
+                          );
+                          const discFmt = formatStorePrice(discUsd, storeCurrency, rate);
+                          return (
+                            <div className="flex items-center gap-2 font-mono text-[11px]">
+                              <span className="text-on-surface-variant">Menu Price:</span>
+                              <span className="line-through text-on-surface-variant/75">
+                                {origFmt}
+                              </span>
+                              <span className="text-primary font-bold">{discFmt}</span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

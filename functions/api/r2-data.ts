@@ -680,6 +680,16 @@ export const onRequestPost = async (context: any) => {
           ? String(rawItem.id).trim()
           : `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 
+      const discountEnabled = Boolean(rawItem.discountEnabled);
+      const discountType = rawItem.discountType === 'fixed' ? 'fixed' : 'percent';
+      const rawDiscVal = Number(rawItem.discountValue);
+      const discountValue =
+        discountEnabled && Number.isFinite(rawDiscVal) && rawDiscVal > 0
+          ? discountType === 'percent'
+            ? Math.min(99, Math.max(1, Math.round(rawDiscVal)))
+            : Math.round(rawDiscVal * 100) / 100
+          : 0;
+
       const cleanItem = sanitizeRecord({
         id: itemId,
         title,
@@ -694,6 +704,9 @@ export const onRequestPost = async (context: any) => {
           : [],
         isNew: Boolean(rawItem.isNew),
         popular: Boolean(rawItem.popular),
+        discountEnabled: Boolean(discountEnabled && discountValue > 0),
+        discountType,
+        discountValue,
       });
 
       const existingIdx = storeData.items.findIndex((i: any) => i.id === itemId);

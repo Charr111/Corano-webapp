@@ -17,6 +17,9 @@ export type MenuItem = {
   order?: number;
   isNew?: boolean;
   popular?: boolean;
+  discountEnabled?: boolean;
+  discountType?: PromoDiscountType;
+  discountValue?: number;
 };
 
 export type Review = {
