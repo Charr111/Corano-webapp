@@ -1,8 +1,6 @@
 // Pure Client-Side Browser Auto-Shrink Utility (< 55 KB Target Budget + iOS Safari/WebKit Fix)
 // and Firestore Payload Sanitization helpers.
 
-import { auth } from '../firebase';
-
 export interface CompressedImageResult {
   base64Data: string;
   contentType: 'image/webp' | 'image/jpeg';
@@ -400,6 +398,7 @@ export async function uploadCompressedToR2(params: {
   skipDeleteOld?: boolean;
   isPromoBanner?: boolean;
 }): Promise<{ url: string; key: string; sizeBytes: number }> {
+  const { auth } = await import('../firebase');
   const currentUser = auth.currentUser;
   if (!currentUser) {
     throw new Error('Please sign in with your Google Admin account before uploading photos.');
@@ -427,6 +426,7 @@ export async function uploadCompressedToR2(params: {
  */
 export async function deleteImageFromR2(imageUrl: string): Promise<void> {
   if (!imageUrl || !imageUrl.trim()) return;
+  const { auth } = await import('../firebase');
   const currentUser = auth.currentUser;
   if (!currentUser) {
     throw new Error('Please sign in with your Google Admin account first.');

@@ -4485,13 +4485,8 @@ const Admin = () => {
               {/* Product Discount System (% or $ / L.L.) */}
               <div className="bg-surface-container border border-outline/40 rounded-xl p-3.5 space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <div className="text-xs font-semibold text-on-surface">
-                      Product Discount (Slashed Price & Badge)
-                    </div>
-                    <p className="text-[11px] text-on-surface-variant mt-0.5">
-                      Discount this item directly on the menu without needing a Promo Banner.
-                    </p>
+                  <div className="text-xs font-semibold text-on-surface">
+                    Product Discount
                   </div>
                   <button
                     type="button"
@@ -5029,13 +5024,8 @@ const Admin = () => {
               {/* Product Discount System (% or $ / L.L.) */}
               <div className="bg-surface-container border border-outline/40 rounded-xl p-3.5 space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <div className="text-xs font-semibold text-on-surface">
-                      Product Discount (Slashed Price & Badge)
-                    </div>
-                    <p className="text-[11px] text-on-surface-variant mt-0.5">
-                      Discount this item directly on the menu without needing a Promo Banner.
-                    </p>
+                  <div className="text-xs font-semibold text-on-surface">
+                    Product Discount
                   </div>
                   <button
                     type="button"

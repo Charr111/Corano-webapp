@@ -1,6 +1,5 @@
 import { AiConversationSession, MenuItem, StoreDataPayload } from '../types';
 import initialSeedData from '../data/initialStoreData.json';
-import { auth } from '../firebase';
 
 export const R2_STORE_CACHE_KEY = 'corano_r2_store_cache_v1';
 const R2_PUBLIC_DATA_URL = 'https://images.restocorano.com/data/store-data.json';
@@ -171,10 +170,13 @@ export async function fetchLiveStoreData(
       'Cache-Control': 'no-cache',
     };
 
-    if (includeAdminAuth && auth.currentUser) {
+    if (includeAdminAuth) {
       try {
-        const idToken = await auth.currentUser.getIdToken();
-        headers['Authorization'] = `Bearer ${idToken}`;
+        const { auth } = await import('../firebase');
+        if (auth.currentUser) {
+          const idToken = await auth.currentUser.getIdToken();
+          headers['Authorization'] = `Bearer ${idToken}`;
+        }
       } catch {
         // continue without token if token fetch fails
       }
@@ -242,6 +244,7 @@ export async function mutateR2StoreData(
   };
 
   if (action !== 'submitPublicReview') {
+    const { auth } = await import('../firebase');
     const currentUser = auth.currentUser;
     if (!currentUser) {
       throw new Error('Please sign in with your Google Admin account first.');
@@ -298,6 +301,7 @@ export async function askCoranoAiWaiter(params: {
 }
 
 export async function fetchAiConversations(): Promise<AiConversationSession[]> {
+  const { auth } = await import('../firebase');
   const currentUser = auth.currentUser;
   if (!currentUser) return [];
   const idToken = await currentUser.getIdToken();
@@ -317,6 +321,7 @@ export async function deleteAiConversations(params: {
   id?: string;
   clearAll?: boolean;
 }): Promise<AiConversationSession[]> {
+  const { auth } = await import('../firebase');
   const currentUser = auth.currentUser;
   if (!currentUser) {
     throw new Error('Please sign in with your Google Admin account first.');

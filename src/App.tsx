@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import Menu from './pages/Menu';
 import About from './pages/About';
 import Reviews from './pages/Reviews';
-import Admin from './pages/Admin';
 import PageMeta from './components/PageMeta';
 import CoranoAiWidget from './components/CoranoAiWidget';
 import PromoBannerModal from './components/PromoBannerModal';
+
+const Admin = lazy(() => import('./pages/Admin'));
 
 
 const Header = () => {
@@ -81,7 +82,14 @@ const MainLayout = () => {
           <Route path="/menu/:categorySlug/:itemSlug" element={<Menu />} />
           <Route path="/about" element={<About />} />
           <Route path="/reviews" element={<Reviews />} />
-          <Route path="/admin" element={<Admin />} />
+          <Route
+            path="/admin"
+            element={
+              <Suspense fallback={<div className="min-h-[100dvh] bg-background" />}>
+                <Admin />
+              </Suspense>
+            }
+          />
         </Routes>
       </main>
       <PromoBannerModal />
