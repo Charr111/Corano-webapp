@@ -259,12 +259,31 @@ export function getActiveItemPromoDiscount(
     }
   } else if (parts[0]?.toLowerCase() === 'menu' && parts.length >= 3) {
     // Specific dish (/menu/:catSlug/:itemSlug)
+    const targetCatSlug = slugifySegment(parts[1]);
     const targetItemSlug = slugifySegment(parts[2]);
     const itemTitleSlug = slugifySegment(item.title || '');
     const itemIdSlug = slugifySegment(item.id || '');
+    const itemCatRaw = String(item.category || '').toLowerCase().trim();
+    const itemCatSlug = slugifySegment(itemCatRaw);
+    const matchedCatObj = (categories || []).find(
+      (c) =>
+        slugifySegment(c.name) === targetCatSlug ||
+        slugifySegment(c.id) === targetCatSlug
+    );
+    const categoryMatches =
+      !targetCatSlug ||
+      targetCatSlug === 'all' ||
+      itemCatSlug === targetCatSlug ||
+      Boolean(
+        matchedCatObj &&
+          (itemCatRaw === matchedCatObj.name.toLowerCase().trim() ||
+            itemCatRaw === matchedCatObj.id.toLowerCase().trim())
+      );
+
     if (
-      (targetItemSlug && itemTitleSlug === targetItemSlug) ||
-      (targetItemSlug && itemIdSlug === targetItemSlug)
+      categoryMatches &&
+      ((targetItemSlug && itemTitleSlug === targetItemSlug) ||
+        (targetItemSlug && itemIdSlug === targetItemSlug))
     ) {
       matchesItem = true;
     }

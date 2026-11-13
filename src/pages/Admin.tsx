@@ -1359,7 +1359,14 @@ const Admin = () => {
       return cat ? `Category: ${cat.name}` : clean;
     }
     if (parts[0] === 'menu' && parts.length >= 3) {
-      const item = items.find((it) => sanitizeSlug(it.title) === parts[2]);
+      const cat = categories.find((c) => sanitizeSlug(c.name) === parts[1]);
+      const item =
+        items.find(
+          (it) =>
+            sanitizeSlug(it.title) === parts[2] &&
+            (sanitizeSlug(it.category || '') === parts[1] ||
+              (cat && (it.category || '').toLowerCase() === cat.name.toLowerCase()))
+        ) || items.find((it) => sanitizeSlug(it.title) === parts[2]);
       return item ? `${item.title} · ${item.category}` : clean;
     }
     return clean;
@@ -2531,6 +2538,30 @@ const Admin = () => {
                                       <span className="text-error font-semibold">Out of Stock</span>
                                     </>
                                   )}
+                                  {(() => {
+                                    const itemCat = categories.find(
+                                      (c) =>
+                                        c.name.toLowerCase() === (item.category || '').toLowerCase() ||
+                                        c.id.toLowerCase() === (item.category || '').toLowerCase()
+                                    );
+                                    const catSlug = itemCat ? sanitizeSlug(itemCat.name) : 'all';
+                                    const itSlug = sanitizeSlug(item.title);
+                                    const liveUrl = `/menu/${catSlug}/${itSlug}`;
+                                    return (
+                                      <>
+                                        <span aria-hidden="true">·</span>
+                                        <Link
+                                          to={liveUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          title={`View dish: restocorano.com${liveUrl}`}
+                                          className="text-[11px] font-mono text-primary/80 hover:text-primary hover:underline lowercase"
+                                        >
+                                          {liveUrl}
+                                        </Link>
+                                      </>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             </div>
@@ -3929,9 +3960,19 @@ const Admin = () => {
                                 const parts = cleanTarget.replace(/^\/+/, '').split('/').filter(Boolean);
                                 let sampleItem: MenuItem | undefined;
                                 if (parts[0] === 'menu' && parts.length >= 3) {
-                                  sampleItem = items.find(
-                                    (it) => sanitizeSlug(it.title) === parts[2]
+                                  const cat = categories.find(
+                                    (c) => sanitizeSlug(c.name) === parts[1]
                                   );
+                                  sampleItem =
+                                    items.find(
+                                      (it) =>
+                                        sanitizeSlug(it.title) === parts[2] &&
+                                        (sanitizeSlug(it.category || '') === parts[1] ||
+                                          (cat &&
+                                            (it.category || '').toLowerCase() ===
+                                              cat.name.toLowerCase()))
+                                    ) ||
+                                    items.find((it) => sanitizeSlug(it.title) === parts[2]);
                                 } else if (parts[0] === 'menu' && parts.length === 2) {
                                   const cat = categories.find(
                                     (c) => sanitizeSlug(c.name) === parts[1]

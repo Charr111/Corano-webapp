@@ -12,6 +12,84 @@ import {
 import { fetchLiveStoreData, getCachedStoreData } from '../utils/r2DataClient';
 import { sanitizeSlug } from '../utils/imageCompressor';
 
+const findCategoryBySlug = (
+  catsList: MenuCategory[],
+  catSlugParam?: string
+): MenuCategory | undefined => {
+  if (!catSlugParam) return undefined;
+  const target = catSlugParam.toLowerCase().trim();
+  const targetSanitized = sanitizeSlug(target);
+  return catsList.find(
+    (c) =>
+      sanitizeSlug(c.name) === target ||
+      sanitizeSlug(c.name) === targetSanitized ||
+      sanitizeSlug(c.id) === target ||
+      sanitizeSlug(c.id) === targetSanitized ||
+      c.name.toLowerCase().trim() === target ||
+      c.id.toLowerCase().trim() === target
+  );
+};
+
+const doesItemMatchCategory = (
+  item: MenuItem,
+  catSlugParam?: string,
+  matchedCat?: MenuCategory
+): boolean => {
+  if (!catSlugParam || catSlugParam.toLowerCase() === 'all') return true;
+  const target = catSlugParam.toLowerCase().trim();
+  const targetSanitized = sanitizeSlug(target);
+  const itemCatRaw = (item.category || '').toLowerCase().trim();
+  const itemCatSanitized = sanitizeSlug(itemCatRaw);
+
+  if (
+    itemCatSanitized === target ||
+    itemCatSanitized === targetSanitized ||
+    itemCatRaw === target
+  ) {
+    return true;
+  }
+  if (matchedCat) {
+    const catNameLower = matchedCat.name.toLowerCase().trim();
+    const catIdLower = matchedCat.id.toLowerCase().trim();
+    if (
+      itemCatRaw === catNameLower ||
+      itemCatRaw === catIdLower ||
+      itemCatSanitized === sanitizeSlug(catNameLower)
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const findItemForCategoryAndSlug = (
+  itemsList: MenuItem[],
+  catsList: MenuCategory[],
+  catSlugParam?: string,
+  itemSlugParam?: string
+): MenuItem | null => {
+  if (!itemSlugParam) return null;
+  const targetItem = itemSlugParam.toLowerCase().trim();
+  const targetItemSanitized = sanitizeSlug(targetItem);
+
+  const matchesItemSlug = (i: MenuItem): boolean =>
+    sanitizeSlug(i.title) === targetItem ||
+    sanitizeSlug(i.title) === targetItemSanitized ||
+    sanitizeSlug(i.id) === targetItem ||
+    sanitizeSlug(i.id) === targetItemSanitized ||
+    i.id.toLowerCase().trim() === targetItem;
+
+  if (catSlugParam && catSlugParam.toLowerCase() !== 'all') {
+    const matchedCat = findCategoryBySlug(catsList, catSlugParam);
+    const exactMatch = itemsList.find(
+      (i) => matchesItemSlug(i) && doesItemMatchCategory(i, catSlugParam, matchedCat)
+    );
+    if (exactMatch) return exactMatch;
+  }
+
+  return itemsList.find(matchesItemSlug) || null;
+};
+
 const Menu = () => {
   const { categorySlug, itemSlug } = useParams<{ categorySlug?: string; itemSlug?: string }>();
   const navigate = useNavigate();
@@ -22,25 +100,15 @@ const Menu = () => {
   );
 
   // Match initial category from URL slug if available
-  const initialCategoryFromSlug = categorySlug
-    ? sortedInitialCats.find(
-        (c) =>
-          sanitizeSlug(c.name) === categorySlug.toLowerCase() ||
-          sanitizeSlug(c.id) === categorySlug.toLowerCase() ||
-          c.name.toLowerCase() === categorySlug.toLowerCase() ||
-          c.id.toLowerCase() === categorySlug.toLowerCase()
-      )
-    : null;
+  const initialCategoryFromSlug = findCategoryBySlug(sortedInitialCats, categorySlug) || null;
 
-  // Match initial item from URL slug if available
-  const initialItemFromSlug = itemSlug
-    ? (initialStore.items || []).find(
-        (i) =>
-          sanitizeSlug(i.title) === itemSlug.toLowerCase() ||
-          sanitizeSlug(i.id) === itemSlug.toLowerCase() ||
-          i.id.toLowerCase() === itemSlug.toLowerCase()
-      ) || null
-    : null;
+  // Match initial item from URL slug + category slug if available
+  const initialItemFromSlug = findItemForCategoryAndSlug(
+    initialStore.items || [],
+    sortedInitialCats,
+    categorySlug,
+    itemSlug
+  );
 
   const [categories, setCategories] = useState<MenuCategory[]>(sortedInitialCats);
   const [allItems, setAllItems] = useState<MenuItem[]>(initialStore.items || []);
@@ -147,35 +215,29 @@ const Menu = () => {
   useEffect(() => {
     if (categories.length === 0) return;
 
-    if (categorySlug) {
-      const foundCat = categories.find(
-        (c) =>
-          sanitizeSlug(c.name) === categorySlug.toLowerCase() ||
-          sanitizeSlug(c.id) === categorySlug.toLowerCase() ||
-          c.name.toLowerCase() === categorySlug.toLowerCase() ||
-          c.id.toLowerCase() === categorySlug.toLowerCase()
-      );
-      if (foundCat && foundCat.name.toLowerCase() !== activeCategory.toLowerCase()) {
-        setActiveCategory(foundCat.name.toLowerCase());
-      }
+    const foundCat = findCategoryBySlug(categories, categorySlug);
+    if (foundCat && foundCat.name.toLowerCase() !== activeCategory.toLowerCase()) {
+      setActiveCategory(foundCat.name.toLowerCase());
     }
 
     if (itemSlug) {
-      const foundItem = allItems.find(
-        (i) =>
-          sanitizeSlug(i.title) === itemSlug.toLowerCase() ||
-          sanitizeSlug(i.id) === itemSlug.toLowerCase() ||
-          i.id.toLowerCase() === itemSlug.toLowerCase()
+      const foundItem = findItemForCategoryAndSlug(
+        allItems,
+        categories,
+        categorySlug,
+        itemSlug
       );
       if (foundItem) {
         setSelectedItem(foundItem);
-        const cat = categories.find(
-          (c) =>
-            c.name.toLowerCase() === (foundItem.category || '').toLowerCase() ||
-            c.id.toLowerCase() === (foundItem.category || '').toLowerCase()
-        );
-        if (cat && cat.name.toLowerCase() !== activeCategory.toLowerCase()) {
-          setActiveCategory(cat.name.toLowerCase());
+        if (!foundCat) {
+          const itemCatObj = categories.find(
+            (c) =>
+              c.name.toLowerCase() === (foundItem.category || '').toLowerCase() ||
+              c.id.toLowerCase() === (foundItem.category || '').toLowerCase()
+          );
+          if (itemCatObj && itemCatObj.name.toLowerCase() !== activeCategory.toLowerCase()) {
+            setActiveCategory(itemCatObj.name.toLowerCase());
+          }
         }
       }
     } else {
