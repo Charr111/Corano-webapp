@@ -1988,18 +1988,18 @@ const Admin = () => {
 
   return (
     <div className="min-h-[100dvh] bg-background text-on-surface flex flex-col lg:flex-row w-full max-w-[100vw] overflow-x-hidden">
-      {/* Mobile Sidebar Drawer Backdrop */}
+      {/* Sidebar Drawer Backdrop (Mobile, POS & Desktop) */}
       {mobileSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/75 backdrop-blur-xs z-50 lg:hidden"
+          className="fixed inset-0 bg-black/75 backdrop-blur-xs z-50"
           onClick={() => setMobileSidebarOpen(false)}
         />
       )}
 
-      {/* Left Sidebar (Desktop Fixed + Mobile Slide-Over Drawer) */}
+      {/* Left Sidebar Slide-Over Drawer (Toggled via Menu/Burger Button on Mobile & Desktop) */}
       <aside
-        className={`fixed lg:sticky lg:top-0 lg:h-[100dvh] inset-y-0 left-0 z-50 w-64 bg-surface-container-low border-r border-outline-variant/40 flex flex-col justify-between transition-transform duration-200 ${
-          mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-surface-container-low border-r border-outline-variant/40 flex flex-col justify-between transition-transform duration-200 ${
+          mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div>
@@ -2009,12 +2009,12 @@ const Admin = () => {
               <span className="font-headline text-3xl font-bold tracking-tight text-on-surface group-hover:text-primary transition-colors">
                 Corano
               </span>
-              <span className="w-2 h-2 rounded-full bg-primary ml-1 mt-1" />
             </Link>
             <button
               type="button"
               onClick={() => setMobileSidebarOpen(false)}
-              className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center text-on-surface-variant hover:text-on-surface -mr-2"
+              aria-label="Close menu"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-on-surface-variant hover:text-on-surface -mr-2 cursor-pointer"
             >
               <AdminSvgIcon name="close" className="text-[24px]" />
             </button>
@@ -2112,17 +2112,16 @@ const Admin = () => {
           <div className="flex items-center gap-2.5 min-w-0">
             <button
               type="button"
-              onClick={() => setMobileSidebarOpen(true)}
-              aria-label="Open menu"
-              className="lg:hidden min-w-[40px] min-h-[40px] rounded-xl bg-surface-container-low border border-outline-variant/40 flex items-center justify-center text-on-surface active:scale-95 transition-transform"
+              onClick={() => setMobileSidebarOpen((prev) => !prev)}
+              aria-label="Toggle menu"
+              className="min-w-[40px] min-h-[40px] rounded-xl bg-surface-container-low border border-outline-variant/40 flex items-center justify-center text-on-surface hover:border-primary active:scale-95 transition-all cursor-pointer"
             >
               <AdminSvgIcon name="menu" className="text-[20px]" />
             </button>
 
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 text-sm truncate">
-                <span className="font-headline font-bold text-primary lg:hidden">Corano</span>
-                <span className="text-on-surface-variant hidden lg:inline">Dashboard</span>
+                <span className="font-headline font-bold text-primary">Corano</span>
                 <span className="text-on-surface-variant">/</span>
                 <span className="text-on-surface font-medium truncate">
                   {sectionLabelMap[activeSection]}
@@ -2462,11 +2461,11 @@ const Admin = () => {
                         return (
                           <div
                             key={item.id}
-                            className="p-3.5 sm:px-6 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 hover:bg-surface-container/40 transition-colors"
+                            className="p-3 sm:px-4 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3.5 hover:bg-surface-container/40 transition-colors"
                           >
                             {/* Top / Left: Thumbnail + Title & Category + Mobile Price */}
-                            <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                              <div className="w-13 h-13 sm:w-12 sm:h-12 rounded-xl bg-surface-container overflow-hidden shrink-0 border border-outline-variant/30">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className="w-11 h-11 sm:w-10 sm:h-10 rounded-xl bg-surface-container overflow-hidden shrink-0 border border-outline-variant/30">
                                 {item.img ? (
                                   <img
                                     src={item.img}
@@ -2478,14 +2477,14 @@ const Admin = () => {
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center text-on-surface-variant">
-                                    <AdminSvgIcon name="restaurant" className="text-[20px]" />
+                                    <AdminSvgIcon name="restaurant" className="text-[18px]" />
                                   </div>
                                 )}
                               </div>
 
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-start justify-between gap-2">
-                                  <div className="text-sm sm:text-base font-semibold text-on-surface leading-snug line-clamp-2 sm:truncate">
+                                  <div className="text-[13px] sm:text-sm font-semibold text-on-surface leading-snug line-clamp-2 sm:truncate">
                                     {item.title}
                                   </div>
                                   {/* Price shown on top-right on phone for clean thumb-zone alignment */}
@@ -2495,18 +2494,18 @@ const Admin = () => {
                                         <span className="text-[10px] text-on-surface-variant/75 line-through leading-tight">
                                           {formatStorePrice(item.price, storeCurrency, exchangeRate)}
                                         </span>
-                                        <span className="text-sm font-bold text-primary leading-tight">
+                                        <span className="text-xs font-bold text-primary leading-tight">
                                           {formatStorePrice(itemDiscUsd, storeCurrency, exchangeRate)}
                                         </span>
                                       </>
                                     ) : (
-                                      <span className="text-sm font-bold text-primary">
+                                      <span className="text-xs font-bold text-primary">
                                         {formatStorePrice(item.price, storeCurrency, exchangeRate)}
                                       </span>
                                     )}
                                   </div>
                                 </div>
-                                <div className="text-xs text-on-surface-variant capitalize flex flex-wrap items-center gap-1.5 mt-0.5">
+                                <div className="text-[11px] text-on-surface-variant capitalize flex flex-wrap items-center gap-1.5 mt-0.5">
                                   <span>{item.category}</span>
                                   <span aria-hidden="true">·</span>
                                   <span className="font-mono tabular-nums">
@@ -2532,47 +2531,23 @@ const Admin = () => {
                                       <span className="text-error font-semibold">Out of Stock</span>
                                     </>
                                   )}
-                                  {(() => {
-                                    const itemCat = categories.find(
-                                      (c) =>
-                                        c.name.toLowerCase() === (item.category || '').toLowerCase() ||
-                                        c.id.toLowerCase() === (item.category || '').toLowerCase()
-                                    );
-                                    const catSlug = itemCat ? sanitizeSlug(itemCat.name) : 'all';
-                                    const itSlug = sanitizeSlug(item.title);
-                                    const liveUrl = `/menu/${catSlug}/${itSlug}`;
-                                    return (
-                                      <>
-                                        <span aria-hidden="true">·</span>
-                                        <Link
-                                          to={liveUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          title={`View dish: restocorano.com${liveUrl}`}
-                                          className="text-[11px] font-mono text-primary/80 hover:text-primary hover:underline lowercase"
-                                        >
-                                          {liveUrl}
-                                        </Link>
-                                      </>
-                                    );
-                                  })()}
                                 </div>
                               </div>
                             </div>
 
-                            {/* Desktop Center: Formatted Price ($ or L.L.) */}
-                            <div className="hidden sm:flex flex-col items-end font-mono tabular-nums whitespace-nowrap">
+                            {/* Desktop / POS Center: Compact Formatted Price ($ or L.L.) */}
+                            <div className="hidden sm:flex flex-col items-end font-mono tabular-nums whitespace-nowrap shrink-0">
                               {hasItemDiscount ? (
                                 <>
-                                  <span className="text-[11px] text-on-surface-variant/75 line-through leading-tight">
+                                  <span className="text-[10px] text-on-surface-variant/75 line-through leading-tight">
                                     {formatStorePrice(item.price, storeCurrency, exchangeRate)}
                                   </span>
-                                  <span className="text-base font-bold text-primary leading-tight">
+                                  <span className="text-xs lg:text-[13px] font-bold text-primary leading-tight">
                                     {formatStorePrice(itemDiscUsd, storeCurrency, exchangeRate)}
                                   </span>
                                 </>
                               ) : (
-                                <span className="text-base font-bold text-primary">
+                                <span className="text-xs lg:text-[13px] font-bold text-primary">
                                   {formatStorePrice(item.price, storeCurrency, exchangeRate)}
                                 </span>
                               )}
@@ -3088,45 +3063,6 @@ const Admin = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Outside AI Bubble Name Control (Zero-bloat, synced via store-data.json) */}
-              <form
-                onSubmit={handleSaveAiBubbleLabel}
-                className="bg-surface-container-low border border-outline-variant/30 rounded-2xl px-3.5 py-2.5 sm:px-5 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <AdminSvgIcon name="label" className="text-primary text-[18px] shrink-0" />
-                  <div className="min-w-0">
-                    <span className="text-xs font-semibold text-on-surface block truncate">
-                      Corano ai name
-                    </span>
-                    <span className="text-[11px] text-on-surface-variant block truncate">
-                      Change the name Of the Ai whenever you want
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-                  <input
-                    type="text"
-                    maxLength={28}
-                    value={aiBubbleLabelDraft}
-                    onChange={(e) => setAiBubbleLabelDraft(e.target.value)}
-                    placeholder="Corano AI"
-                    className="flex-1 sm:w-44 bg-surface-container border border-outline-variant/40 focus:border-primary rounded-xl px-3 py-1.5 text-xs text-on-surface outline-none transition-colors"
-                  />
-                  <button
-                    type="submit"
-                    disabled={
-                      savingAiLabel ||
-                      (aiBubbleLabelDraft.trim() || 'Corano AI') === aiBubbleLabel
-                    }
-                    className="px-3.5 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-semibold hover:opacity-90 disabled:opacity-40 transition-opacity cursor-pointer shrink-0"
-                  >
-                    {savingAiLabel ? 'Saving...' : 'Save Name'}
-                  </button>
-                </div>
-              </form>
 
               {/* Analytics Summary Grid (Compact 2x2 on Phones, 4 Columns on Desktop) */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
